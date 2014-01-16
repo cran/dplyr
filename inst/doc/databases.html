@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<title>Databases</title>
+
+<!-- Styles for R syntax highlighter -->
+<style type="text/css">
+   pre .operator,
+   pre .paren {
+     color: rgb(104, 118, 135)
+   }
+
+   pre .literal {
+     color: rgb(88, 72, 246)
+   }
+
+   pre .number {
+     color: rgb(0, 0, 205);
+   }
+
+   pre .comment {
+     color: rgb(76, 136, 107);
+   }
+
+   pre .keyword {
+     color: rgb(0, 0, 255);
+   }
+
+   pre .identifier {
+     color: rgb(0, 0, 0);
+   }
+
+   pre .string {
+     color: rgb(3, 106, 7);
+   }
+</style>
+
+<!-- R syntax highlighter -->
+<script type="text/javascript">
+var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/</gm,"&lt;")}function f(r,q,p){return RegExp(q,"m"+(r.cI?"i":"")+(p?"g":""))}function b(r){for(var p=0;p<r.childNodes.length;p++){var q=r.childNodes[p];if(q.nodeName=="CODE"){return q}if(!(q.nodeType==3&&q.nodeValue.match(/\s+/))){break}}}function h(t,s){var p="";for(var r=0;r<t.childNodes.length;r++){if(t.childNodes[r].nodeType==3){var q=t.childNodes[r].nodeValue;if(s){q=q.replace(/\n/g,"")}p+=q}else{if(t.childNodes[r].nodeName=="BR"){p+="\n"}else{p+=h(t.childNodes[r])}}}if(/MSIE [678]/.test(navigator.userAgent)){p=p.replace(/\r/g,"\n")}return p}function a(s){var r=s.className.split(/\s+/);r=r.concat(s.parentNode.className.split(/\s+/));for(var q=0;q<r.length;q++){var p=r[q].replace(/^language-/,"");if(e[p]){return p}}}function c(q){var p=[];(function(s,t){for(var r=0;r<s.childNodes.length;r++){if(s.childNodes[r].nodeType==3){t+=s.childNodes[r].nodeValue.length}else{if(s.childNodes[r].nodeName=="BR"){t+=1}else{if(s.childNodes[r].nodeType==1){p.push({event:"start",offset:t,node:s.childNodes[r]});t=arguments.callee(s.childNodes[r],t);p.push({event:"stop",offset:t,node:s.childNodes[r]})}}}}return t})(q,0);return p}function k(y,w,x){var q=0;var z="";var s=[];function u(){if(y.length&&w.length){if(y[0].offset!=w[0].offset){return(y[0].offset<w[0].offset)?y:w}else{return w[0].event=="start"?y:w}}else{return y.length?y:w}}function t(D){var A="<"+D.nodeName.toLowerCase();for(var B=0;B<D.attributes.length;B++){var C=D.attributes[B];A+=" "+C.nodeName.toLowerCase();if(C.value!==undefined&&C.value!==false&&C.value!==null){A+='="'+m(C.value)+'"'}}return A+">"}while(y.length||w.length){var v=u().splice(0,1)[0];z+=m(x.substr(q,v.offset-q));q=v.offset;if(v.event=="start"){z+=t(v.node);s.push(v.node)}else{if(v.event=="stop"){var p,r=s.length;do{r--;p=s[r];z+=("</"+p.nodeName.toLowerCase()+">")}while(p!=v.node);s.splice(r,1);while(r<s.length){z+=t(s[r]);r++}}}}return z+m(x.substr(q))}function j(){function q(x,y,v){if(x.compiled){return}var u;var s=[];if(x.k){x.lR=f(y,x.l||hljs.IR,true);for(var w in x.k){if(!x.k.hasOwnProperty(w)){continue}if(x.k[w] instanceof Object){u=x.k[w]}else{u=x.k;w="keyword"}for(var r in u){if(!u.hasOwnProperty(r)){continue}x.k[r]=[w,u[r]];s.push(r)}}}if(!v){if(x.bWK){x.b="\\b("+s.join("|")+")\\s"}x.bR=f(y,x.b?x.b:"\\B|\\b");if(!x.e&&!x.eW){x.e="\\B|\\b"}if(x.e){x.eR=f(y,x.e)}}if(x.i){x.iR=f(y,x.i)}if(x.r===undefined){x.r=1}if(!x.c){x.c=[]}x.compiled=true;for(var t=0;t<x.c.length;t++){if(x.c[t]=="self"){x.c[t]=x}q(x.c[t],y,false)}if(x.starts){q(x.starts,y,false)}}for(var p in e){if(!e.hasOwnProperty(p)){continue}q(e[p].dM,e[p],true)}}function d(B,C){if(!j.called){j();j.called=true}function q(r,M){for(var L=0;L<M.c.length;L++){if((M.c[L].bR.exec(r)||[null])[0]==r){return M.c[L]}}}function v(L,r){if(D[L].e&&D[L].eR.test(r)){return 1}if(D[L].eW){var M=v(L-1,r);return M?M+1:0}return 0}function w(r,L){return L.i&&L.iR.test(r)}function K(N,O){var M=[];for(var L=0;L<N.c.length;L++){M.push(N.c[L].b)}var r=D.length-1;do{if(D[r].e){M.push(D[r].e)}r--}while(D[r+1].eW);if(N.i){M.push(N.i)}return f(O,M.join("|"),true)}function p(M,L){var N=D[D.length-1];if(!N.t){N.t=K(N,E)}N.t.lastIndex=L;var r=N.t.exec(M);return r?[M.substr(L,r.index-L),r[0],false]:[M.substr(L),"",true]}function z(N,r){var L=E.cI?r[0].toLowerCase():r[0];var M=N.k[L];if(M&&M instanceof Array){return M}return false}function F(L,P){L=m(L);if(!P.k){return L}var r="";var O=0;P.lR.lastIndex=0;var M=P.lR.exec(L);while(M){r+=L.substr(O,M.index-O);var N=z(P,M);if(N){x+=N[1];r+='<span class="'+N[0]+'">'+M[0]+"</span>"}else{r+=M[0]}O=P.lR.lastIndex;M=P.lR.exec(L)}return r+L.substr(O,L.length-O)}function J(L,M){if(M.sL&&e[M.sL]){var r=d(M.sL,L);x+=r.keyword_count;return r.value}else{return F(L,M)}}function I(M,r){var L=M.cN?'<span class="'+M.cN+'">':"";if(M.rB){y+=L;M.buffer=""}else{if(M.eB){y+=m(r)+L;M.buffer=""}else{y+=L;M.buffer=r}}D.push(M);A+=M.r}function G(N,M,Q){var R=D[D.length-1];if(Q){y+=J(R.buffer+N,R);return false}var P=q(M,R);if(P){y+=J(R.buffer+N,R);I(P,M);return P.rB}var L=v(D.length-1,M);if(L){var O=R.cN?"</span>":"";if(R.rE){y+=J(R.buffer+N,R)+O}else{if(R.eE){y+=J(R.buffer+N,R)+O+m(M)}else{y+=J(R.buffer+N+M,R)+O}}while(L>1){O=D[D.length-2].cN?"</span>":"";y+=O;L--;D.length--}var r=D[D.length-1];D.length--;D[D.length-1].buffer="";if(r.starts){I(r.starts,"")}return R.rE}if(w(M,R)){throw"Illegal"}}var E=e[B];var D=[E.dM];var A=0;var x=0;var y="";try{var s,u=0;E.dM.buffer="";do{s=p(C,u);var t=G(s[0],s[1],s[2]);u+=s[0].length;if(!t){u+=s[1].length}}while(!s[2]);if(D.length>1){throw"Illegal"}return{r:A,keyword_count:x,value:y}}catch(H){if(H=="Illegal"){return{r:0,keyword_count:0,value:m(C)}}else{throw H}}}function g(t){var p={keyword_count:0,r:0,value:m(t)};var r=p;for(var q in e){if(!e.hasOwnProperty(q)){continue}var s=d(q,t);s.language=q;if(s.keyword_count+s.r>r.keyword_count+r.r){r=s}if(s.keyword_count+s.r>p.keyword_count+p.r){r=p;p=s}}if(r.language){p.second_best=r}return p}function i(r,q,p){if(q){r=r.replace(/^((<[^>]+>|\t)+)/gm,function(t,w,v,u){return w.replace(/\t/g,q)})}if(p){r=r.replace(/\n/g,"<br>")}return r}function n(t,w,r){var x=h(t,r);var v=a(t);var y,s;if(v){y=d(v,x)}else{return}var q=c(t);if(q.length){s=document.createElement("pre");s.innerHTML=y.value;y.value=k(q,c(s),x)}y.value=i(y.value,w,r);var u=t.className;if(!u.match("(\\s|^)(language-)?"+v+"(\\s|$)")){u=u?(u+" "+v):v}if(/MSIE [678]/.test(navigator.userAgent)&&t.tagName=="CODE"&&t.parentNode.tagName=="PRE"){s=t.parentNode;var p=document.createElement("div");p.innerHTML="<pre><code>"+y.value+"</code></pre>";t=p.firstChild.firstChild;p.firstChild.cN=s.cN;s.parentNode.replaceChild(p.firstChild,s)}else{t.innerHTML=y.value}t.className=u;t.result={language:v,kw:y.keyword_count,re:y.r};if(y.second_best){t.second_best={language:y.second_best.language,kw:y.second_best.keyword_count,re:y.second_best.r}}}function o(){if(o.called){return}o.called=true;var r=document.getElementsByTagName("pre");for(var p=0;p<r.length;p++){var q=b(r[p]);if(q){n(q,hljs.tabReplace)}}}function l(){if(window.addEventListener){window.addEventListener("DOMContentLoaded",o,false);window.addEventListener("load",o,false)}else{if(window.attachEvent){window.attachEvent("onload",o)}else{window.onload=o}}}var e={};this.LANGUAGES=e;this.highlight=d;this.highlightAuto=g;this.fixMarkup=i;this.highlightBlock=n;this.initHighlighting=o;this.initHighlightingOnLoad=l;this.IR="[a-zA-Z][a-zA-Z0-9_]*";this.UIR="[a-zA-Z_][a-zA-Z0-9_]*";this.NR="\\b\\d+(\\.\\d+)?";this.CNR="\\b(0[xX][a-fA-F0-9]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)";this.BNR="\\b(0b[01]+)";this.RSR="!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|\\.|-|-=|/|/=|:|;|<|<<|<<=|<=|=|==|===|>|>=|>>|>>=|>>>|>>>=|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~";this.ER="(?![\\s\\S])";this.BE={b:"\\\\.",r:0};this.ASM={cN:"string",b:"'",e:"'",i:"\\n",c:[this.BE],r:0};this.QSM={cN:"string",b:'"',e:'"',i:"\\n",c:[this.BE],r:0};this.CLCM={cN:"comment",b:"//",e:"$"};this.CBLCLM={cN:"comment",b:"/\\*",e:"\\*/"};this.HCM={cN:"comment",b:"#",e:"$"};this.NM={cN:"number",b:this.NR,r:0};this.CNM={cN:"number",b:this.CNR,r:0};this.BNM={cN:"number",b:this.BNR,r:0};this.inherit=function(r,s){var p={};for(var q in r){p[q]=r[q]}if(s){for(var q in s){p[q]=s[q]}}return p}}();hljs.LANGUAGES.cpp=function(){var a={keyword:{"false":1,"int":1,"float":1,"while":1,"private":1,"char":1,"catch":1,"export":1,virtual:1,operator:2,sizeof:2,dynamic_cast:2,typedef:2,const_cast:2,"const":1,struct:1,"for":1,static_cast:2,union:1,namespace:1,unsigned:1,"long":1,"throw":1,"volatile":2,"static":1,"protected":1,bool:1,template:1,mutable:1,"if":1,"public":1,friend:2,"do":1,"return":1,"goto":1,auto:1,"void":2,"enum":1,"else":1,"break":1,"new":1,extern:1,using:1,"true":1,"class":1,asm:1,"case":1,typeid:1,"short":1,reinterpret_cast:2,"default":1,"double":1,register:1,explicit:1,signed:1,typename:1,"try":1,"this":1,"switch":1,"continue":1,wchar_t:1,inline:1,"delete":1,alignof:1,char16_t:1,char32_t:1,constexpr:1,decltype:1,noexcept:1,nullptr:1,static_assert:1,thread_local:1,restrict:1,_Bool:1,complex:1},built_in:{std:1,string:1,cin:1,cout:1,cerr:1,clog:1,stringstream:1,istringstream:1,ostringstream:1,auto_ptr:1,deque:1,list:1,queue:1,stack:1,vector:1,map:1,set:1,bitset:1,multiset:1,multimap:1,unordered_set:1,unordered_map:1,unordered_multiset:1,unordered_multimap:1,array:1,shared_ptr:1}};return{dM:{k:a,i:"</",c:[hljs.CLCM,hljs.CBLCLM,hljs.QSM,{cN:"string",b:"'\\\\?.",e:"'",i:"."},{cN:"number",b:"\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)"},hljs.CNM,{cN:"preprocessor",b:"#",e:"$"},{cN:"stl_container",b:"\\b(deque|list|queue|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array)\\s*<",e:">",k:a,r:10,c:["self"]}]}}}();hljs.LANGUAGES.r={dM:{c:[hljs.HCM,{cN:"number",b:"\\b0[xX][0-9a-fA-F]+[Li]?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+(?:[eE][+\\-]?\\d*)?L\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\b\\d+\\.(?!\\d)(?:i\\b)?",e:hljs.IMMEDIATE_RE,r:1},{cN:"number",b:"\\b\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"number",b:"\\.\\d+(?:[eE][+\\-]?\\d*)?i?\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"keyword",b:"(?:tryCatch|library|setGeneric|setGroupGeneric)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\.",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\.\\.\\d+(?![\\w.])",e:hljs.IMMEDIATE_RE,r:10},{cN:"keyword",b:"\\b(?:function)",e:hljs.IMMEDIATE_RE,r:2},{cN:"keyword",b:"(?:if|in|break|next|repeat|else|for|return|switch|while|try|stop|warning|require|attach|detach|source|setMethod|setClass)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"literal",b:"(?:NA|NA_integer_|NA_real_|NA_character_|NA_complex_)\\b",e:hljs.IMMEDIATE_RE,r:10},{cN:"literal",b:"(?:NULL|TRUE|FALSE|T|F|Inf|NaN)\\b",e:hljs.IMMEDIATE_RE,r:1},{cN:"identifier",b:"[a-zA-Z.][a-zA-Z0-9._]*\\b",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"<\\-(?!\\s*\\d)",e:hljs.IMMEDIATE_RE,r:2},{cN:"operator",b:"\\->|<\\-",e:hljs.IMMEDIATE_RE,r:1},{cN:"operator",b:"%%|~",e:hljs.IMMEDIATE_RE},{cN:"operator",b:">=|<=|==|!=|\\|\\||&&|=|\\+|\\-|\\*|/|\\^|>|<|!|&|\\||\\$|:",e:hljs.IMMEDIATE_RE,r:0},{cN:"operator",b:"%",e:"%",i:"\\n",r:1},{cN:"identifier",b:"`",e:"`",r:0},{cN:"string",b:'"',e:'"',c:[hljs.BE],r:0},{cN:"string",b:"'",e:"'",c:[hljs.BE],r:0},{cN:"paren",b:"[[({\\])}]",e:hljs.IMMEDIATE_RE,r:0}]}};
+hljs.initHighlightingOnLoad();
+</script>
+
+<!-- MathJax scripts -->
+<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+</style>
+
+
+
+</head>
+
+<body>
+<!--
+%\VignetteEngine{knitr}
+%\VignetteIndexEntry{Databases}
+-->
+
+<h1>Databases</h1>
+
+<p>As well as working with local in-memory data like data frames and data tables, dplyr also works with remote on-disk data stored in databases. Generally, if your data fits in memory there is no advantage to putting it in a database: it will only be slower and more hassle. The reason you&#39;d want to use dplyr with a database is because either your data is already in a database (and you don&#39;t want to work with static csv files that someone else has dumped out for you), or you have so much data that it does not fit in memory and you have to use a database. Currently dplyr supports the three most popular open source databases (sqlite, mysql and postgresql), and google&#39;s bigquery.</p>
+
+<p>Since R almost exclusively works with in-memory data, if you do have a lot of data in a database, you can&#39;t just dump it into R. Instead, you&#39;ll have to work with subsets or aggregates, and dplyr aims to make that as easy as possible. If you&#39;re working with large data, it&#39;s also likely that you&#39;ll need support to get the data into the database and to ensure you have the right indices for good performance. dplyr provides some simple tools to help with these tasks but they are no substitute for a local expert.</p>
+
+<p>The motivation for supporting databases in dplyr is that you never pull down the right subset or aggregate from the database the first time, and usually you have to iterate between R and SQL many times before you get the perfect dataset. Switching between languages is cognitively challenging (especially because R and SQL are so perilously similar), so dplyr allows you to write R code that is automatically translated to SQL. The goal of dplyr is not to replace every SQL function with an R function: that would be difficult and error prone. Instead, dplyr only generates <code>SELECT</code> statements, the SQL you write most often as an analyst. </p>
+
+<p>To get the most out of this chapter, you&#39;ll need to be familiar with querying SQL databases using the <code>SELECT</code> statement.</p>
+
+<h2>Getting started</h2>
+
+<p>To experiement with databases, it&#39;s easiest to get started with SQLite because everything you need is included in the R package. You don&#39;t need to install anything else, and you don&#39;t need to deal with the hassle of setting up a database server. Using a SQLite database in dplyr is really easy: just give it a path and the ok to create it.</p>
+
+<pre><code class="r">my_db &lt;- src_sqlite(&quot;my_db.sqlite3&quot;, create = T)
+</code></pre>
+
+<p>The main new concert here is the <code>src</code>, which is a collection of tables. Use <code>src_sqlite()</code>, <code>src_mysql()</code>, <code>src_postgres()</code> and <code>src_bigquery()</code> to connect to the different databases supported by dplyr.</p>
+
+<p><code>my_db</code> currently has no data in it, so we&#39;ll load it up with the <code>hflights</code> data using the convenient <code>copy_to()</code> function. This is a quick and dirty way of getting data into a database, but it&#39;s not suitable for very large datasets because all the data has to flow through R.</p>
+
+<pre><code class="r">library(hflights)
+hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list(
+  c(&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;), &quot;UniqueCarrier&quot;, &quot;TailNum&quot;))
+</code></pre>
+
+<p>As you can see, the <code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. <code>copy_to()</code> also executes the SQL <code>ANALYZE</code> comomand: this ensures that the database has up-to-date table statistics and can pick appropriate query optimisations.</p>
+
+<p>For this particular dataset, there&#39;s a built <code>src</code> that will cache <code>hflights</code> in a standard location:</p>
+
+<pre><code class="r">hflights_sqlite &lt;- tbl(hflights_sqlite(), &quot;hflights&quot;)
+</code></pre>
+
+<pre><code>#&gt; Loading required package: hflights
+#&gt; Loading required package: RSQLite
+#&gt; Loading required package: DBI
+#&gt; Loading required package: RSQLite.extfuns
+</code></pre>
+
+<pre><code class="r">hflights_sqlite
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [227,496 x 21]
+#&gt; 
+#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
+#&gt; 1  2011     1          1         6    1400    1500            AA       428
+#&gt; 2  2011     1          2         7    1401    1501            AA       428
+#&gt; 3  2011     1          3         1    1352    1502            AA       428
+#&gt; 4  2011     1          4         2    1403    1513            AA       428
+#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
+#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
+#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
+#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
+#&gt;   CancellationCode (chr), Diverted (int)
+</code></pre>
+
+<p>You can also create <code>tbl</code> from arbitrary SQL:</p>
+
+<pre><code class="r">tbl(my_db, sql(&quot;SELECT * FROM hflights&quot;))
+</code></pre>
+
+<h2>Basic verbs</h2>
+
+<p>Remote data sources use exactly the same five verbs as local data sources:</p>
+
+<pre><code class="r">select(hflights_sqlite, Year:DayofMonth, DepDelay, ArrDelay)
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [227,496 x 5]
+#&gt; 
+#&gt;    Year Month DayofMonth DepDelay ArrDelay
+#&gt; 1  2011     1          1        0      -10
+#&gt; 2  2011     1          2        1       -9
+#&gt; 3  2011     1          3       -8       -8
+#&gt; 4  2011     1          4        3        3
+#&gt; ..  ...   ...        ...      ...      ...
+</code></pre>
+
+<pre><code class="r">filter(hflights_sqlite, depDelay &gt; 240)
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [389 x 21]
+#&gt; Filter: depDelay &gt; 240 
+#&gt; 
+#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
+#&gt; 1  2011     1         28         5    1516    1916            CO         1
+#&gt; 2  2011     1         27         4    2137    2254            CO       150
+#&gt; 3  2011     1         20         4     635     807            CO        59
+#&gt; 4  2011     1         17         1    1838    2109            CO       746
+#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
+#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
+#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
+#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
+#&gt;   CancellationCode (chr), Diverted (int)
+</code></pre>
+
+<pre><code class="r">arrange(hflights_sqlite, Year, Month, DayofMonth)
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [227,496 x 21]
+#&gt; Arrange: Year, Month, DayofMonth 
+#&gt; 
+#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
+#&gt; 1  2011     1          1         6    1400    1500            AA       428
+#&gt; 2  2011     1          1         6     728     840            AA       460
+#&gt; 3  2011     1          1         6    1631    1736            AA      1121
+#&gt; 4  2011     1          1         6    1756    2112            AA      1294
+#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
+#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
+#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
+#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
+#&gt;   CancellationCode (chr), Diverted (int)
+</code></pre>
+
+<pre><code class="r">mutate(hflights_sqlite, speed = AirTime / Distance)
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [227,496 x 22]
+#&gt; 
+#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
+#&gt; 1  2011     1          1         6    1400    1500            AA       428
+#&gt; 2  2011     1          2         7    1401    1501            AA       428
+#&gt; 3  2011     1          3         1    1352    1502            AA       428
+#&gt; 4  2011     1          4         2    1403    1513            AA       428
+#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
+#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
+#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
+#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
+#&gt;   CancellationCode (chr), Diverted (int), speed (int)
+</code></pre>
+
+<pre><code class="r">summarise(hflights_sqlite, delay = mean(DepTime))
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: &lt;derived table&gt; [?? x 1]
+#&gt; 
+#&gt;    delay
+#&gt; 1   1396
+#&gt; ..   ...
+</code></pre>
+
+<p>The most important difference is that the expressions in <code>select()</code>, <code>filter()</code>, <code>arrange()</code>, <code>mutate()</code>, and <code>summarise()</code> are translated into SQL so they can be run on the database. This translation is almost perfect for the most common operations but there are some limitations, which you&#39;ll learn about later.</p>
+
+<h2>Lazyness</h2>
+
+<p>When working with databases, dplyr tries to be as lazy as possible. It&#39;s lazy in two ways:</p>
+
+<ul>
+<li><p>It never pulls data back to R unless you explicitly ask for it.</p></li>
+<li><p>It delays doing any work until the last possible minute, collecting together
+everything you want to do then sending that to the database in one step.</p></li>
+</ul>
+
+<p>For example, take the following code:</p>
+
+<pre><code class="r">c1 &lt;- filter(hflights_sqlite, DepDelay &gt; 0)
+c2 &lt;- select(c1, Year, Month, DayofMonth, UniqueCarrier, DepDelay, AirTime, Distance)
+c3 &lt;- mutate(c2, Speed = Distance / AirTime * 60)
+c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
+</code></pre>
+
+<p>Suprisingly, this sequence of operations never actually touches the database. It&#39;s not until you ask for the data (e.g. by printing <code>c4</code>) that dplyr generates the SQL and requests the results from the database, and even then it only pulls down 10 rows. </p>
+
+<pre><code class="r">c4
+</code></pre>
+
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+#&gt; From: hflights [109,996 x 8]
+#&gt; Filter: DepDelay &gt; 0 
+#&gt; Arrange: Year, Month, DayofMonth, UniqueCarrier 
+#&gt; 
+#&gt;    Year Month DayofMonth UniqueCarrier DepDelay AirTime Distance Speed
+#&gt; 1  2011     1          1            AA        8      41      224   300
+#&gt; 2  2011     1          1            AA        1      37      224   360
+#&gt; 3  2011     1          1            AA        1     113      964   480
+#&gt; 4  2011     1          1            AA        6      39      224   300
+#&gt; ..  ...   ...        ...           ...      ...     ...      ...   ...
+</code></pre>
+
+<p>To pull down all the results use <code>collect()</code>, which returns a <code>tbl_df()</code>:</p>
+
+<pre><code class="r">collect(c4)
+</code></pre>
+
+<pre><code>#&gt; Source: local data frame [109,996 x 8]
+#&gt; 
+#&gt;    Year Month DayofMonth UniqueCarrier DepDelay AirTime Distance Speed
+#&gt; 1  2011     1          1            AA        8      41      224   300
+#&gt; 2  2011     1          1            AA        1      37      224   360
+#&gt; 3  2011     1          1            AA        1     113      964   480
+#&gt; 4  2011     1          1            AA        6      39      224   300
+#&gt; ..  ...   ...        ...           ...      ...     ...      ...   ...
+</code></pre>
+
+<p>You can see the query dplyr has generated by looking at the <code>query</code> component of the object:</p>
+
+<pre><code class="r">c4$query
+</code></pre>
+
+<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;, &quot;DepDelay&quot;, &quot;AirTime&quot;, &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
+#&gt; FROM &quot;hflights&quot;
+#&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
+#&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
+#&gt; &lt;SQLiteConnection: DBI CON (82937, 0)&gt;
+</code></pre>
+
+<p>You can also ask the database how it plans to execute the query with <code>explain_tbl()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
+
+<pre><code class="r">explain_tbl(c4)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt;
+#&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;, &quot;DepDelay&quot;, &quot;AirTime&quot;, &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
+#&gt; FROM &quot;hflights&quot;
+#&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
+#&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
+#&gt; 
+#&gt; &lt;PLAN&gt;
+#&gt;   selectid order from                            detail
+#&gt; 1        0     0    0 SCAN TABLE hflights (~75832 rows)
+#&gt; 2        0     0    0      USE TEMP B-TREE FOR ORDER BY
+</code></pre>
+
+<h3>Forcing computation</h3>
+
+<p>There are three ways to force the computation of a query:</p>
+
+<ul>
+<li><p><code>collect()</code> executes the query and returns the results to R.</p></li>
+<li><p><code>compute()</code> executes the query and stores the results in a temporary table 
+in the database.</p></li>
+<li><p><code>collapse()</code> turns the query into a table expresion.</p></li>
+</ul>
+
+<p>You are most likely to use <code>collect()</code>: once you have interactively converged on the right set of operations, use <code>collect()</code> to pull down the data into a local <code>tbl_df()</code>. If you have some knowledge of SQL, you can use <code>compute()</code> and <code>collapse()</code> to optimise performance.</p>
+
+<h3>Performance considerations</h3>
+
+<p>dplyr tries to prevent you from accidentally performing expensive query operations:</p>
+
+<ul>
+<li><p><code>nrow()</code> is always <code>NA</code>: in general, there&#39;s no way to determine how 
+many rows a query will return unless you actually run it.</p></li>
+<li><p>Printing a tbl only runs the query enough to get the first 10 rows</p></li>
+<li><p>You can use <code>tail()</code> on database tbls: you can&#39;t find the last rows 
+without executing the whole query. </p></li>
+</ul>
+
+<h2>SQL translation</h2>
+
+<p>When doing simple mathematical operations of the form you normally use when filtering, mutating and summarising it&#39;s relatively straightforward to translate R code to SQL (or indeed to any programming language). </p>
+
+<p>To experiment with the translation, use <code>translate_sql()</code>. The following examples work through some basic differences between R and SQL.</p>
+
+<pre><code class="r"># In SQLite variable names are escaped by double quotes:
+translate_sql(x)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; &quot;x&quot;
+</code></pre>
+
+<pre><code class="r"># And strings are escaped by single quotes
+translate_sql(&quot;x&quot;)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; &#39;x&#39;
+</code></pre>
+
+<pre><code class="r">
+# Many functions have slightly different names
+translate_sql(x == 1 &amp;&amp; (y &lt; 2 || z &gt; 3))
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; &quot;x&quot; = 1.0 AND (&quot;y&quot; &lt; 2.0 OR &quot;z&quot; &gt; 3.0)
+</code></pre>
+
+<pre><code class="r">translate_sql(x ^ 2 &lt; 10)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; POWER(&quot;x&quot;, 2.0) &lt; 10.0
+</code></pre>
+
+<pre><code class="r">translate_sql(x %% 2 == 10)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; &quot;x&quot; % 2.0 = 10.0
+</code></pre>
+
+<pre><code class="r">
+# R and SQL have different defaults for integers vs reals.
+# In R, 1 is an real, and 1L is an integer
+# In SQL, 1 is an integer, and 1.0 is a real
+translate_sql(1)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; 1.0
+</code></pre>
+
+<pre><code class="r">translate_sql(1L)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; 1
+</code></pre>
+
+<p>dplyr knows how to convert the following R functions to SQL:</p>
+
+<ul>
+<li>basic math operators: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%%</code>, <code>^</code></li>
+<li>math functions: <code>abs</code>, <code>acos</code>, <code>acosh</code>, <code>asin</code>, <code>asinh</code>, <code>atan</code>, <code>atan2</code>, 
+<code>atanh</code>, <code>ceiling</code>, <code>cos</code>, <code>cosh</code>, <code>cot</code>, <code>coth</code>, <code>exp</code>, <code>floor</code>, 
+<code>log</code>, <code>log10</code>, <code>round</code>, <code>sign</code>, <code>sin</code>, <code>sinh</code>, <code>sqrt</code>, <code>tan</code>, <code>tanh</code></li>
+<li>logical comparisons: <code>&lt;</code>, <code>&lt;=</code>, <code>!=</code>, <code>&gt;=</code>, <code>&gt;</code>, <code>==</code>, <code>%in%</code></li>
+<li>boolean operations: <code>&amp;</code>, <code>&amp;&amp;</code>, <code>|</code>, <code>||</code>, <code>!</code>, <code>xor</code></li>
+<li>basic aggregations: <code>mean</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>sd</code>, <code>var</code></li>
+</ul>
+
+<p>The basic techniques underying the implementation of <code>translate_sql()</code> are described in the <a href="http://adv-r.had.co.nz/dsl.html">Advanced R book</a>. <code>translate_sql()</code> is built on top of R&#39;s parsing engine and has been carefully design to generate correct sql. It also protects you against SQL injection attacks by correctly escaping strings and variable names as needed by the database that you&#39;re connecting to.</p>
+
+<p>It&#39;s not possible to provide a perfect translation because databases don&#39;t have all the functions that R does. The goal of dplyr is to provide a semantic translation: to translate what you mean, not the precise details. Even for functions that exist both in databases and R you shouldn&#39;t expect results to be exactly the same; database programmers have different priorities to R core. For example, in R, <code>mean()</code> loops through the data twice in order to get a higher level of numerical accuracy at the cost of being twice as slow. R&#39;s <code>mean()</code> also provides a <code>trim</code> option for computing trimmed means, which databases do not provide. Databases automatically drop NULLs (their equivalent of missing values) whereas in R you have to ask nicely. This means the essense of simple calls like <code>mean(x)</code> will be translated accurately, but more complicated calls like <code>mean(x, trim = 0.5, na.rm = TRUE)</code> will raise an error:</p>
+
+<pre><code class="r">translate_sql(mean(x, trim = T))
+# Error: Invalid number of args to SQL AVG. Expecting 1
+</code></pre>
+
+<p>Any function that dplyr does&#39;t know how to convert it leaves as is - that means if you want to use any other function that database provides, you can use it as is. Here a couple of examples that will work with <a href="http://www.sqlite.org/lang_corefunc.html">SQLite</a>:</p>
+
+<pre><code class="r">translate_sql(glob(x, y)) 
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; GLOB(&quot;x&quot;, &quot;y&quot;)
+</code></pre>
+
+<pre><code class="r">translate_sql(x %like% &quot;ab*&quot;)
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; &quot;x&quot; LIKE &#39;ab*&#39;
+</code></pre>
+
+<h2>Grouping</h2>
+
+<p>SQLite lacks window functions, which are needed for grouped mutation and filtering. This means that only really useful operation for grouped sqlite tables in <code>summarise()</code>. The grouped summarise from the introduction translates well - the only difference is that databases always drop NULLs (their equivalent of missing values), so we don&#39;t supply <code>na.rm = TRUE</code>.</p>
+
+<pre><code class="r">planes &lt;- group_by(hflights_sqlite, TailNum)
+delay &lt;- summarise(planes, 
+  count = n(),
+  dist = mean(Distance),
+  delay = mean(ArrDelay)
+)
+delay &lt;- filter(delay, count &gt; 20, dist &lt; 2000)
+delay_local &lt;- collect(delay)
+</code></pre>
+
+<p>Other databases do support window functions and you can learn about them in the corresponding vignette. It&#39;s sometimes possible to simulate grouped filters and mutates using self joins, where you join the original table with a summarised version, but that topic is beyond the scope of this intro.</p>
+
+<h2>Other databases</h2>
+
+<p>Using other databases instead of SQLite works similarly, the overall workflow is the same regardless of what database you&#39;re connecting to. The following sections go in to more details on the pecularities of each database engine. All of these databases follow a client-server model - as well as your computer which is connecting to the databse, there is another computer actually running it (that might be your computer but usually isn&#39;t). Getting one of these databases setup up is beyond the scope of this article, but there are plenty of tutorials available on the web.</p>
+
+<h3>Postgresql</h3>
+
+<p><code>src_postgres()</code> has five arguments: <code>dbname</code>, <code>host</code>, <code>port</code>, <code>user</code> and <code>password</code>. If you are running a local postgresql database with the default settings you&#39;ll only need <code>dbname</code>, but in most cases you&#39;ll need all five. dplyr uses the RPostgreSQL package to connect to postgres databases, which means you can&#39;t currently connect to remote databases that require a SSL connection (e.g. Heroku).</p>
+
+<p>For example, the following code allows me to connect to a local postgresql database that contains a copy of the <code>hflights</code> data:</p>
+
+<pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
+  hflights_postgres &lt;- tbl(src_postgres(&quot;hflights&quot;), &quot;hflights&quot;)
+}
+</code></pre>
+
+<pre><code>#&gt; Loading required package: RPostgreSQL
+</code></pre>
+
+<p>Postgres is a considerably more powerful database than SQLite.  It has:</p>
+
+<ul>
+<li><p>a much wider <a href="http://www.postgresql.org/docs/9.3/static/functions.html">range of functions</a> built in to the database</p></li>
+<li><p>support for <a href="http://www.postgresql.org/docs/9.3/static/tutorial-window.html">window functions</a>, which allow grouped subset and mutates to work.</p></li>
+</ul>
+
+<p>The following examples shows the grouped filter and mutate possible with PostgreSQL. The SQL generated from the grouped filter is quite complex because you can&#39;t filter on window functions directly; instead they have to go in a subquery.</p>
+
+<pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
+  daily &lt;- group_by(hflights_postgres, Year, Month, DayofMonth)
+
+  # Find the most and least delayed flight each day
+  bestworst &lt;- filter(daily, ArrDelay == min(ArrDelay) || 
+    ArrDelay == max(ArrDelay))
+  bestworst$query
+
+  # Rank each flight within a daily
+  ranked &lt;- mutate(daily, rank = rank(desc(ArrDelay)))
+  ranked$query
+}
+</code></pre>
+
+<pre><code>#&gt; Auto-disconnecting postgres connection (82937, 2)
+</code></pre>
+
+<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;DayOfWeek&quot;, &quot;DepTime&quot;, &quot;ArrTime&quot;, &quot;UniqueCarrier&quot;, &quot;FlightNum&quot;, &quot;TailNum&quot;, &quot;ActualElapsedTime&quot;, &quot;AirTime&quot;, &quot;ArrDelay&quot;, &quot;DepDelay&quot;, &quot;Origin&quot;, &quot;Dest&quot;, &quot;Distance&quot;, &quot;TaxiIn&quot;, &quot;TaxiOut&quot;, &quot;Cancelled&quot;, &quot;CancellationCode&quot;, &quot;Diverted&quot;, rank() OVER (PARTITION BY (&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;) ORDER BY &quot;ArrDelay&quot; DESC) AS &quot;rank&quot;
+#&gt; FROM &quot;hflights&quot;
+#&gt; An object of class &quot;PostgreSQLConnection&quot;
+#&gt; Slot &quot;Id&quot;:
+#&gt; [1] 82937     1
+</code></pre>
+
+<h3>MySQL and MariaDB</h3>
+
+<p>You can connect to MySQL and MariaDB (a recent fork of MySQL) through <code>src_mysql()</code>, mediated by the <a href="https://github.com/jeffreyhorner/RMySQL">RMySQL</a> package. Like PostgreSQL, you&#39;ll need to provide a <code>dbname</code>, <code>username</code>, <code>password</code>, <code>host</code>, and <code>port</code>.</p>
+
+<p>In terms of functionality, MySQL lies somewhere between SQLite and PostgreSQL. It provides a wider range of <a href="http://dev.mysql.com/doc/refman/5.0/en/functions.html">built-in functions</a>, but it does not support window functions (so you can&#39;t do grouped mutates and filters).</p>
+
+<h3>Bigquery</h3>
+
+<p>Bigquery is a hosted database server provided by google. To connect, you need to provide your <code>project</code>, <code>dataset</code> and optionally a project for <code>billing</code> (if billing for <code>project</code> isn&#39;t enabled). After you create the src, your web browser will open and ask you to authenticate. Your credentials are stored in a local cache, so you should only need to do this once.</p>
+
+<p>Bigquery supports only a single SQL statement: <a href="https://developers.google.com/bigquery/query-reference">SELECT</a>. Fortunately this is all you need for data analysis, and within SELECT bigquery provides comprehensive coverage similar level to postgresql. </p>
+
+<h2>Picking a database</h2>
+
+<p>If you don&#39;t already have a database, here&#39;s some advice from my experiences setting up and running all of them. SQLite is by far the easiest to get started with, but the lack of window functions make it limited for data analysis. PostgreSQL is not too much harder to use and has a wide range of built in functions. Don&#39;t bother with MySQL/MariaDB: it&#39;s a pain to set up and the documentation is subpar. Google bigquery might be a good fit if you have very large data, or you&#39;re willing to pay (a small amount of) money for someone else to look after your database.</p>
+
+</body>
+
+</html>

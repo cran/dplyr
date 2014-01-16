@@ -1,0 +1,64 @@
+\name{group_by}
+\alias{group_by}
+\title{Group a tbl by one or more variables.}
+\usage{
+group_by(x, ..., add = TRUE)
+}
+\arguments{
+  \item{x}{a tbl}
+
+  \item{...}{variables to group by. All tbls accept
+  variable names, some will also accept functons of
+  variables. Duplicated groups will be silently dropped.}
+
+  \item{add}{By default, when \code{add = TRUE},
+  \code{group_by} will add groups to existing. To instead
+  set the groups to a set of new values, use \code{add =
+  FALSE}}
+}
+\description{
+Most data operations are useful done on groups defined by
+variables in the the dataset. The \code{group_by} function
+takes an existing tbl and converts it into a grouped tbl
+where operations are performed "by group".
+}
+\section{Tbl types}{
+  \code{group_by} is an S3 generic with methods for the
+  three built-in tbls. See the help for the corresponding
+  classes and their manip methods for more details:
+
+  \itemize{ \item data.frame: \link{grouped_df} \item
+  data.table: \link{grouped_dt} \item SQLite:
+  \code{\link{src_sqlite}} \item PostgreSQL:
+  \code{\link{src_postgres}} \item MySQL:
+  \code{\link{src_mysql}} }
+}
+\examples{
+by_cyl <- group_by(mtcars, cyl)
+summarise(by_cyl, mean(disp), mean(hp))
+filter(by_cyl, disp == max(disp))
+
+# summarise peels off a single layer of grouping
+by_vs_am <- group_by(mtcars, vs, am)
+by_vs <- summarise(by_vs_am, n = n())
+groups(by_vs)
+summarise(by_vs, n = sum(n))
+# use ungroup() to remove if not wanted
+
+# You can group by expressions: this is just short-hand for
+# a mutate followed by a simple group_by
+group_by(mtcars, vsam = vs + am)
+
+# By default, group_by increases grouping. Use add = FALSE to set groups
+groups(group_by(by_cyl, vs, am))
+groups(group_by(by_cyl, vs, am, add = FALSE))
+
+# Duplicate groups are silently dropped
+groups(group_by(by_cyl, cyl, cyl))
+}
+\seealso{
+\code{\link{ungroup}} for the inverse operation,
+\code{\link{group}} for accessors that don't do special
+evaluation.
+}
+
