@@ -1,7 +1,7 @@
 Package: dplyr
 Type: Package
 Title: dplyr: a grammar of data manipulation
-Version: 0.1
+Version: 0.1.1
 Author: Hadley Wickham <h.wickham@gmail.com>,
     Romain Francois <romain@r-enthusiasts.com>
 Maintainer: Hadley Wickham <h.wickham@gmail.com>
@@ -21,18 +21,18 @@ Collate: 'RcppExports.R' 'all-equal.r' 'bench-compare.r' 'chain.r'
         'data-lahman.r' 'data-nasa.r' 'data-temp.r' 'data.r' 'dbi-s3.r'
         'desc.r' 'do.r' 'dplyr.r' 'explain.r' 'failwith.r' 'group-by.r'
         'group-size.r' 'grouped-df.r' 'grouped-dt.r' 'id.r' 'join-df.r'
-        'join-dt.r' 'join-sql.r' 'join.r' 'lead-lag.R' 'manip-cube.r'
-        'manip-df.r' 'manip-dt.r' 'manip-grouped-dt.r' 'manip-sql.r'
-        'manip.r' 'nth-value.R' 'order-by.R' 'over.R' 'partial-eval.r'
-        'query.r' 'query-bq.r' 'rank.R' 'rbind.r' 'sets.r'
-        'sql-escape.r' 'sql-star.r' 'src-bigquery.r' 'src-local.r'
-        'src-mysql.r' 'src-postgres.r' 'src-sql.r' 'src-sqlite.r'
-        'src.r' 'tally.R' 'tbl-cube.r' 'tbl-data-frame.R' 'tbl-df.r'
-        'tbl-dt.r' 'tbl-sql.r' 'tbl.r' 'top-n.R'
-        'translate-sql-helpers.r' 'translate-sql-base.r'
+        'join-dt.r' 'join-sql.r' 'join.r' 'lead-lag.R' 'location.R'
+        'manip-cube.r' 'manip-df.r' 'manip-dt.r' 'manip-grouped-dt.r'
+        'manip-sql.r' 'manip.r' 'nth-value.R' 'order-by.R' 'over.R'
+        'partial-eval.r' 'query.r' 'query-bq.r' 'rank.R' 'rbind.r'
+        'sets.r' 'sql-escape.r' 'sql-star.r' 'src-bigquery.r'
+        'src-local.r' 'src-mysql.r' 'src-postgres.r' 'src-sql.r'
+        'src-sqlite.r' 'src.r' 'tally.R' 'tbl-cube.r'
+        'tbl-data-frame.R' 'tbl-df.r' 'tbl-dt.r' 'tbl-sql.r' 'tbl.r'
+        'top-n.R' 'translate-sql-helpers.r' 'translate-sql-base.r'
         'translate-sql-window.r' 'translate-sql.r' 'type-sum.r'
         'utils-format.r' 'utils.r' 'view.r' 'zzz.r'
-Packaged: 2014-01-16 14:18:30 UTC; hadley
+Packaged: 2014-01-29 19:33:59 UTC; hadley
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-01-16 22:53:34
+Date/Publication: 2014-01-29 21:24:54

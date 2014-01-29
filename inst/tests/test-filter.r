@@ -37,7 +37,6 @@ test_that("filter fails if no expression is given (#157)", {
 
 test_that("filter gives useful error message when given incorrect input", {
   expect_error( filter(tbl_df(mtcars), x ), "unknown column" )
-  expect_error( filter(tbl_df(mtcars), TRUE), "incompatible expression in filter" )
 })
 
 test_that("filter handles passing ...", {                        
@@ -68,6 +67,12 @@ test_that( "filter handles simple symbols", {
   gdf <- group_by(df,x)
   res <- filter(gdf, test) 
   
+  h <- function(data){
+    test2 <- c(T,T,F,F)
+    filter(data,test2)  
+  }
+  expect_equal(h(df), df[1:2,])
+  
   f <- function(data, ...){
     one <- 1
     filter( data, test, x > one, ...)
@@ -86,3 +91,14 @@ test_that( "filter handles simple symbols", {
   
 })
 
+test_that("filter handlers scalar results", {
+  expect_equal( filter(mtcars, min(mpg)>0 ), mtcars )
+  expect_equal( as.data.frame(filter(group_by(mtcars,cyl), min(mpg)>0 )), mtcars )
+})
+
+test_that("filter propagates attributes", {
+  date.start <- ISOdate(2010, 01, 01, 0) 
+  test <- data.frame(Date = ISOdate(2010, 01, 01, 1:10))
+  test2 <- test %.% filter(Date < ISOdate(2010, 01, 01, 5)) 
+  expect_equal(test$Date[1:4], test2$Date)
+})

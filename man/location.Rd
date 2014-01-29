@@ -1,0 +1,28 @@
+\name{location}
+\alias{changes}
+\alias{location}
+\title{Print the location in memory of a data frame}
+\usage{
+location(df)
+
+changes(x, y)
+}
+\arguments{
+  \item{df,}{a data frame}
+
+  \item{x,y}{two data frames to compare}
+}
+\description{
+This is useful for understand how and when dplyr makes
+copies of data frames
+}
+\examples{
+location(mtcars)
+
+mtcars2 <- mutate(mtcars, cyl2 = cyl * 2)
+location(mtcars2)
+
+changes(mtcars, mtcars)
+changes(mtcars, mtcars2)
+}
+

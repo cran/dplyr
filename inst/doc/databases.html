@@ -227,7 +227,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">hflights_sqlite
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -254,7 +254,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">select(hflights_sqlite, Year:DayofMonth, DepDelay, ArrDelay)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 5]
 #&gt; 
 #&gt;    Year Month DayofMonth DepDelay ArrDelay
@@ -268,7 +268,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">filter(hflights_sqlite, depDelay &gt; 240)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [389 x 21]
 #&gt; Filter: depDelay &gt; 240 
 #&gt; 
@@ -287,7 +287,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">arrange(hflights_sqlite, Year, Month, DayofMonth)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; Arrange: Year, Month, DayofMonth 
 #&gt; 
@@ -306,7 +306,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">mutate(hflights_sqlite, speed = AirTime / Distance)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 22]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -324,7 +324,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">summarise(hflights_sqlite, delay = mean(DepTime))
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: &lt;derived table&gt; [?? x 1]
 #&gt; 
 #&gt;    delay
@@ -357,7 +357,7 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpwM1HSU/Rinst143c124aa650/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [109,996 x 8]
 #&gt; Filter: DepDelay &gt; 0 
 #&gt; Arrange: Year, Month, DayofMonth, UniqueCarrier 
@@ -394,12 +394,12 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 #&gt; FROM &quot;hflights&quot;
 #&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
 #&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
-#&gt; &lt;SQLiteConnection: DBI CON (82937, 0)&gt;
+#&gt; &lt;SQLiteConnection: DBI CON (78347, 0)&gt;
 </code></pre>
 
-<p>You can also ask the database how it plans to execute the query with <code>explain_tbl()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
+<p>You can also ask the database how it plans to execute the query with <code>explain()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
 
-<pre><code class="r">explain_tbl(c4)
+<pre><code class="r">explain(c4)
 </code></pre>
 
 <pre><code>#&gt; &lt;SQL&gt;
@@ -561,6 +561,7 @@ delay_local &lt;- collect(delay)
 </code></pre>
 
 <pre><code>#&gt; Loading required package: RPostgreSQL
+#&gt; Auto-disconnecting postgres connection (78347, 0)
 </code></pre>
 
 <p>Postgres is a considerably more powerful database than SQLite.  It has:</p>
@@ -586,14 +587,14 @@ delay_local &lt;- collect(delay)
 }
 </code></pre>
 
-<pre><code>#&gt; Auto-disconnecting postgres connection (82937, 2)
+<pre><code>#&gt; Auto-disconnecting postgres connection (78347, 2)
 </code></pre>
 
 <pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;DayOfWeek&quot;, &quot;DepTime&quot;, &quot;ArrTime&quot;, &quot;UniqueCarrier&quot;, &quot;FlightNum&quot;, &quot;TailNum&quot;, &quot;ActualElapsedTime&quot;, &quot;AirTime&quot;, &quot;ArrDelay&quot;, &quot;DepDelay&quot;, &quot;Origin&quot;, &quot;Dest&quot;, &quot;Distance&quot;, &quot;TaxiIn&quot;, &quot;TaxiOut&quot;, &quot;Cancelled&quot;, &quot;CancellationCode&quot;, &quot;Diverted&quot;, rank() OVER (PARTITION BY (&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;) ORDER BY &quot;ArrDelay&quot; DESC) AS &quot;rank&quot;
 #&gt; FROM &quot;hflights&quot;
 #&gt; An object of class &quot;PostgreSQLConnection&quot;
 #&gt; Slot &quot;Id&quot;:
-#&gt; [1] 82937     1
+#&gt; [1] 78347     1
 </code></pre>
 
 <h3>MySQL and MariaDB</h3>

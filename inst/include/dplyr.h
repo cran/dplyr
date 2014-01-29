@@ -38,7 +38,10 @@ bool can_simplify(SEXP) ;
 inline SEXP as_symbol(SEXP x) {
     return Rf_install( CHAR(x) );
 }
-    
+void check_supported_type(SEXP) ;
+SEXP pairlist_shallow_copy(SEXP) ;
+void copy_attributes(SEXP, SEXP) ;
+
 // currently [[Rcpp::register]] does nothing.
 //
 // I'd like it to generate the boiler plate code
@@ -50,16 +53,20 @@ DataFrame build_index_cpp( DataFrame data ) ;
 SEXP get_time_classes() ;
 SEXP get_date_classes() ;
 
+CharacterVector dfloc(List) ;
+
 typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
 
 // [[Rcpp::register]]
 void registerHybridHandler( const char* , HybridHandler ) ;
 
+#include <dplyr/check_supported_type.h>
 #include <dplyr/visitor_set/visitor_set.h>
 #include <dplyr/DataFrameVisitorsIndexSet.h>
 #include <dplyr/DataFrameVisitorsIndexMap.h>
 #include <dplyr/BoolResult.h>
 
+#include <dplyr/EmptySubset.h>
 #include <dplyr/FullDataFrame.h>
 #include <dplyr/GroupedDataFrame.h>
 #include <dplyr/tbl_cpp.h>

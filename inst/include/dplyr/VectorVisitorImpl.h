@@ -84,6 +84,10 @@ namespace dplyr {
             return out ;
         }
         
+        inline SEXP subset( EmptySubset ) const {
+            return VECTOR(0) ;    
+        }
+    
         inline std::string get_r_type() const {
             return VectorVisitorType<RTYPE>() ;    
         }
@@ -128,6 +132,10 @@ namespace dplyr {
             return promote( VisitorImpl::subset( index ) ) ;
         }
         
+        inline SEXP subset( EmptySubset empty) const {
+            return promote( VisitorImpl::subset(empty) ) ;    
+        }
+        
         inline std::string get_r_type() const {
             CharacterVector classes = VisitorImpl::vec.attr( "class" ) ;
             return collapse(classes) ;    
@@ -144,8 +152,8 @@ namespace dplyr {
             return true ;    
         }
         
-        inline SEXP promote( NumericVector x) const{
-            x.attr( "class" ) = VisitorImpl::vec.attr( "class" ) ;
+        inline SEXP promote(VECTOR x) const{
+            copy_attributes(x, VisitorImpl::vec ) ;
             return x ;
         }
     } ;
@@ -160,15 +168,21 @@ namespace dplyr {
         }
         
         inline bool equal(int i, int j) const { 
-            return string_compare.is_equal( levels_ptr[vec[i]], levels_ptr[vec[j]] ) ;
+            return vec[i] == vec[j] ;
         }
         
-        inline bool less(int i, int j) const { 
-            return string_compare.is_less( levels_ptr[vec[i]], levels_ptr[vec[j]] ) ;
+        inline bool less(int i, int j) const {
+            return string_compare.is_less( 
+                vec[i] < 0 ? NA_STRING : levels_ptr[vec[i]], 
+                vec[j] < 0 ? NA_STRING : levels_ptr[vec[j]]
+            ) ;
         }
         
         inline bool greater(int i, int j) const { 
-            return string_compare.is_greater( levels_ptr[vec[i]], levels_ptr[vec[j]] ) ;
+            return string_compare.is_greater( 
+                vec[i] < 0 ? NA_STRING : levels_ptr[vec[i]], 
+                vec[j] < 0 ? NA_STRING : levels_ptr[vec[j]]
+            ) ;
         }
             
         inline SEXP subset( const Rcpp::IntegerVector& index) const {
@@ -185,6 +199,10 @@ namespace dplyr {
         
         inline SEXP subset( const Rcpp::LogicalVector& index ) const {
             return promote( Parent::subset( index ) ) ;
+        }
+        
+        inline SEXP subset( EmptySubset empty) const {
+            return promote( Parent::subset(empty) ) ;    
         }
         
         inline std::string get_r_type() const {
@@ -209,9 +227,8 @@ namespace dplyr {
         }
         
         inline SEXP promote( IntegerVector x) const {
-            x.attr( "class" ) = vec.attr( "class" );
-            x.attr( "levels" ) = levels ;
-            return x;
+            copy_attributes(x, vec ) ;
+            return x ;
         }
         
         CharacterVector levels ;

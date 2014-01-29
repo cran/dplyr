@@ -36,6 +36,8 @@ namespace dplyr{
             
             delete processor ;
             
+            copy_attributes(res, first_result) ;
+            
             return res ;        
         }
         
