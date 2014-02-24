@@ -69,12 +69,12 @@ grouped_df_impl <- function(data, symbols, drop) {
     .Call('dplyr_grouped_df_impl', PACKAGE = 'dplyr', data, symbols, drop)
 }
 
-build_index_cpp <- function(data) {
-    .Call('dplyr_build_index_cpp', PACKAGE = 'dplyr', data)
+grouped_df_adj_impl <- function(data, symbols, drop) {
+    .Call('dplyr_grouped_df_adj_impl', PACKAGE = 'dplyr', data, symbols, drop)
 }
 
-filter_impl <- function(df, args, env) {
-    .Call('dplyr_filter_impl', PACKAGE = 'dplyr', df, args, env)
+integer_filter_impl <- function(df, args, env) {
+    .Call('dplyr_integer_filter_impl', PACKAGE = 'dplyr', df, args, env)
 }
 
 mutate_impl <- function(df, args, env) {
@@ -101,6 +101,10 @@ summarise_impl <- function(df, args, env) {
     .Call('dplyr_summarise_impl', PACKAGE = 'dplyr', df, args, env)
 }
 
+select_impl <- function(df, vars) {
+    .Call('dplyr_select_impl', PACKAGE = 'dplyr', df, vars)
+}
+
 #' Efficiently count the number of unique values in a vector.
 #'
 #' This is a faster and more concise equivalent of \code{length(unique(x))}
@@ -121,6 +125,18 @@ rbind_all <- function(dots) {
     .Call('dplyr_rbind_all', PACKAGE = 'dplyr', dots)
 }
 
+rbind_list__impl <- function(dots) {
+    .Call('dplyr_rbind_list__impl', PACKAGE = 'dplyr', dots)
+}
+
+cbind_list__impl <- function(dots) {
+    .Call('dplyr_cbind_list__impl', PACKAGE = 'dplyr', dots)
+}
+
+cbind_all <- function(dots) {
+    .Call('dplyr_cbind_all', PACKAGE = 'dplyr', dots)
+}
+
 as_regular_df <- function(df) {
     .Call('dplyr_as_regular_df', PACKAGE = 'dplyr', df)
 }
@@ -137,12 +153,16 @@ split_indices <- function(group, groups) {
     .Call('dplyr_split_indices', PACKAGE = 'dplyr', group, groups)
 }
 
+filter_impl <- function(df, args, env) {
+    .Call('dplyr_filter_impl', PACKAGE = 'dplyr', df, args, env)
+}
+
 #' Cumulativate versions of any, all, and mean
-#' 
+#'
 #' dplyr adds \code{cumall}, \code{cumany}, and \code{cummean} to complete
 #' R's set of cumulate functions to match the aggregation functions available
 #' in most databases
-#' 
+#'
 #' @param x For \code{cumall} & \code{cumany}, a logical vector; for
 #'   \code{cummean} an integer or numeric vector
 #' @export

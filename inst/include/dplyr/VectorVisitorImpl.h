@@ -10,7 +10,7 @@ namespace dplyr {
     
     template <>
     inline int output_size<LogicalVector>( const LogicalVector& container){
-        return std::count( container.begin(), container.end(), 1 ) ;
+        return std::count( container.begin(), container.end(), TRUE ) ;
     }
     
     template <int RTYPE> std::string VectorVisitorType() ;
@@ -78,7 +78,7 @@ namespace dplyr {
             int n = output_size(index) ;
             VECTOR out = Rcpp::no_init(n) ;
             for( int i=0, k=0; k<n; k++, i++ ) {
-                while( ! index[i] ) i++; 
+                while( index[i] != TRUE ) i++; 
                 out[k] = vec[i] ;
             }
             return out ;
@@ -110,7 +110,7 @@ namespace dplyr {
         
     } ;
     
-    template <typename Class, typename VisitorImpl> 
+    template <typename VisitorImpl> 
     class PromoteClassVisitor : public VisitorImpl {
     public:
         typedef typename VisitorImpl::VECTOR VECTOR ;
@@ -162,7 +162,7 @@ namespace dplyr {
     public:    
         typedef VectorVisitorImpl<INTSXP> Parent ;
         
-        FactorVisitor( const IntegerVector& vec ) : Parent(vec){
+        FactorVisitor( const IntegerVector& vec_ ) : Parent(vec_){
                 levels = vec.attr( "levels" ) ;
                 levels_ptr = Rcpp::internal::r_vector_start<STRSXP>(levels) ;
         }
@@ -236,26 +236,35 @@ namespace dplyr {
         comparisons<STRSXP> string_compare ;
     } ;
     
-    #define PROMOTE_VISITOR(__CLASS__)                                                    \
-    class __CLASS__ : public PromoteClassVisitor<__CLASS__, VectorVisitorImpl<REALSXP> >{ \
-    public:                                                                               \
-        typedef PromoteClassVisitor<__CLASS__, VectorVisitorImpl<REALSXP> > Parent ;      \
-        __CLASS__( const NumericVector& vec_) : Parent(vec_){}                            \
+    template <int RTYPE>
+    class DateVisitor : public PromoteClassVisitor< VectorVisitorImpl<RTYPE> > {
+    public:
+      typedef PromoteClassVisitor< VectorVisitorImpl<RTYPE> > Parent ;
+      DateVisitor( SEXP v) : Parent(v){}
     } ;
-    PROMOTE_VISITOR(DateVisitor)
-    PROMOTE_VISITOR(POSIXctVisitor)
+    template <int RTYPE>
+    class POSIXctVisitor : public PromoteClassVisitor< VectorVisitorImpl<RTYPE> > {
+    public:
+      typedef PromoteClassVisitor< VectorVisitorImpl<RTYPE> > Parent ;
+      POSIXctVisitor( SEXP v) : Parent(v){}
+    } ;
+    
     
     inline VectorVisitor* visitor( SEXP vec ){
         switch( TYPEOF(vec) ){
             case INTSXP: 
                 if( Rf_inherits(vec, "factor" ))
                     return new FactorVisitor( vec ) ;
+                if( Rf_inherits(vec, "Date") )
+                    return new DateVisitor<INTSXP>(vec) ;
+                if( Rf_inherits(vec, "POSIXct") )
+                    return new POSIXctVisitor<INTSXP>(vec) ;
                 return new VectorVisitorImpl<INTSXP>( vec ) ;
             case REALSXP:
                 if( Rf_inherits( vec, "Date" ) )
-                    return new DateVisitor( vec ) ;
+                    return new DateVisitor<REALSXP>( vec ) ;
                 if( Rf_inherits( vec, "POSIXct" ) )
-                    return new POSIXctVisitor( vec ) ;
+                    return new POSIXctVisitor<REALSXP>( vec ) ;
                 return new VectorVisitorImpl<REALSXP>( vec ) ;
             case LGLSXP:  return new VectorVisitorImpl<LGLSXP>( vec ) ;
             case STRSXP:  return new VectorVisitorImpl<STRSXP>( vec ) ;

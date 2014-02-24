@@ -13,19 +13,21 @@
    }
 
    pre .literal {
-     color: rgb(88, 72, 246)
+     color: #990073
    }
 
    pre .number {
-     color: rgb(0, 0, 205);
+     color: #099;
    }
 
    pre .comment {
-     color: rgb(76, 136, 107);
+     color: #998;
+     font-style: italic
    }
 
    pre .keyword {
-     color: rgb(0, 0, 255);
+     color: #900;
+     font-weight: bold
    }
 
    pre .identifier {
@@ -33,7 +35,7 @@
    }
 
    pre .string {
-     color: rgb(3, 106, 7);
+     color: #d14;
    }
 </style>
 
@@ -44,7 +46,7 @@ hljs.initHighlightingOnLoad();
 </script>
 
 <!-- MathJax scripts -->
-<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/2.0-latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
 </script>
 
 
@@ -52,8 +54,13 @@ hljs.initHighlightingOnLoad();
 body, td {
    font-family: sans-serif;
    background-color: white;
-   font-size: 12px;
-   margin: 8px;
+   font-size: 13px;
+}
+
+body {
+  max-width: 800px;
+  margin: auto;
+  line-height: 20px;
 }
 
 tt, code, pre {
@@ -88,19 +95,21 @@ a:visited {
    color: rgb(50%, 0%, 50%);
 }
 
-pre {	
-   margin-top: 0;
-   max-width: 95%;
-   border: 1px solid #ccc;
-   white-space: pre-wrap;
+pre, img {
+  max-width: 100%;
 }
 
 pre code {
    display: block; padding: 0.5em;
 }
 
-code.r, code.cpp {
-   background-color: #F8F8F8;
+code {
+  font-size: 92%;
+  border: 1px solid #ccc;
+}
+
+code[class] {
+  background-color: #F8F8F8;
 }
 
 table, td, th {
@@ -227,7 +236,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">hflights_sqlite
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -254,7 +263,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">select(hflights_sqlite, Year:DayofMonth, DepDelay, ArrDelay)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 5]
 #&gt; 
 #&gt;    Year Month DayofMonth DepDelay ArrDelay
@@ -268,7 +277,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">filter(hflights_sqlite, depDelay &gt; 240)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [389 x 21]
 #&gt; Filter: depDelay &gt; 240 
 #&gt; 
@@ -287,7 +296,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">arrange(hflights_sqlite, Year, Month, DayofMonth)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; Arrange: Year, Month, DayofMonth 
 #&gt; 
@@ -306,7 +315,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">mutate(hflights_sqlite, speed = AirTime / Distance)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 22]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -324,7 +333,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">summarise(hflights_sqlite, delay = mean(DepTime))
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: &lt;derived table&gt; [?? x 1]
 #&gt; 
 #&gt;    delay
@@ -357,7 +366,7 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpiKtZIx/Rinst131da37ce0abe/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmp88DKxz/Rinst5e594af8e4dc/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [109,996 x 8]
 #&gt; Filter: DepDelay &gt; 0 
 #&gt; Arrange: Year, Month, DayofMonth, UniqueCarrier 
@@ -394,7 +403,7 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 #&gt; FROM &quot;hflights&quot;
 #&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
 #&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
-#&gt; &lt;SQLiteConnection: DBI CON (78347, 0)&gt;
+#&gt; &lt;SQLiteConnection: DBI CON (24184, 0)&gt;
 </code></pre>
 
 <p>You can also ask the database how it plans to execute the query with <code>explain()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
@@ -561,7 +570,7 @@ delay_local &lt;- collect(delay)
 </code></pre>
 
 <pre><code>#&gt; Loading required package: RPostgreSQL
-#&gt; Auto-disconnecting postgres connection (78347, 0)
+#&gt; Auto-disconnecting postgres connection (24184, 0)
 </code></pre>
 
 <p>Postgres is a considerably more powerful database than SQLite.  It has:</p>
@@ -587,14 +596,14 @@ delay_local &lt;- collect(delay)
 }
 </code></pre>
 
-<pre><code>#&gt; Auto-disconnecting postgres connection (78347, 2)
+<pre><code>#&gt; Auto-disconnecting postgres connection (24184, 2)
 </code></pre>
 
 <pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;DayOfWeek&quot;, &quot;DepTime&quot;, &quot;ArrTime&quot;, &quot;UniqueCarrier&quot;, &quot;FlightNum&quot;, &quot;TailNum&quot;, &quot;ActualElapsedTime&quot;, &quot;AirTime&quot;, &quot;ArrDelay&quot;, &quot;DepDelay&quot;, &quot;Origin&quot;, &quot;Dest&quot;, &quot;Distance&quot;, &quot;TaxiIn&quot;, &quot;TaxiOut&quot;, &quot;Cancelled&quot;, &quot;CancellationCode&quot;, &quot;Diverted&quot;, rank() OVER (PARTITION BY (&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;) ORDER BY &quot;ArrDelay&quot; DESC) AS &quot;rank&quot;
 #&gt; FROM &quot;hflights&quot;
 #&gt; An object of class &quot;PostgreSQLConnection&quot;
 #&gt; Slot &quot;Id&quot;:
-#&gt; [1] 78347     1
+#&gt; [1] 24184     1
 </code></pre>
 
 <h3>MySQL and MariaDB</h3>

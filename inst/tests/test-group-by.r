@@ -104,3 +104,26 @@ test_that("FactorVisitor handles NA. #183", {
   expect_equal(g$M.I, survey$M.I)
 })
 
+test_that("group_by orders by groups. #242", {
+  df <- data.frame(a = sample(1:10, 100, replace = TRUE)) %.% group_by(a)
+  expect_equal( attr(df, "labels")$a, 1:10 )
+  
+  df <- data.frame(a = sample(letters[1:10], 100, replace = TRUE), stringsAsFactors = FALSE) %.% group_by(a)
+  expect_equal(attr(df, "labels")$a, letters[1:10] )
+  
+  df <- data.frame(a = sample(sqrt(1:10), 100, replace = TRUE)) %.% group_by(a)
+  expect_equal(attr(df, "labels")$a, sqrt(1:10))
+  
+})
+
+test_that("group_by uses the white list", {
+  df <- data.frame( times = 1:5 )
+  df$times <- as.POSIXlt( seq.Date( Sys.Date(), length.out = 5, by = "day" ) )
+  expect_error(group_by(df, times))
+})
+
+test_that("group_by fails when lists are used as grouping variables (#276)",{
+  df <- data.frame(x = 1:3)
+  df$y <- list(1:2, 1:3, 1:4)
+  expect_error(group_by(df,y))  
+})

@@ -156,6 +156,36 @@ test_that( "summarise propagate attributes (#194)", {
 })
 
 test_that("summarise fails on missing variables", {
-  expect_error(summarise(mtcars, a = mean(notthear)), "binding not found")  
+  expect_error(summarise(mtcars, a = mean(notthear)) )  
 })
 
+test_that("n() does not accept arguments",{
+  expect_error(summarise(group_by(mtcars, cyl), n(hp)), "does not take arguments")  
+})
+
+test_that("hybrid nests correctly", {
+  res <- group_by(mtcars, cyl) %.% summarise(a = if(n()>10) 1 else 2 )
+  expect_equal(res$a, c(1,2,1))
+  
+  res <- mtcars %.% summarise(a = if(n()>10) 1 else 2 )
+  expect_equal(res$a, 1)
+})
+
+test_that("hybrid min and max propagate attributes (#246)", {
+  x <- data.frame(id=c(rep("a",2), rep("b",2)), 
+                date=as.POSIXct(c("2014-01-13", "2014-01-14", 
+                                  "2014-01-15", "2014-01-16"), 
+                                tz="GMT"))
+  y <- x %.% group_by(id) %.% summarise(max_date=max(date), min_date=min(date))
+  
+  expect_true("tzone" %in% names(attributes(y$min_date)))
+  expect_true("tzone" %in% names(attributes(y$max_date)))
+})
+
+test_that("summarise can use newly created variable more than once", {
+  df <- data.frame(id=c(1,1,2,2,3,3), a=1:6) %.% group_by(id)
+  for( i in 1:10){
+    res <- summarise(df, biggest=max(a), smallest=min(a), diff1=biggest-smallest, diff2=smallest-biggest)
+    expect_equal( res$diff1, -res$diff2)
+  }
+})

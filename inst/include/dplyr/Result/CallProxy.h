@@ -15,7 +15,7 @@ namespace dplyr {
             
         }
         
-        CallProxy( const Rcpp::Call& call_, Rcpp::DataFrame& data_, const Environment& env_) : 
+        CallProxy( const Rcpp::Call& call_, const Rcpp::DataFrame& data_, const Environment& env_) :
             call(call_), subsets(data_), proxies(), env(env_), hybrid(false)
         {
             // fill proxies
@@ -77,17 +77,29 @@ namespace dplyr {
         
     private:
         
-        inline bool can_simplify_call( SEXP call){
-            bool res =  can_simplify(call);
+        inline bool can_simplify_call( SEXP call_){
+            bool res =  can_simplify(call_);
             return res ;
         }
         
         void traverse_call( SEXP obj ){
-            if( ! Rf_isNull(obj) ){ 
+            if( ! Rf_isNull(obj) ){
                 SEXP head = CAR(obj) ;
+                
                 switch( TYPEOF( head ) ){
                 case LANGSXP:
-                    traverse_call( CDR(head) ) ;
+                    if( Rf_length(head) == 3 ){
+                        if( CAR(head) == R_DollarSymbol ){
+                            SETCAR(obj, Rf_eval(head, env) ) ;
+                        } else if( CAR(head) == Rf_install("@")) {
+                            SETCAR(obj, Rf_eval(head, env) ) ;
+                        } else {
+                          traverse_call( CDR(head) ) ;    
+                        }
+                    } else {
+                        traverse_call( CDR(head) ) ;  
+                    }
+                    
                     break ;
                 case LISTSXP:
                     traverse_call( head ) ;
@@ -98,9 +110,12 @@ namespace dplyr {
                         LazySubsets::const_iterator it = subsets.find(head) ;
                         if( it == subsets.end() ){
                             // in the Environment -> resolve
-                            // TODO: handle the case where the variable is not found in env
-                            Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;
-                            SETCAR( obj, x );
+                            try{
+                                Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;
+                                SETCAR( obj, x );
+                            } catch( ...){
+                                // what happens when not found in environment
+                            }
                         } else {
                             // in the data frame
                             proxies.push_back( CallElementProxy( head, obj ) );

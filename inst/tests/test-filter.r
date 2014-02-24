@@ -102,3 +102,43 @@ test_that("filter propagates attributes", {
   test2 <- test %.% filter(Date < ISOdate(2010, 01, 01, 5)) 
   expect_equal(test$Date[1:4], test2$Date)
 })
+
+test_that("filter fails on integer indices", {
+  expect_error(filter(mtcars, 1:2))
+  expect_error(filter(group_by(mtcars,cyl), 1:2))
+})
+
+test_that("filter discards NA", {
+  temp <- data.frame(
+    i = 1:5,
+    x = c(NA, 1L, 1L, 0L, 0L)
+  )
+  res <- filter(temp, x == 1)
+  expect_equal(nrow(res), 2L)
+})
+
+test_that("date class remains on filter (#273)",{
+  x1 <- x2 <- data.frame(
+    date = seq.Date(as.Date('2013-01-01'), by = "1 days", length.out = 2),
+    var = c(5, 8)
+  )
+  x1.filter <- x1 %.% filter(as.Date(date) > as.Date('2013-01-01'))
+  x2$date <- x2$date + 1
+  x2.filter <- x2 %.% filter(as.Date(date) > as.Date('2013-01-01'))
+
+  expect_equal(class(x1.filter$date), "Date")
+  expect_equal(class(x2.filter$date), "Date")
+})
+
+test_that("filter handles $ correctly (#278)", {
+  d1 <- tbl_df(data.frame(
+    num1 = as.character(sample(1:10, 1000, T)),
+    var1 = runif(1000), 
+    stringsAsFactors = FALSE))
+  d2 <- data.frame(num1 = as.character(1:3), stringsAsFactors = FALSE)
+  
+  res1 <- d1 %.% filter(num1 %in% c("1", "2", "3"))
+  res2 <- d1 %.% filter(num1 %in% d2$num1)
+  expect_equal(res1, res2)
+})
+

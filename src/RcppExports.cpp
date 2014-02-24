@@ -137,13 +137,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // shallow_copy
-SEXP shallow_copy(const DataFrame& data);
+SEXP shallow_copy(const List& data);
 RcppExport SEXP dplyr_shallow_copy(SEXP dataSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
     {
         Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< const DataFrame& >::type data(dataSEXP );
+        Rcpp::traits::input_parameter< const List& >::type data(dataSEXP );
         SEXP __result = shallow_copy(data);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
@@ -285,24 +285,26 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
-// build_index_cpp
-DataFrame build_index_cpp(DataFrame data);
-RcppExport SEXP dplyr_build_index_cpp(SEXP dataSEXP) {
+// grouped_df_adj_impl
+DataFrame grouped_df_adj_impl(DataFrame data, ListOf<Symbol> symbols, bool drop);
+RcppExport SEXP dplyr_grouped_df_adj_impl(SEXP dataSEXP, SEXP symbolsSEXP, SEXP dropSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
     {
         Rcpp::RNGScope __rngScope;
         Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP );
-        DataFrame __result = build_index_cpp(data);
+        Rcpp::traits::input_parameter< ListOf<Symbol> >::type symbols(symbolsSEXP );
+        Rcpp::traits::input_parameter< bool >::type drop(dropSEXP );
+        DataFrame __result = grouped_df_adj_impl(data, symbols, drop);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
     return __sexp_result;
 END_RCPP
 }
-// filter_impl
-SEXP filter_impl(DataFrame df, List args, Environment env);
-RcppExport SEXP dplyr_filter_impl(SEXP dfSEXP, SEXP argsSEXP, SEXP envSEXP) {
+// integer_filter_impl
+SEXP integer_filter_impl(DataFrame df, List args, Environment env);
+RcppExport SEXP dplyr_integer_filter_impl(SEXP dfSEXP, SEXP argsSEXP, SEXP envSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
     {
@@ -310,7 +312,7 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP );
         Rcpp::traits::input_parameter< List >::type args(argsSEXP );
         Rcpp::traits::input_parameter< Environment >::type env(envSEXP );
-        SEXP __result = filter_impl(df, args, env);
+        SEXP __result = integer_filter_impl(df, args, env);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -351,7 +353,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // arrange_impl
-DataFrame arrange_impl(DataFrame data, List args, DataDots dots);
+List arrange_impl(DataFrame data, List args, DataDots dots);
 RcppExport SEXP dplyr_arrange_impl(SEXP dataSEXP, SEXP argsSEXP, SEXP dotsSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
@@ -360,7 +362,7 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP );
         Rcpp::traits::input_parameter< List >::type args(argsSEXP );
         Rcpp::traits::input_parameter< DataDots >::type dots(dotsSEXP );
-        DataFrame __result = arrange_impl(data, args, dots);
+        List __result = arrange_impl(data, args, dots);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -414,6 +416,22 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
+// select_impl
+DataFrame select_impl(DataFrame df, CharacterVector vars);
+RcppExport SEXP dplyr_select_impl(SEXP dfSEXP, SEXP varsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP );
+        Rcpp::traits::input_parameter< CharacterVector >::type vars(varsSEXP );
+        DataFrame __result = select_impl(df, vars);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
 // n_distinct
 SEXP n_distinct(SEXP x);
 RcppExport SEXP dplyr_n_distinct(SEXP xSEXP) {
@@ -438,6 +456,51 @@ BEGIN_RCPP
         Rcpp::RNGScope __rngScope;
         Rcpp::traits::input_parameter< ListOf<DataFrame> >::type dots(dotsSEXP );
         List __result = rbind_all(dots);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// rbind_list__impl
+List rbind_list__impl(DotsOf<DataFrame> dots);
+RcppExport SEXP dplyr_rbind_list__impl(SEXP dotsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DotsOf<DataFrame> >::type dots(dotsSEXP );
+        List __result = rbind_list__impl(dots);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// cbind_list__impl
+List cbind_list__impl(DotsOf<DataFrame> dots);
+RcppExport SEXP dplyr_cbind_list__impl(SEXP dotsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DotsOf<DataFrame> >::type dots(dotsSEXP );
+        List __result = cbind_list__impl(dots);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// cbind_all
+List cbind_all(ListOf<DataFrame> dots);
+RcppExport SEXP dplyr_cbind_all(SEXP dotsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< ListOf<DataFrame> >::type dots(dotsSEXP );
+        List __result = cbind_all(dots);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -499,6 +562,23 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< IntegerVector >::type group(groupSEXP );
         Rcpp::traits::input_parameter< int >::type groups(groupsSEXP );
         std::vector<std::vector<int> > __result = split_indices(group, groups);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// filter_impl
+SEXP filter_impl(DataFrame df, List args, Environment env);
+RcppExport SEXP dplyr_filter_impl(SEXP dfSEXP, SEXP argsSEXP, SEXP envSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP );
+        Rcpp::traits::input_parameter< List >::type args(argsSEXP );
+        Rcpp::traits::input_parameter< Environment >::type env(envSEXP );
+        SEXP __result = filter_impl(df, args, env);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);

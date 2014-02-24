@@ -35,7 +35,7 @@ namespace dplyr {
                 
                 int n = proxies.size() ;
                 for( int i=0; i<n; i++){
-                    proxies[i].set( subsets.get(proxies[i].symbol, indices ) ) ;  
+                    proxies[i].set( subsets.get(proxies[i].symbol, indices ) ) ;
                 }
                 return call.eval(env) ;
             } else if( TYPEOF(call) == SYMSXP ) {
@@ -53,7 +53,7 @@ namespace dplyr {
             proxies.clear() ;
             call = call_ ;
             if( TYPEOF(call) == LANGSXP ) traverse_call(call) ;
-            hybrid = can_simplify_call(call) ;
+            hybrid = can_simplify_call(call) ; 
         }
         
         void input( Rcpp::String name, SEXP x ){
@@ -86,8 +86,8 @@ namespace dplyr {
         
     private:
         
-        inline bool can_simplify_call( SEXP call){
-            bool res =  can_simplify(call);
+        inline bool can_simplify_call( SEXP call_ ){
+            bool res =  can_simplify(call_);
             return res ;
         }
         
@@ -96,6 +96,15 @@ namespace dplyr {
                 SEXP head = CAR(obj) ;
                 switch( TYPEOF( head ) ){
                 case LANGSXP: 
+                    if( Rf_length(head) == 3 ){
+                        if( CAR(head) == R_DollarSymbol ){
+                            SETCAR(obj, Rf_eval(head, env) ) ;
+                            return ;
+                        } else if( CAR(head) == Rf_install("@")) {
+                            SETCAR(obj, Rf_eval(head, env) ) ;
+                            return ;
+                        } 
+                    } 
                     traverse_call( CDR(head) ) ;
                     break ;
                 case LISTSXP:
@@ -107,9 +116,14 @@ namespace dplyr {
                     if( TYPEOF(obj) != LANGSXP ){
                         if( ! subsets.count(head) ){  
                             // in the Environment -> resolve
-                            // TODO: handle the case where the variable is not found in env
-                            Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;
-                            SETCAR( obj, x );
+                            try{
+                                Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;
+                                SETCAR( obj, x );
+                            } catch(...){
+                                // when the binding is not found in the environment
+                                // e.g. summary(mod)$r.squared
+                                // the "r.squared" is not in the env
+                            }
                         } else {
                             // in the data frame
                             proxies.push_back( CallElementProxy( head, obj ) );
