@@ -83,13 +83,13 @@ translate_sql(1L)
 
 
 ## ------------------------------------------------------------------------
-translate_sql(glob(x, y)) 
+translate_sql(glob(x, y))
 translate_sql(x %like% "ab*")
 
 
 ## ------------------------------------------------------------------------
 planes <- group_by(hflights_sqlite, TailNum)
-delay <- summarise(planes, 
+delay <- summarise(planes,
   count = n(),
   dist = mean(Distance),
   delay = mean(ArrDelay)
@@ -107,12 +107,12 @@ if (has_lahman("postgres")) {
 ## ------------------------------------------------------------------------
 if (has_lahman("postgres")) {
   daily <- group_by(hflights_postgres, Year, Month, DayofMonth)
-  
+
   # Find the most and least delayed flight each day
-  bestworst <- filter(daily, ArrDelay == min(ArrDelay) || 
+  bestworst <- filter(daily, ArrDelay == min(ArrDelay) ||
     ArrDelay == max(ArrDelay))
   bestworst$query
-  
+
   # Rank each flight within a daily
   ranked <- mutate(daily, rank = rank(desc(ArrDelay)))
   ranked$query

@@ -10,7 +10,7 @@ batting <- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H)
 batting <- arrange(batting, playerID, yearID, teamID)
 players <- group_by(batting, playerID)
 
-# For each player, find the two years with most home runs
+# For each player, find the two years with most hits
 filter(players, min_rank(desc(H)) <= 2 & H > 0)
 # Within each player, rank each year by the number of games played
 mutate(players, G_rank = min_rank(G))
@@ -67,7 +67,7 @@ mutate(players, G_delta = G - lag(G))
 
 ## ----, results = "hide"--------------------------------------------------
 # Find when a player changed teams
-filter(players, teamID != lag(teamID)); TRUE
+filter(players, teamID != lag(teamID))
 
 
 ## ------------------------------------------------------------------------

@@ -204,7 +204,7 @@ hr {
 batting &lt;- arrange(batting, playerID, yearID, teamID)
 players &lt;- group_by(batting, playerID)
 
-# For each player, find the two years with most home runs
+# For each player, find the two years with most hits
 filter(players, min_rank(desc(H)) &lt;= 2 &amp; H &gt; 0)
 # Within each player, rank each year by the number of games played
 mutate(players, G_rank = min_rank(G))
@@ -355,7 +355,7 @@ mutate(players, G_delta = G - lag(G))
 <li><p>Find out when a value changes.</p>
 
 <pre><code class="r"># Find when a player changed teams
-filter(players, teamID != lag(teamID)); TRUE
+filter(players, teamID != lag(teamID))
 </code></pre></li>
 </ul>
 
@@ -371,12 +371,12 @@ arrange(wrong, year)
 </code></pre>
 
 <pre><code>#&gt;   year value running
-#&gt; 1 2000     0      14
-#&gt; 2 2001     1      10
-#&gt; 3 2002     4      14
-#&gt; 4 2003     9       9
-#&gt; 5 2004    16      55
-#&gt; 6 2005    25      39
+#&gt; 1 2000     0      46
+#&gt; 2 2001     1      46
+#&gt; 3 2002     4      45
+#&gt; 4 2003     9      55
+#&gt; 5 2004    16      41
+#&gt; 6 2005    25      25
 </code></pre>
 
 <pre><code class="r">

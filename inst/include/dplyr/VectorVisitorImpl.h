@@ -18,6 +18,7 @@ namespace dplyr {
     template <> inline std::string VectorVisitorType<REALSXP>(){ return "numeric" ; }
     template <> inline std::string VectorVisitorType<LGLSXP>() { return "logical" ; }
     template <> inline std::string VectorVisitorType<STRSXP>() { return "character" ; }
+    template <> inline std::string VectorVisitorType<VECSXP>() { return "list" ; }
     
     /** 
      * Implementations 
@@ -102,13 +103,27 @@ namespace dplyr {
         inline SEXP subset_int_index( const Container& index ) const {
             int n = output_size(index) ;
             VECTOR out = Rcpp::no_init(n) ;
-            // TODO: find a way to mark that we don't need the NA handling
-            for( int i=0; i<n; i++) 
-                out[i] = (index[i] < 0) ? VECTOR::get_na() : vec[ index[i] ] ;
+            for( int i=0; i<n; i++){
+                if( index[i] < 0 ){
+                    out[i] = VECTOR::get_na() ;
+                } else {
+                    out[i] = vec[ index[i] ] ;
+                }
+            }
             return out ;
         }
         
     } ;
+    
+    template <>
+    template <typename Container>
+    SEXP VectorVisitorImpl<VECSXP>::subset_int_index( const Container& index ) const {
+        int n = output_size(index) ;
+        List out(n) ;
+        for( int i=0; i<n; i++) 
+            out[i] = (index[i] < 0) ? R_NilValue : vec[ index[i] ] ;
+        return out ;
+    }
     
     template <typename VisitorImpl> 
     class PromoteClassVisitor : public VisitorImpl {
@@ -268,6 +283,8 @@ namespace dplyr {
                 return new VectorVisitorImpl<REALSXP>( vec ) ;
             case LGLSXP:  return new VectorVisitorImpl<LGLSXP>( vec ) ;
             case STRSXP:  return new VectorVisitorImpl<STRSXP>( vec ) ;
+                
+            case VECSXP:  return new VectorVisitorImpl<VECSXP>( vec ) ;
             default: break ;
         }
         

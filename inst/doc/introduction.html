@@ -631,18 +631,18 @@ a4 &lt;- filter(a3, arr &gt; 30 | dep &gt; 30)
 )
 </code></pre>
 
-<pre><code>#&gt; Source: local data frame [14 x 4]
-#&gt; Groups: DayofMonth, Month
+<pre><code>#&gt; Source: local data frame [14 x 5]
+#&gt; Groups: Year, Month
 #&gt; 
-#&gt;    DayofMonth Month   arr   dep
-#&gt; 1           4     2 44.08 47.17
-#&gt; 2           3     3 35.13 38.20
-#&gt; 3          14     3 46.64 36.14
-#&gt; 4           4     4 38.72 27.95
-#&gt; ..        ...   ...   ...   ...
+#&gt;    Year Month DayofMonth   arr   dep
+#&gt; 1  2011     2          4 44.08 47.17
+#&gt; 2  2011     3          3 35.13 38.20
+#&gt; 3  2011     3         14 46.64 36.14
+#&gt; 4  2011     4          4 38.72 27.95
+#&gt; ..  ...   ...        ...   ...   ...
 </code></pre>
 
-<p>This is difficult to read because the order of the operations is from inside to out, and the arguments are a long way away from the function. To get around this problem, dplyr provides the <code>%.%</code> operator. <code>x %.% f(y)</code> turns into <code>f(x, y)</code> so you can use it to rewrite multiple operations so you can read from left-to-riht, top-to-bottom:</p>
+<p>This is difficult to read because the order of the operations is from inside to out, and the arguments are a long way away from the function. To get around this problem, dplyr provides the <code>%.%</code> operator. <code>x %.% f(y)</code> turns into <code>f(x, y)</code> so you can use it to rewrite multiple operations so you can read from left-to-right, top-to-bottom:</p>
 
 <pre><code class="r">hflights %.%
   group_by(Year, Month, DayofMonth) %.%
@@ -683,12 +683,12 @@ it provides many simple methods.</p></li>
 <ul>
 <li>it hides, as much as possible, the fact that you&#39;re working with a remote database</li>
 <li>you don&#39;t need to know any sql (although it helps!)</li>
-<li>it shims over the many differences between the difference DBI implementations</li>
+<li>it shims over the many differences between the different DBI implementations</li>
 </ul>
 
 <h2>Multidimensional arrays / cubes</h2>
 
-<p><code>tbl_cube()</code> provides an experimental interface to multidimenssional arrays or data cubes. If you&#39;re using this form of data in R, please get in touch so I can better understand your needs.</p>
+<p><code>tbl_cube()</code> provides an experimental interface to multidimensional arrays or data cubes. If you&#39;re using this form of data in R, please get in touch so I can better understand your needs.</p>
 
 <h1>Comparisons</h1>
 
