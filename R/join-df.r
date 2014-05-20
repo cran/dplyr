@@ -14,7 +14,6 @@
 #'   \code{copy} is \code{TRUE}, \code{y} will be converted into a data frame
 #' @param ... included for compatibility with the generic; otherwise ignored.
 #' @examples
-#' if (require("Lahman")) {
 #' data("Batting", package = "Lahman")
 #' data("Master", package = "Lahman")
 #'
@@ -34,7 +33,6 @@
 #' anti_join(batting_df, person_df)
 #' # or people who didn't bat
 #' anti_join(person_df, batting_df)
-#' }
 #' @name join.tbl_df
 NULL
 
@@ -42,6 +40,7 @@ NULL
 #' @rdname join.tbl_df
 inner_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
   by <- by %||% common_by(x, y)
+  if( !length(by) ) stop("no common variables")
   y <- auto_copy(x, y, copy = copy)
   inner_join_impl(x, y, by)
 }
@@ -50,6 +49,7 @@ inner_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
 #' @rdname join.tbl_df
 left_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
   by <- by %||% common_by(x, y)
+  if( !length(by) ) stop("no common variables")
   y <- auto_copy(x, y, copy = copy)
   left_join_impl(x, y, by)
 }
@@ -58,6 +58,7 @@ left_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
 #' @rdname join.tbl_df
 semi_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
   by <- by %||% common_by(x, y)
+  if( !length(by) ) stop("no common variables")
   y <- auto_copy(x, y, copy = copy)
   semi_join_impl(x, y, by)
 }
@@ -66,6 +67,7 @@ semi_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
 #' @rdname join.tbl_df
 anti_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...) {
   by <- by %||% common_by(x, y)
+  if( !length(by) ) stop("no common variables")
   y <- auto_copy(x, y, copy = copy)
   anti_join_impl(x, y, by)
 }

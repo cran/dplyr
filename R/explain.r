@@ -7,10 +7,10 @@
 #'
 #' @param code code to run. All sql queries executed during the running of the
 #'   code will be shown and explained.
-#' @param tbl an sql-based table to explain.
+#' @param x an sql-based table to explain.
+#' @param ... Ignored. Needed for compatibility with generic.
 #' @export
 #' @examples
-#' \donttest{
 #' if (require("RSQLite") && has_lahman("sqlite")) {
 #'
 #' batting <- tbl(lahman_sqlite(), "Batting")
@@ -36,7 +36,6 @@
 #' # OR's will use multiple indexes
 #' explain(filter(batting, lgID == "NL" | yearID == 2000))
 #' }
-#' }
 explain_sql <- function(code) {
   old <- options(dplyr.explain_sql = TRUE, dplyr.show_sql = TRUE)
   on.exit(options(old))
@@ -55,13 +54,28 @@ show_sql <- function(code) {
 
 #' @export
 #' @rdname explain_sql
-explain <- function(tbl) {
-  force(tbl)
+explain.tbl_sql <- function(x, ...) {
+  force(x)
   message(
-    "<SQL>\n", tbl$query$sql,
+    "<SQL>\n", x$query$sql,
     "\n\n",
-    "<PLAN>\n", qry_explain(tbl$query$con, tbl$query$sql)
+    "<PLAN>\n", qry_explain(x$query$con, x$query$sql)
   )
 
   invisible(NULL)
+}
+
+#' Explain details of an object
+#'
+#' This is a generic function which gives more details about an object than
+#' \code{\link{print}}, and is more focussed on human readable output than
+#' \code{\link{str}}.
+#'
+#' For more details of explaining dplyr sql tbls, see \code{\link{explain_sql}}.
+#'
+#' @export
+#' @param x An object to explain
+#' @param ... Other parameters possibly used by generic
+explain <- function(x, ...) {
+  UseMethod("explain")
 }

@@ -25,7 +25,6 @@
 #' @export
 #' @keywords internal
 #' @examples
-#' if (require("Lahman")) {
 #' data("Batting", package = "Lahman")
 #' bdf <- tbl_df(Batting)
 #' partial_eval(quote(year > 1980), bdf)
@@ -49,7 +48,6 @@
 #' partial_eval(quote(1 + 2 * 3))
 #' x <- 1
 #' partial_eval(quote(x ^ y))
-#' }
 partial_eval <- function(call, tbl = NULL, env = parent.frame()) {
   if (is.atomic(call)) return(call)
 
@@ -70,6 +68,9 @@ partial_eval <- function(call, tbl = NULL, env = parent.frame()) {
     name <- as.character(call[[1]])
     if (name == "local") {
       eval(call[[2]], env)
+    } else if (name %in% c("$", "[[", "[")) {
+      # Subsetting is always done locally
+      eval(call, env)
     } else if (name == "remote") {
       call[[2]]
     } else {

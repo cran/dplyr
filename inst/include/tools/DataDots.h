@@ -6,27 +6,39 @@ namespace Rcpp {
     class DataDots {
     public:
         
-        DataDots( Environment env ) : environments() {                
+        DataDots( Environment env ) : environments(), parent(env) {                
           SEXP dots = env.find( "..." );
-          
-          while( dots != R_NilValue ){
-            Promise prom = CAR(dots) ;
+          if( dots != R_MissingArg ){
             
-            while(true){
-              SEXP code = PRCODE(prom) ;
-              if( TYPEOF(code) != PROMSXP ){
-                break ;  
+            int i= 0 ;
+            while( dots != R_NilValue ){
+              Promise prom = CAR(dots) ;
+              
+              while(true){                                                  
+                SEXP code = PRCODE(prom) ;
+                if( code == R_MissingArg){
+                    break ;    
+                }
+                if( TYPEOF(code) != PROMSXP ){
+                    environments.push_back(prom.environment()) ;
+                    index.push_back(i) ;
+                    break ;  
+                }
+                prom = code ;
               }
-              prom = code ;
+              
+              dots = CDR(dots) ; 
+              i++ ;
             }
-            environments.push_back(prom.environment()) ;
-            
-            dots = CDR(dots) ;
           }
         }
             
         inline const Environment& envir(int i) const {
             return environments[i] ;
+        }
+        
+        inline int expr_index(int i) const {
+            return index[i] ; 
         }
         
         inline int size() const{ 
@@ -36,14 +48,20 @@ namespace Rcpp {
         inline bool single_env() const{
             if( environments.size() < 2 ) return true ;
             SEXP first = environments[0] ;
-            for( int i=1; i<environments.size(); i++){
+            for( size_t i=1; i<environments.size(); i++){
                 if( first != environments[i] ) return false ;    
             }
             return true ;
         }
         
+        inline const Environment& parent_env() const {
+            return parent ;
+        }
+        
     private:
         std::vector<Environment> environments ;
+        std::vector<int> index;
+        Environment parent ;
     } ;
           
 }    

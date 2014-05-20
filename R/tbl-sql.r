@@ -43,7 +43,8 @@ tbl_sql <- function(subclass, src, from, ..., vars = NULL) {
 #' @export
 update.tbl_sql <- function(object, ...) {
   args <- list(...)
-  assert_that(only_has_names(args, c("select", "where", "group_by", "order_by")))
+  assert_that(only_has_names(args,
+    c("select", "where", "group_by", "order_by", "summarise")))
 
   for (nm in names(args)) {
     object[[nm]] <- args[[nm]]
@@ -102,7 +103,8 @@ as.data.frame.tbl_sql <- function(x, row.names = NULL, optional = NULL,
 }
 
 #' @export
-print.tbl_sql <- function(x, ...) {
+#' @rdname dplyr-formatting
+print.tbl_sql <- function(x, ..., n = NULL) {
   cat("Source: ", brief_desc(x$src), "\n", sep = "")
 
   if (inherits(x$from, "ident")) {
@@ -123,7 +125,7 @@ print.tbl_sql <- function(x, ...) {
 
   cat("\n")
 
-  trunc_mat(x)
+  trunc_mat(x, n = n)
 }
 
 brief_desc <- function(x) UseMethod("brief_desc")

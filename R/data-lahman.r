@@ -7,9 +7,6 @@
 #' Michael Friendly, Dennis Murphy and Martin Monkman. See the documentation
 #' for that package for documentation of the inidividual tables.
 #'
-#' @param path location to look for and cache SQLite database. If \code{NULL},
-#'   the default, will first try storing in the installed package directory, and
-#'   if that isn't writeable, a temporary directory.
 #' @param ... Arguments passed to \code{src} on first
 #'   load. For mysql and postgresql, the defaults assume you have a local
 #'   server with \code{lahman} database already created. For bigquery,
@@ -21,12 +18,11 @@
 #'   connect.
 #' @param type src type.
 #' @examples
-#' \donttest{
+#' # Connect to a local sqlite database, if already created
 #' if (require("RSQLite") && has_lahman("sqlite")) {
 #'   lahman_sqlite()
 #'   batting <- tbl(lahman_sqlite(), "Batting")
 #'   batting
-#' }
 #' }
 #'
 #' # Connect to a local postgres database with lahman database, if available
@@ -39,7 +35,9 @@ NULL
 
 #' @export
 #' @rdname lahman
-lahman_sqlite <- function(path = NULL) cache_lahman("sqlite", path = path)
+lahman_sqlite <- function() {
+  cache_lahman("sqlite", create = TRUE)
+}
 
 #' @export
 #' @rdname lahman
@@ -51,15 +49,17 @@ lahman_mysql <- function(...) cache_lahman("mysql", ...)
 
 #' @export
 #' @rdname lahman
+lahman_monetdb <- function(...) cache_lahman("monetdb", ...)
+
+#' @export
+#' @rdname lahman
 lahman_df <- function() {
-  check_lahman()
   src_df("Lahman")
 }
 
 #' @export
 #' @rdname lahman
 lahman_dt <- function() {
-  check_lahman()
   src_dt("Lahman")
 }
 
@@ -76,7 +76,7 @@ lahman_bigquery <- function(...) {
 
   # Submit all upload jobs
   for(table in tables) {
-    df <- get(table, "package:Lahman")
+    df <- getExportedValue("Lahman", table)
 
     if (!quiet) message("Creating table ", table)
     jobs[[table]] <- insert_upload_job(src$con$project, src$con$dataset, table,
@@ -96,8 +96,6 @@ lahman_bigquery <- function(...) {
 }
 
 cache_lahman <- function(type, ...) {
-  check_lahman()
-
   cache_name <- paste0("lahman_", type)
   if (is_cached(cache_name)) return(get_cache(cache_name))
 
@@ -106,7 +104,7 @@ cache_lahman <- function(type, ...) {
 
   # Create missing tables
   for(table in tables) {
-    df <- get(table, "package:Lahman")
+    df <- getExportedValue("Lahman", table)
     message("Creating table: ", table)
 
     ids <- as.list(names(df)[grepl("ID$", names(df))])
@@ -114,12 +112,6 @@ cache_lahman <- function(type, ...) {
   }
 
   set_cache(cache_name, src)
-}
-
-check_lahman <- function() {
-  if (!require("Lahman")) {
-    stop("Please install the Lahman package", call. = FALSE)
-  }
 }
 
 #' @rdname lahman
@@ -132,8 +124,9 @@ lahman_src <- function(type, ...) {
   switch(type,
     df = lahman_df(),
     dt = lahman_dt(),
-    sqlite = src_sqlite(db_location(filename = "lahman.sqlite", ...), create = TRUE),
+    sqlite = src_sqlite(db_location(filename = "lahman.sqlite"), ...),
     mysql = src_mysql("lahman", ...),
+    monetdb = src_monetdb("lahman", ...),
     postgres = src_postgres("lahman", ...),
     bigquery = src_bigquery(Sys.getenv("BIGQUERY_PROJECT"), "lahman", ...),
     stop("Unknown src type ", type, call. = FALSE)

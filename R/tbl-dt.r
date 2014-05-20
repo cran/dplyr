@@ -16,10 +16,10 @@ tbl_dt <- function(data) {
   if (!require("data.table")) {
     stop("data.table package required to use data tables", call. = FALSE)
   }
-  if (is.grouped_df(data)) return(ungroup(data))
+  if (is.grouped_dt(data)) return(ungroup(data))
 
   data <- as.data.table(data)
-  structure(data, class = c("tbl_dt", "tbl", class(data)))
+  structure(data, class = c("tbl_dt", "tbl", "data.table", "data.frame"))
 }
 
 #' @export
@@ -57,10 +57,11 @@ as.data.frame.tbl_dt <- function(x, row.names = NULL, optional = FALSE, ...) {
 }
 
 #' @export
-print.tbl_dt <- function(x, ...) {
-  cat("Source:     local data table ", dim_desc(x), "\n", sep = "")
+#' @rdname dplyr-formatting
+print.tbl_dt <- function(x, ..., n = NULL) {
+  cat("Source: local data table ", dim_desc(x), "\n", sep = "")
   cat("\n")
-  trunc_mat(x)
+  trunc_mat(x, n = n)
 }
 
 #' @export

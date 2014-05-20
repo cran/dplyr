@@ -1,6 +1,5 @@
 
 ## ----, echo = FALSE, message = FALSE-------------------------------------
-library(ggplot2)
 library(dplyr)
 knitr::opts_chunk$set(
   comment = "#>",
@@ -14,7 +13,7 @@ options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 
 
 ## ----, eval = FALSE------------------------------------------------------
-## library(hflights)
+## data("hflights", package = "hflights")
 ## hflights_sqlite <- copy_to(my_db, hflights, temporary = FALSE, indexes = list(
 ##   c("Year", "Month", "DayofMonth"), "UniqueCarrier", "TailNum"))
 

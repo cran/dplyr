@@ -8,12 +8,14 @@ namespace dplyr {
     public:
         typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
         
-        Min(SEXP x) : data_ptr( Rcpp::internal::r_vector_start<RTYPE>(x) ) {}
+        Min(SEXP x, bool is_summary_ = false) : 
+            data_ptr( Rcpp::internal::r_vector_start<RTYPE>(x) ), is_summary(is_summary_) {}
         ~Min(){}
         
         STORAGE process_chunk( const SlicingIndex& indices ){
-            int n = indices.size() ;
+            if( is_summary ) return data_ptr[ indices.group() ] ;
         
+            int n = indices.size() ;
             // find the first non NA value
             STORAGE res = data_ptr[ indices[0] ] ;
             int i=1 ;
@@ -26,11 +28,13 @@ namespace dplyr {
                 STORAGE current = data_ptr[indices[i]] ;
                 if( !Rcpp::Vector<RTYPE>::is_na(current) && internal::is_smaller<RTYPE>( current, res ) ) res = current ;
             }
+            
             return res ;
         }
         
     private:
         STORAGE* data_ptr ;
+        bool is_summary ;
     } ;
      
     // quit early version for NA_RM = false
@@ -39,10 +43,12 @@ namespace dplyr {
     public:
         typedef typename Rcpp::traits::storage_type<RTYPE>::type STORAGE ;
         
-        Min(SEXP x) : data_ptr( Rcpp::internal::r_vector_start<RTYPE>(x) ) {}
+        Min(SEXP x, bool is_summary_ = false) : data_ptr( Rcpp::internal::r_vector_start<RTYPE>(x) ), is_summary(is_summary_) {}
         ~Min(){}
         
         STORAGE process_chunk( const SlicingIndex& indices ){
+            if( is_summary ) return data_ptr[ indices.group() ] ;
+        
             int n = indices.size() ;
         
             // find the first non NA value
@@ -59,6 +65,7 @@ namespace dplyr {
         
     private:
         STORAGE* data_ptr ; 
+        bool is_summary ;
     } ;
      
     

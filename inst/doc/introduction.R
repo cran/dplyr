@@ -135,13 +135,13 @@ filter(
 
 
 ## ----, eval = FALSE------------------------------------------------------
-## hflights %.%
-##   group_by(Year, Month, DayofMonth) %.%
-##   select(Year:DayofMonth, ArrDelay, DepDelay) %.%
+## hflights %>%
+##   group_by(Year, Month, DayofMonth) %>%
+##   select(Year:DayofMonth, ArrDelay, DepDelay) %>%
 ##   summarise(
 ##     arr = mean(ArrDelay, na.rm = TRUE),
 ##     dep = mean(DepDelay, na.rm = TRUE)
-##   ) %.%
+##   ) %>%
 ##   filter(arr > 30 | dep > 30)
 
 

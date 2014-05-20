@@ -42,13 +42,14 @@ Currently `dplyr` supports:
 * [PostgreSQL](http://www.postgresql.org/)/[Redshift](http://aws.amazon.com/redshift/)
 * [MySQL](http://www.mysql.com/)/[MariaDB](https://mariadb.com/)
 * [Bigquery](https://developers.google.com/bigquery/)
+* [MonetDB](http://www.monetdb.org/)
 * data cubes with arrays (partial implementation)
 
 You can create them as follows:
 
 ```R
-library(dplyr)
-# Built in data frame
+library(dplyr) # for functions
+library(hflights) # for data
 head(hflights)
 
 # Coerce to data table

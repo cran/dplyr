@@ -39,10 +39,6 @@ select.data.frame <- function(.data, ...) {
   vars <- select_vars(names(.data), ..., env = parent.frame())
   select_impl(.data, vars)
 }
-#' @export
-do.data.frame <- function(.data, .f, ...) {
-  list(.f(.data, ...))
-}
 
 # Joins ------------------------------------------------------------------------
 

@@ -8,7 +8,8 @@
 #' @param vars a list of quoted variables.
 #' @export
 #' @examples
-#' if (require("hflights")) {
+#' if (require("data.table")) {
+#' data("hflights", package = "hflights")
 #' hflights_dt <- tbl_dt(hflights)
 #' group_size(group_by(hflights_dt, Year, Month, DayofMonth))
 #' group_size(group_by(hflights_dt, Dest))
@@ -25,9 +26,12 @@ grouped_dt <- function(data, vars) {
     stop("Data tables can only be grouped by variables, not expressions",
       call. = FALSE)
   }
+
+  data <- copy(data)
   setkeyv(data, deparse_all(vars))
 
-  structure(data, vars = vars, class = c("grouped_dt", "tbl_dt", "tbl", class(data)))
+  structure(data, vars = vars,
+    class = c("grouped_dt", "tbl_dt", "tbl", class(data)))
 }
 
 #' @export

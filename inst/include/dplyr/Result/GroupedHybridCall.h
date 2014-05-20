@@ -3,9 +3,10 @@
 
 namespace dplyr {
      
+    template <typename Subsets>
     class GroupedHybridCall {
     public:
-        GroupedHybridCall( const Call& call_, const SlicingIndex& indices_, LazyGroupedSubsets& subsets_, const Environment& env_ ) : 
+        GroupedHybridCall( const Call& call_, const SlicingIndex& indices_, Subsets& subsets_, const Environment& env_ ) : 
             call( clone(call_) ), indices(indices_), subsets(subsets_), env(env_) 
         {
             while( simplified() ){}
@@ -14,7 +15,7 @@ namespace dplyr {
         SEXP eval(){
             if( TYPEOF(call) == LANGSXP ){
                 substitute(call) ;
-                return Rf_eval( call, R_GlobalEnv ) ;
+                return Rf_eval( call, env ) ;
             } else if(TYPEOF(call) == SYMSXP) {
                 if(subsets.count(call)){
                     return subsets.get(call, indices) ;    
@@ -85,7 +86,7 @@ namespace dplyr {
         
         Armor<SEXP> call ;
         const SlicingIndex& indices ;
-        LazyGroupedSubsets& subsets ;
+        Subsets& subsets ;
         const Environment& env ;
     } ;
     

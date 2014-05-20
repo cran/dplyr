@@ -4,6 +4,7 @@
 #include <dplyr/Result/Everything.h>
 #include <dplyr/Result/is_smaller.h>
 #include <dplyr/Result/GroupedSubset.h>
+#include <dplyr/Result/RowwiseSubset.h>
 #include <dplyr/Result/Result.h>
 #include <dplyr/Result/Processor.h>
 #include <dplyr/Result/Count.h>
@@ -21,7 +22,9 @@
 #include <dplyr/Result/CallbackProcessor.h>
 #include <dplyr/Result/Reducer.h>
 #include <dplyr/Result/DelayedReducer.h>
+#include <dplyr/Result/LazySubsets.h>
 #include <dplyr/Result/LazyGroupedSubsets.h>
+#include <dplyr/Result/LazyRowwiseSubsets.h>
 #include <dplyr/Result/HybridCall.h>
 #include <dplyr/Result/GroupedHybridCall.h>
 #include <dplyr/Result/GroupedCallProxy.h>
@@ -41,5 +44,9 @@
 #include <dplyr/Result/CumSum.h>
 #include <dplyr/Result/CumMin.h>
 #include <dplyr/Result/CumMax.h>
+
+#include <dplyr/Result/First.h>
+#include <dplyr/Result/Last.h>
+#include <dplyr/Result/Nth.h>
 
 #endif

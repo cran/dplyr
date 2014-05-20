@@ -37,6 +37,7 @@ namespace dplyr {
                 for( int i=0; i<n; i++){
                     proxies[i].set( subsets[proxies[i].symbol] ) ;     
                 }
+            
                 Shield<SEXP> res( call.eval(env) ) ;
                 return res ;
             } else if( TYPEOF(call) == SYMSXP) {
@@ -83,11 +84,19 @@ namespace dplyr {
         }
         
         void traverse_call( SEXP obj ){
+            if( TYPEOF(obj) == LANGSXP && CAR(obj) == Rf_install("local") ) return ;
+                
             if( ! Rf_isNull(obj) ){
                 SEXP head = CAR(obj) ;
                 
                 switch( TYPEOF( head ) ){
                 case LANGSXP:
+                    if( CAR(head) == Rf_install("function") ) break ;
+                    if( CAR(head) == Rf_install("local") ) return ;
+                    if( CAR(head) == Rf_install("<-") ){
+                        stop( "assignments are forbidden" ) ;    
+                    }
+                    
                     if( Rf_length(head) == 3 ){
                         if( CAR(head) == R_DollarSymbol ){
                             SETCAR(obj, Rf_eval(head, env) ) ;
@@ -109,6 +118,8 @@ namespace dplyr {
                     if( TYPEOF(obj) != LANGSXP ){
                         LazySubsets::const_iterator it = subsets.find(head) ;
                         if( it == subsets.end() ){
+                            if( head == R_MissingArg ) break ;
+                            
                             // in the Environment -> resolve
                             try{
                                 Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;

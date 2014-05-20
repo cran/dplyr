@@ -72,6 +72,8 @@ inline SEXP check_filter_logical_result(SEXP tmp){
 }
 
 DataFrame filter_grouped_single_env( const GroupedDataFrame& gdf, const List& args, const Environment& env){
+    typedef GroupedCallProxy<GroupedDataFrame, LazyGroupedSubsets> Proxy ; 
+    
     const DataFrame& data = gdf.data() ;
     CharacterVector names = data.names() ;
     SymbolSet set ;
@@ -86,7 +88,7 @@ DataFrame filter_grouped_single_env( const GroupedDataFrame& gdf, const List& ar
     LogicalVector test(nrows, TRUE);
 
     LogicalVector g_test ;
-    GroupedCallProxy call_proxy( call, gdf, env ) ;
+    Proxy call_proxy( call, gdf, env ) ;
 
     int ngroups = gdf.ngroups() ;
     GroupedDataFrame::group_iterator git = gdf.group_begin() ;
@@ -127,9 +129,11 @@ DataFrame filter_grouped_multiple_env( const GroupedDataFrame& gdf, const List& 
 
     LogicalVector g_test ;
 
-    for( int k=0; k<args.size(); k++){
-        Call call( (SEXP)args[k] ) ;
-        GroupedCallProxy call_proxy( call, gdf, dots.envir(k) ) ;
+    for( int k=0; k<dots.size(); k++){
+        Rcpp::checkUserInterrupt() ;
+    
+        Call call( (SEXP)args[dots.expr_index(k)] ) ;
+        GroupedCallProxy<GroupedDataFrame> call_proxy( call, gdf, dots.envir(k) ) ;
         int ngroups = gdf.ngroups() ;
         GroupedDataFrame::group_iterator git = gdf.group_begin() ;
         for( int i=0; i<ngroups; i++, ++git){
@@ -194,7 +198,6 @@ SEXP filter_not_grouped( DataFrame df, List args, const DataDots& dots){
     for( int i=0; i<names.size(); i++){
         set.insert( Rf_install( names[i] ) ) ;
     }
-
     if( dots.single_env() ){
         Environment env = dots.envir(0) ;
         // a, b, c ->  a & b & c
@@ -228,6 +231,8 @@ SEXP filter_not_grouped( DataFrame df, List args, const DataDots& dots){
         }
         
         for( int i=1; i<nargs; i++){
+            Rcpp::checkUserInterrupt() ;
+    
             LogicalVector test2 = check_filter_logical_result(CallProxy(args[i], df, dots.envir(i) ).eval()) ;
             if( combine_and(test, test2) ){
                 return empty_subset(df, df.names(), classes_not_grouped() ) ;
@@ -241,6 +246,8 @@ SEXP filter_not_grouped( DataFrame df, List args, const DataDots& dots){
 
 // [[Rcpp::export]]
 SEXP filter_impl( DataFrame df, List args, Environment env){
+    if( args.size() == 0 ) return df ;
+    
     // special case
     if( args.size() == 1 && TYPEOF(args[0]) == LGLSXP){
         LogicalVector what = args[0] ;
@@ -254,6 +261,7 @@ SEXP filter_impl( DataFrame df, List args, Environment env){
     }
     
     DataDots dots(env) ;
+    
     if( is<GroupedDataFrame>( df ) ){
         return filter_grouped( GroupedDataFrame(df), args, dots);
     } else {

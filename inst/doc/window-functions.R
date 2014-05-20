@@ -1,11 +1,11 @@
 
 ## ----, echo = FALSE, message = FALSE-------------------------------------
 library(dplyr)
-library(Lahman)
 knitr::opts_chunk$set(tidy = FALSE, comment = "#>")
 
 
 ## ----, results = "hide"--------------------------------------------------
+library(Lahman)
 batting <- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
 batting <- arrange(batting, playerID, yearID, teamID)
 players <- group_by(batting, playerID)

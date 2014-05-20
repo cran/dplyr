@@ -1,4 +1,4 @@
-.onAttach <- function(libname, pkgname) {
+.onLoad <- function(libname, pkgname) {
   op <- options()
   op.dplyr <- list(
     dplyr.show_sql = FALSE,
@@ -11,4 +11,15 @@
   if(any(toset)) options(op.dplyr[toset])
 
   invisible()
+}
+
+.onAttach <- function(libname, pkgname) {
+
+  setHook(packageEvent("plyr", "attach"), function(...) {
+    packageStartupMessage(rule())
+    packageStartupMessage("You have loaded plyr after dplyr - this is likely ",
+      "to cause problems.\nIf you need functions from both plyr and dplyr, ",
+      "please load plyr first, then dplyr:\nlibrary(plyr); library(dplyr)")
+    packageStartupMessage(rule())
+  })
 }

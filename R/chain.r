@@ -6,21 +6,27 @@
 #' functions providing an alternative way of calling dplyr (and other data
 #' manipulation) functions that you read can from left to right.
 #'
-#' The functions work via simple substitution so that \code{chain(x, f(y))} or
+#' The functions work via simple substitution so that
 #' \code{x \%.\% f(y)} is translated into \code{f(x, y)}.
 #'
-#' @param x,y A dataset and function to apply to it
+#' @section Deprecation:
+#'
+#' \code{chain} was deprecated in version 0.2, and will be removed in
+#' 0.3. It was removed in the interest of making dplyr code more
+#' standardised and \code{\%.\%} is much more popular.
+#'
+#' @param lhs,rhs A dataset and function to apply to it
 #' @param ...,calls A sequence of data transformations, starting with a dataset.
 #'   The first argument of each call should be omitted - the value of the
-#'   previous step will be substituted in automatically.  Use \code{chain} and
+#'   previous step will be substituted in automatically. Use \code{chain} and
 #'   \code{...} when working interactive; use \code{chain_q} and \code{calls}
 #'   when calling from another function.
 #' @param env Environment in which to evaluation expressions. In ordinary
 #'   operation you should not need to set this parameter.
 #' @export
 #' @examples
-#' if (require("hflights")) {
 #' # If you're performing many operations you can either do step by step
+#' data("hflights", package = "hflights")
 #' a1 <- group_by(hflights, Year, Month, DayofMonth)
 #' a2 <- select(a1, Year:DayofMonth, ArrDelay, DepDelay)
 #' a3 <- summarise(a2,
@@ -44,30 +50,20 @@
 #'
 #' # This is difficult to read because the order of the operations is from
 #' # inside to out, and the arguments are a long way away from the function.
-#' # Alternatively you can use chain or %.% to sequence the operations
+#' # Alternatively you can use chain or %>% to sequence the operations
 #' # linearly:
 #'
-#' hflights %.%
-#'   group_by(Year, Month, DayofMonth) %.%
-#'   select(Year:DayofMonth, ArrDelay, DepDelay) %.%
+#' hflights %>%
+#'   group_by(Year, Month, DayofMonth) %>%
+#'   select(Year:DayofMonth, ArrDelay, DepDelay) %>%
 #'   summarise(
 #'     arr = mean(ArrDelay, na.rm = TRUE),
 #'     dep = mean(DepDelay, na.rm = TRUE)
-#'   ) %.%
+#'   ) %>%
 #'   filter(arr > 30 | dep > 30)
-#'
-#' chain(
-#'   hflights,
-#'   group_by(Year, Month, DayofMonth),
-#'   select(Year:DayofMonth, ArrDelay, DepDelay),
-#'   summarise(
-#'     arr = mean(ArrDelay, na.rm = TRUE),
-#'     dep = mean(DepDelay, na.rm = TRUE)
-#'   ),
-#'   filter(arr > 30 | dep > 30)
-#' )
-#' }
 chain <- function(..., env = parent.frame()) {
+  # Deprecated 0.2. Remove in 0.3
+  warning("Chain is deprecated. Please use %>%", call. = FALSE)
   chain_q(dots(...), env = env)
 }
 
@@ -93,6 +89,11 @@ chain_q <- function(calls, env = parent.frame()) {
 
 #' @export
 #' @rdname chain
-"%.%" <- function(x, y) {
-  chain_q(list(substitute(x), substitute(y)), env = parent.frame())
+"%.%" <- function(lhs, rhs) {
+  chain_q(list(substitute(lhs), substitute(rhs)), env = parent.frame())
 }
+
+#' @export
+#' @rdname chain
+`%>%` <- magrittr::`%>%`
+

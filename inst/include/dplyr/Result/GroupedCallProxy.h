@@ -3,22 +3,24 @@
 
 namespace dplyr {
      
+    template <typename Data = GroupedDataFrame, typename Subsets = LazyGroupedSubsets>
     class GroupedCallProxy {
     public:
+        typedef GroupedHybridCall<Subsets> HybridCall ;
         
-        GroupedCallProxy( Call& call_, const LazyGroupedSubsets& subsets_, const Environment& env_) : 
+        GroupedCallProxy( Call& call_, const Subsets& subsets_, const Environment& env_) : 
             call(call_), subsets(subsets_), proxies(), env(env_), hybrid(false)
         {
             set_call(call) ; 
         }
         
-        GroupedCallProxy( Call& call_, const GroupedDataFrame& data_, const Environment& env_) : 
+        GroupedCallProxy( Call& call_, const Data& data_, const Environment& env_) : 
             call(call_), subsets(data_), proxies(), env(env_), hybrid(false)
         {
             set_call(call) ; 
         }
         
-        GroupedCallProxy( const GroupedDataFrame& data_, const Environment& env_ ) : 
+        GroupedCallProxy( const Data& data_, const Environment& env_ ) : 
             subsets(data_), proxies(), env(env_), hybrid(false)
         {}
         
@@ -29,7 +31,7 @@ namespace dplyr {
             subsets.clear();
             if( TYPEOF(call) == LANGSXP){
                 if( hybrid ) {
-                    GroupedHybridCall hybrid_eval( call, indices, subsets, env ) ;
+                    HybridCall hybrid_eval( call, indices, subsets, env ) ;
                     return hybrid_eval.eval() ;
                 }
                 
@@ -92,10 +94,18 @@ namespace dplyr {
         }
         
         void traverse_call( SEXP obj ){
+            if( TYPEOF(obj) == LANGSXP && CAR(obj) == Rf_install("local") ) return ;
+            
             if( ! Rf_isNull(obj) ){ 
                 SEXP head = CAR(obj) ;
                 switch( TYPEOF( head ) ){
                 case LANGSXP: 
+                    if( CAR(head) == Rf_install("function") ) break ;
+                    if( CAR(head) == Rf_install("local") ) return ;
+                    if( CAR(head) == Rf_install("<-") ){
+                        stop( "assignments are forbidden" ) ;    
+                    }
+                    
                     if( Rf_length(head) == 3 ){
                         if( CAR(head) == R_DollarSymbol ){
                             SETCAR(obj, Rf_eval(head, env) ) ;
@@ -117,6 +127,7 @@ namespace dplyr {
                         if( ! subsets.count(head) ){  
                             // in the Environment -> resolve
                             try{
+                                if( head == R_MissingArg ) break ;
                                 Shield<SEXP> x( env.find( CHAR(PRINTNAME(head)) ) ) ;
                                 SETCAR( obj, x );
                             } catch(...){
@@ -136,7 +147,7 @@ namespace dplyr {
         }
         
         Rcpp::Call call ;
-        LazyGroupedSubsets subsets ;
+        Subsets subsets ;
         std::vector<CallElementProxy> proxies ;
         Environment env; 
         bool hybrid ;

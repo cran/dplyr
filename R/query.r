@@ -5,7 +5,7 @@
 #' DBI and the individual database implementation.
 #'
 #' @keywords internal
-#' @aliases Query-class
+#' @aliases Query-class MonetDBQuery-class
 #' @param con a \code{DBOConnection}
 #' @param sql a string containing an sql query.
 #' @export
@@ -19,8 +19,7 @@ query.DBIConnection <- function(con, sql, .vars) {
 }
 
 #' @export
-#' @importFrom methods setRefClass
-Query <- setRefClass("Query",
+Query <- methods::setRefClass("Query",
   fields = c("con", "sql", ".vars", ".res", ".nrow"),
   methods = list(
     show = function() {
@@ -43,11 +42,10 @@ Query <- setRefClass("Query",
       qry_fetch_paged(con, sql, chunk_size, callback)
     },
 
-    save_into = function(name = random_table_name()) {
-      tt_sql <- build_sql("CREATE TEMPORARY TABLE ", ident(name), " AS ", sql,
-        con = con)
-      qry_run(con, tt_sql)
-
+    save_into = function(name = random_table_name(), temporary = TRUE) {
+      tt_sql <- build_sql("CREATE ", if (temporary) sql("TEMPORARY "),
+                          "TABLE ", ident(name), " AS ", sql, con = con)
+      qry_run(con, tt_sql) 
       name
     },
 

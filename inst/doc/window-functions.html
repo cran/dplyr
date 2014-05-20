@@ -60,6 +60,7 @@ body, td {
 body {
   max-width: 800px;
   margin: auto;
+  padding: 1em;
   line-height: 20px;
 }
 
@@ -67,28 +68,28 @@ tt, code, pre {
    font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
 }
 
-h1 { 
-   font-size:2.2em; 
+h1 {
+   font-size:2.2em;
 }
 
-h2 { 
-   font-size:1.8em; 
+h2 {
+   font-size:1.8em;
 }
 
-h3 { 
-   font-size:1.4em; 
+h3 {
+   font-size:1.4em;
 }
 
-h4 { 
-   font-size:1.0em; 
+h4 {
+   font-size:1.0em;
 }
 
-h5 { 
-   font-size:0.9em; 
+h5 {
+   font-size:0.9em;
 }
 
-h6 { 
-   font-size:0.8em; 
+h6 {
+   font-size:0.8em;
 }
 
 a:visited {
@@ -132,54 +133,54 @@ hr {
 }
 
 @media print {
-   * { 
-      background: transparent !important; 
-      color: black !important; 
-      filter:none !important; 
-      -ms-filter: none !important; 
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
    }
 
-   body { 
-      font-size:12pt; 
-      max-width:100%; 
-   }
-       
-   a, a:visited { 
-      text-decoration: underline; 
+   body {
+      font-size:12pt;
+      max-width:100%;
    }
 
-   hr { 
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
       visibility: hidden;
       page-break-before: always;
    }
 
-   pre, blockquote { 
-      padding-right: 1em; 
-      page-break-inside: avoid; 
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
    }
 
-   tr, img { 
-      page-break-inside: avoid; 
+   tr, img {
+      page-break-inside: avoid;
    }
 
-   img { 
-      max-width: 100% !important; 
+   img {
+      max-width: 100% !important;
    }
 
-   @page :left { 
-      margin: 15mm 20mm 15mm 10mm; 
-   }
-     
-   @page :right { 
-      margin: 15mm 10mm 15mm 20mm; 
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
    }
 
-   p, h2, h3 { 
-      orphans: 3; widows: 3; 
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
    }
 
-   h2, h3 { 
-      page-break-after: avoid; 
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
    }
 }
 </style>
@@ -200,7 +201,8 @@ hr {
 
 <p>Window functions are used in conjunction with <code>mutate</code> and <code>filter</code> to solve a wide range of problems, some of which are shown below:</p>
 
-<pre><code class="r">batting &lt;- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
+<pre><code class="r">library(Lahman)
+batting &lt;- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
 batting &lt;- arrange(batting, playerID, yearID, teamID)
 players &lt;- group_by(batting, playerID)
 
@@ -311,15 +313,13 @@ by_team_quartile &lt;- group_by(by_team, quartile = ntile(G, 4))
 summarise(by_team_quartile, mean(G))
 </code></pre>
 
-<pre><code>#&gt; Source: local data frame [596 x 3]
-#&gt; Groups: teamID
+<pre><code>#&gt; Source: local data frame [4 x 2]
 #&gt; 
-#&gt;    teamID quartile mean(G)
-#&gt; 1     ALT        1    3.00
-#&gt; 2     ALT        2    8.75
-#&gt; 3     ALT        3   20.25
-#&gt; 4     ALT        4   23.75
-#&gt; ..    ...      ...     ...
+#&gt;   quartile mean(G)
+#&gt; 1        1   5.325
+#&gt; 2        2  24.808
+#&gt; 3        3  77.073
+#&gt; 4        4 373.976
 </code></pre>
 
 <p>All ranking functions rank from lowest to highest so that small input values get small ranks. Use <code>desc()</code> to rank from highest to lowest.</p>
@@ -371,16 +371,15 @@ arrange(wrong, year)
 </code></pre>
 
 <pre><code>#&gt;   year value running
-#&gt; 1 2000     0      46
-#&gt; 2 2001     1      46
-#&gt; 3 2002     4      45
-#&gt; 4 2003     9      55
-#&gt; 5 2004    16      41
+#&gt; 1 2000     0      51
+#&gt; 2 2001     1      51
+#&gt; 3 2002     4      55
+#&gt; 4 2003     9      34
+#&gt; 5 2004    16      50
 #&gt; 6 2005    25      25
 </code></pre>
 
-<pre><code class="r">
-right &lt;- mutate(scrambled, running = order_by(year, cumsum(value)))
+<pre><code class="r">right &lt;- mutate(scrambled, running = order_by(year, cumsum(value)))
 arrange(right, year)
 </code></pre>
 
@@ -545,13 +544,6 @@ aggregate or a cumulative aggregate.</p></li>
 }
 </code></pre>
 
-<pre><code>#&gt; &lt;SQL&gt; avg(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
-#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS UNBOUNDED PRECEDING)
-#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
-#&gt; &lt;SQL&gt; NTILE(2.0) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
-#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot;)
-</code></pre>
-
 <p>If the tbl has been arranged previously, then that ordering will be used for the order clause:</p>
 
 <pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
@@ -560,11 +552,6 @@ aggregate or a cumulative aggregate.</p></li>
   print(translate_sql(rank(), tbl = players_by_year, window = TRUE))
   print(translate_sql(lag(G), tbl = players_by_year, window = TRUE))
 }
-</code></pre>
-
-<pre><code>#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot; ROWS UNBOUNDED PRECEDING)
-#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
-#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
 </code></pre>
 
 <p>There are some challenges when translating window functions between R and SQL, because dplyr tries to keep the window functions as similar as possible to both the existing R analogues and to the SQL functions. This means that there are three ways to control the order clause depending on which window function you&#39;re using:</p>

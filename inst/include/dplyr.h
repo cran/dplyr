@@ -3,6 +3,7 @@
 
 #include <Rcpp.h>
 #include <solaris/solaris.h>
+#include <dplyr/config.h>
 
 using namespace Rcpp ;
 
@@ -52,6 +53,7 @@ namespace dplyr {
 dplyr::Result* get_handler( SEXP, const dplyr::LazySubsets&, const Environment& ) ;
 bool can_simplify(SEXP) ;
 
+void assert_all_white_list(const DataFrame&) ;
 inline SEXP as_symbol(SEXP x) {
     return Rf_install( CHAR(x) );
 }
@@ -62,6 +64,7 @@ inline SEXP shared_SEXP(SEXP x){
 void check_supported_type(SEXP) ;
 SEXP pairlist_shallow_copy(SEXP) ;
 void copy_attributes(SEXP, SEXP) ;
+void copy_most_attributes(SEXP, SEXP); 
 
 // currently [[Rcpp::register]] does nothing.
 //
@@ -75,6 +78,7 @@ SEXP get_time_classes() ;
 SEXP get_date_classes() ;
 
 CharacterVector dfloc(List) ;
+SEXP shallow_copy(const List& data) ;
 
 typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
 
@@ -91,8 +95,10 @@ void registerHybridHandler( const char* , HybridHandler ) ;
 #include <dplyr/EmptySubset.h>
 #include <dplyr/FullDataFrame.h>
 #include <dplyr/GroupedDataFrame.h>
+#include <dplyr/RowwiseDataFrame.h>
 #include <dplyr/tbl_cpp.h>
 #include <dplyr/comparisons.h>
+#include <dplyr/comparisons_different.h>
 #include <dplyr/VectorVisitor.h>
 #include <dplyr/OrderVisitor.h>
 #include <dplyr/VectorVisitorImpl.h>
@@ -104,11 +110,16 @@ void registerHybridHandler( const char* , HybridHandler ) ;
 #include <dplyr/Order.h>
 #include <dplyr/SummarisedVariable.h>
 #include <dplyr/Result/all.h>
+#include <dplyr/vector_class.h>
 #include <dplyr/Gatherer.h>
 #include <dplyr/Replicator.h>
 #include <dplyr/Collecter.h>
 #include <dplyr/NamedListAccumulator.h>
+#include <dplyr/train.h>
 
 #include <dplyr/registration.h>
+
+void check_not_groups(const CharacterVector& result_names, const GroupedDataFrame& gdf) ;
+void check_not_groups(const CharacterVector& result_names, const RowwiseDataFrame& gdf) ;
 
 #endif

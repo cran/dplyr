@@ -13,6 +13,32 @@ plfloc <- function(data) {
     .Call('dplyr_plfloc', PACKAGE = 'dplyr', data)
 }
 
+arrange_impl <- function(data, args, dots) {
+    .Call('dplyr_arrange_impl', PACKAGE = 'dplyr', data, args, dots)
+}
+
+#' @export
+#' @rdname rbind
+rbind_all <- function(dots) {
+    .Call('dplyr_rbind_all', PACKAGE = 'dplyr', dots)
+}
+
+rbind_list__impl <- function(dots) {
+    .Call('dplyr_rbind_list__impl', PACKAGE = 'dplyr', dots)
+}
+
+cbind_list__impl <- function(dots) {
+    .Call('dplyr_cbind_list__impl', PACKAGE = 'dplyr', dots)
+}
+
+cbind_all <- function(dots) {
+    .Call('dplyr_cbind_all', PACKAGE = 'dplyr', dots)
+}
+
+distinct_impl <- function(df) {
+    .Call('dplyr_distinct_impl', PACKAGE = 'dplyr', df)
+}
+
 semi_join_impl <- function(x, y, by) {
     .Call('dplyr_semi_join_impl', PACKAGE = 'dplyr', x, y, by)
 }
@@ -85,24 +111,12 @@ order_impl <- function(args, env) {
     .Call('dplyr_order_impl', PACKAGE = 'dplyr', args, env)
 }
 
-arrange_impl <- function(data, args, dots) {
-    .Call('dplyr_arrange_impl', PACKAGE = 'dplyr', data, args, dots)
-}
-
 sort_impl <- function(data) {
     .Call('dplyr_sort_impl', PACKAGE = 'dplyr', data)
 }
 
 group_size_grouped_cpp <- function(gdf) {
     .Call('dplyr_group_size_grouped_cpp', PACKAGE = 'dplyr', gdf)
-}
-
-summarise_impl <- function(df, args, env) {
-    .Call('dplyr_summarise_impl', PACKAGE = 'dplyr', df, args, env)
-}
-
-select_impl <- function(df, vars) {
-    .Call('dplyr_select_impl', PACKAGE = 'dplyr', df, vars)
 }
 
 #' Efficiently count the number of unique values in a vector.
@@ -117,24 +131,6 @@ select_impl <- function(df, vars) {
 #' n_distinct(x)
 n_distinct <- function(x) {
     .Call('dplyr_n_distinct', PACKAGE = 'dplyr', x)
-}
-
-#' @export
-#' @rdname rbind
-rbind_all <- function(dots) {
-    .Call('dplyr_rbind_all', PACKAGE = 'dplyr', dots)
-}
-
-rbind_list__impl <- function(dots) {
-    .Call('dplyr_rbind_list__impl', PACKAGE = 'dplyr', dots)
-}
-
-cbind_list__impl <- function(dots) {
-    .Call('dplyr_cbind_list__impl', PACKAGE = 'dplyr', dots)
-}
-
-cbind_all <- function(dots) {
-    .Call('dplyr_cbind_all', PACKAGE = 'dplyr', dots)
 }
 
 as_regular_df <- function(df) {
@@ -155,6 +151,18 @@ split_indices <- function(group, groups) {
 
 filter_impl <- function(df, args, env) {
     .Call('dplyr_filter_impl', PACKAGE = 'dplyr', df, args, env)
+}
+
+select_impl <- function(df, vars) {
+    .Call('dplyr_select_impl', PACKAGE = 'dplyr', df, vars)
+}
+
+summarise_impl <- function(df, args, env) {
+    .Call('dplyr_summarise_impl', PACKAGE = 'dplyr', df, args, env)
+}
+
+test_comparisons <- function() {
+    .Call('dplyr_test_comparisons', PACKAGE = 'dplyr')
 }
 
 #' Cumulativate versions of any, all, and mean

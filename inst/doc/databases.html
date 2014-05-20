@@ -60,6 +60,7 @@ body, td {
 body {
   max-width: 800px;
   margin: auto;
+  padding: 1em;
   line-height: 20px;
 }
 
@@ -67,28 +68,28 @@ tt, code, pre {
    font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
 }
 
-h1 { 
-   font-size:2.2em; 
+h1 {
+   font-size:2.2em;
 }
 
-h2 { 
-   font-size:1.8em; 
+h2 {
+   font-size:1.8em;
 }
 
-h3 { 
-   font-size:1.4em; 
+h3 {
+   font-size:1.4em;
 }
 
-h4 { 
-   font-size:1.0em; 
+h4 {
+   font-size:1.0em;
 }
 
-h5 { 
-   font-size:0.9em; 
+h5 {
+   font-size:0.9em;
 }
 
-h6 { 
-   font-size:0.8em; 
+h6 {
+   font-size:0.8em;
 }
 
 a:visited {
@@ -132,54 +133,54 @@ hr {
 }
 
 @media print {
-   * { 
-      background: transparent !important; 
-      color: black !important; 
-      filter:none !important; 
-      -ms-filter: none !important; 
+   * {
+      background: transparent !important;
+      color: black !important;
+      filter:none !important;
+      -ms-filter: none !important;
    }
 
-   body { 
-      font-size:12pt; 
-      max-width:100%; 
-   }
-       
-   a, a:visited { 
-      text-decoration: underline; 
+   body {
+      font-size:12pt;
+      max-width:100%;
    }
 
-   hr { 
+   a, a:visited {
+      text-decoration: underline;
+   }
+
+   hr {
       visibility: hidden;
       page-break-before: always;
    }
 
-   pre, blockquote { 
-      padding-right: 1em; 
-      page-break-inside: avoid; 
+   pre, blockquote {
+      padding-right: 1em;
+      page-break-inside: avoid;
    }
 
-   tr, img { 
-      page-break-inside: avoid; 
+   tr, img {
+      page-break-inside: avoid;
    }
 
-   img { 
-      max-width: 100% !important; 
+   img {
+      max-width: 100% !important;
    }
 
-   @page :left { 
-      margin: 15mm 20mm 15mm 10mm; 
-   }
-     
-   @page :right { 
-      margin: 15mm 10mm 15mm 20mm; 
+   @page :left {
+      margin: 15mm 20mm 15mm 10mm;
    }
 
-   p, h2, h3 { 
-      orphans: 3; widows: 3; 
+   @page :right {
+      margin: 15mm 10mm 15mm 20mm;
    }
 
-   h2, h3 { 
-      page-break-after: avoid; 
+   p, h2, h3 {
+      orphans: 3; widows: 3;
+   }
+
+   h2, h3 {
+      page-break-after: avoid;
    }
 }
 </style>
@@ -215,7 +216,7 @@ hr {
 
 <p><code>my_db</code> currently has no data in it, so we&#39;ll load it up with the <code>hflights</code> data using the convenient <code>copy_to()</code> function. This is a quick and dirty way of getting data into a database, but it&#39;s not suitable for very large datasets because all the data has to flow through R.</p>
 
-<pre><code class="r">library(hflights)
+<pre><code class="r">data(&quot;hflights&quot;, package = &quot;hflights&quot;)
 hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list(
   c(&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;), &quot;UniqueCarrier&quot;, &quot;TailNum&quot;))
 </code></pre>
@@ -227,8 +228,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">hflights_sqlite &lt;- tbl(hflights_sqlite(), &quot;hflights&quot;)
 </code></pre>
 
-<pre><code>#&gt; Loading required package: hflights
-#&gt; Loading required package: RSQLite
+<pre><code>#&gt; Loading required package: RSQLite
 #&gt; Loading required package: DBI
 #&gt; Loading required package: RSQLite.extfuns
 </code></pre>
@@ -236,7 +236,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">hflights_sqlite
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -263,7 +263,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">select(hflights_sqlite, Year:DayofMonth, DepDelay, ArrDelay)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 5]
 #&gt; 
 #&gt;    Year Month DayofMonth DepDelay ArrDelay
@@ -277,7 +277,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">filter(hflights_sqlite, depDelay &gt; 240)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [389 x 21]
 #&gt; Filter: depDelay &gt; 240 
 #&gt; 
@@ -296,7 +296,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">arrange(hflights_sqlite, Year, Month, DayofMonth)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 21]
 #&gt; Arrange: Year, Month, DayofMonth 
 #&gt; 
@@ -315,7 +315,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">mutate(hflights_sqlite, speed = AirTime / Distance)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [227,496 x 22]
 #&gt; 
 #&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
@@ -333,7 +333,7 @@ hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list
 <pre><code class="r">summarise(hflights_sqlite, delay = mean(DepTime))
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: &lt;derived table&gt; [?? x 1]
 #&gt; 
 #&gt;    delay
@@ -366,7 +366,7 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptxkEBK/Rinst1424b59c21ad0/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
 #&gt; From: hflights [109,996 x 8]
 #&gt; Filter: DepDelay &gt; 0 
 #&gt; Arrange: Year, Month, DayofMonth, UniqueCarrier 
@@ -399,11 +399,11 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4$query
 </code></pre>
 
-<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;, &quot;DepDelay&quot;, &quot;AirTime&quot;, &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
+<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot; AS &quot;Year&quot;, &quot;Month&quot; AS &quot;Month&quot;, &quot;DayofMonth&quot; AS &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot; AS &quot;UniqueCarrier&quot;, &quot;DepDelay&quot; AS &quot;DepDelay&quot;, &quot;AirTime&quot; AS &quot;AirTime&quot;, &quot;Distance&quot; AS &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
 #&gt; FROM &quot;hflights&quot;
 #&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
 #&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
-#&gt; &lt;SQLiteConnection: DBI CON (82546, 0)&gt;
+#&gt; &lt;SQLiteConnection: DBI CON (43422, 0)&gt;
 </code></pre>
 
 <p>You can also ask the database how it plans to execute the query with <code>explain()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
@@ -412,7 +412,7 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 </code></pre>
 
 <pre><code>#&gt; &lt;SQL&gt;
-#&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;, &quot;DepDelay&quot;, &quot;AirTime&quot;, &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
+#&gt; SELECT &quot;Year&quot; AS &quot;Year&quot;, &quot;Month&quot; AS &quot;Month&quot;, &quot;DayofMonth&quot; AS &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot; AS &quot;UniqueCarrier&quot;, &quot;DepDelay&quot; AS &quot;DepDelay&quot;, &quot;AirTime&quot; AS &quot;AirTime&quot;, &quot;Distance&quot; AS &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
 #&gt; FROM &quot;hflights&quot;
 #&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
 #&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
@@ -444,7 +444,7 @@ in the database.</p></li>
 <li><p><code>nrow()</code> is always <code>NA</code>: in general, there&#39;s no way to determine how
 many rows a query will return unless you actually run it.</p></li>
 <li><p>Printing a tbl only runs the query enough to get the first 10 rows</p></li>
-<li><p>You can use <code>tail()</code> on database tbls: you can&#39;t find the last rows
+<li><p>You can&#39;t use <code>tail()</code> on database tbls: you can&#39;t find the last rows
 without executing the whole query.</p></li>
 </ul>
 
@@ -468,8 +468,7 @@ translate_sql(&quot;x&quot;)
 <pre><code>#&gt; &lt;SQL&gt; &#39;x&#39;
 </code></pre>
 
-<pre><code class="r">
-# Many functions have slightly different names
+<pre><code class="r"># Many functions have slightly different names
 translate_sql(x == 1 &amp;&amp; (y &lt; 2 || z &gt; 3))
 </code></pre>
 
@@ -488,8 +487,7 @@ translate_sql(x == 1 &amp;&amp; (y &lt; 2 || z &gt; 3))
 <pre><code>#&gt; &lt;SQL&gt; &quot;x&quot; % 2.0 = 10.0
 </code></pre>
 
-<pre><code class="r">
-# R and SQL have different defaults for integers vs reals.
+<pre><code class="r"># R and SQL have different defaults for integers vs reals.
 # In R, 1 is an real, and 1L is an integer
 # In SQL, 1 is an integer, and 1.0 is a real
 translate_sql(1)
@@ -593,16 +591,6 @@ delay_local &lt;- collect(delay)
   ranked &lt;- mutate(daily, rank = rank(desc(ArrDelay)))
   ranked$query
 }
-</code></pre>
-
-<pre><code>#&gt; Auto-disconnecting postgres connection (82546, 2)
-</code></pre>
-
-<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;DayOfWeek&quot;, &quot;DepTime&quot;, &quot;ArrTime&quot;, &quot;UniqueCarrier&quot;, &quot;FlightNum&quot;, &quot;TailNum&quot;, &quot;ActualElapsedTime&quot;, &quot;AirTime&quot;, &quot;ArrDelay&quot;, &quot;DepDelay&quot;, &quot;Origin&quot;, &quot;Dest&quot;, &quot;Distance&quot;, &quot;TaxiIn&quot;, &quot;TaxiOut&quot;, &quot;Cancelled&quot;, &quot;CancellationCode&quot;, &quot;Diverted&quot;, rank() OVER (PARTITION BY (&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;) ORDER BY &quot;ArrDelay&quot; DESC) AS &quot;rank&quot;
-#&gt; FROM &quot;hflights&quot;
-#&gt; An object of class &quot;PostgreSQLConnection&quot;
-#&gt; Slot &quot;Id&quot;:
-#&gt; [1] 82546     1
 </code></pre>
 
 <h3>MySQL and MariaDB</h3>
