@@ -46,6 +46,25 @@ test_that("colums in output override columns in input", {
   expect_equal(out$g, c(1, 1, 1))
 })
 
+test_that("empty results preserved (#597)", {
+  blankdf <- function(x) data.frame(blank = numeric(0))
+
+  dat <- data.frame(a = 1:2, b = factor(1:2))
+  dat %>% group_by(b) %>% do(blankdf(.))
+
+})
+
+test_that("empty inputs give empty outputs (#597)", {
+  out <- data.frame(a = numeric(), b = factor()) %>%
+    group_by(b) %>%
+    do(data.frame())
+  expect_equal(out, data.frame(b = factor()) %>% group_by(b))
+
+  out <- data.frame(a = numeric(), b = character()) %>%
+    group_by(b) %>%
+    do(data.frame())
+  expect_equal(out, data.frame(b = character()) %>% group_by(b))
+})
 
 # Ungrouped data frames --------------------------------------------------------
 
@@ -110,3 +129,11 @@ test_that("results independent of chunk_size", {
   expect_equal(nrows(grp$sqlite, 2), c(1, 2, 3))
   expect_equal(nrows(grp$sqlite, 10), c(1, 2, 3))
 })
+
+test_that("handling of empty data frames in do",{
+  blankdf <- function(x) data.frame(blank = numeric(0))
+  dat <- data.frame(a = 1:2, b = factor(1:2))
+  res <- dat %>% group_by(b) %>% do(blankdf(.))
+  expect_equal(names(res), c("b", "blank"))
+})
+

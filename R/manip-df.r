@@ -1,55 +1,47 @@
-.data_dots <- function(fun, DOTS = dots){
-  f <- function(.data, ...){}
-  body(f) <- substitute({
-    FUN(.data, DOTS(...), environment() )
-  }, list( FUN = substitute(fun), DOTS = substitute(DOTS)))
-  attr(f, "srcref") <- NULL
-  f
+#' @export
+arrange_.tbl_df  <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  arrange_impl(.data, dots)
 }
 
-#' Data manipulation for data frames.
-#'
-#' @param .data a data frame
-#' @param ... variables interpreted in the context of \code{.data}
-#' @examples
-#' data("hflights", package = "hflights")
-#' filter(hflights, Month == 1, DayofMonth == 1, Dest == "DFW")
-#' head(select(hflights, Year:DayOfWeek))
-#' summarise(hflights, delay = mean(ArrDelay, na.rm = TRUE), n = length(ArrDelay))
-#' head(mutate(hflights, gained = ArrDelay - DepDelay))
-#' head(arrange(hflights, Dest, desc(ArrDelay)))
-#' @name manip_df
-NULL
-
-#' @rdname manip_df
 #' @export
-arrange.tbl_df    <- .data_dots(arrange_impl)  
+filter_.tbl_df    <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  filter_impl(.data, dots)
+}
 
-#' @rdname manip_df
 #' @export
-filter.tbl_df    <- .data_dots(filter_impl)
+slice_.tbl_df  <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  slice_impl(.data, dots)
+}
 
-integer_filter   <- .data_dots(integer_filter_impl)
-
-#' @rdname manip_df
 #' @export
-mutate.tbl_df    <- .data_dots(mutate_impl, named_dots)
+mutate_.tbl_df  <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  mutate_impl(.data, dots)
+}
 
-#' @rdname manip_df
 #' @export
-summarise.tbl_df <- .data_dots(summarise_impl, named_dots)
+summarise_.tbl_df <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  summarise_impl(.data, dots)
+}
 
-#' @rdname manip_df
 #' @export
-select.tbl_df <- function(.data, ...) {
-  vars <- select_vars(names(.data), ..., env = parent.frame())
+select_.grouped_df <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+
+  vars <- select_vars_(names(.data), dots,
+    include = as.character(groups(.data)))
+
   select_impl(.data, vars)
 }
 
 #' @export
-select.grouped_df <- function(.data, ...) {
-  vars <- select_vars(names(.data), ..., env = parent.frame(),
-    include = as.character(groups(.data)))
+rename_.grouped_df <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+  vars <- rename_vars_(names(.data), dots)
 
   select_impl(.data, vars)
 }

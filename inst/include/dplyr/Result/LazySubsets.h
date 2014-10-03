@@ -10,7 +10,7 @@ namespace dplyr {
         
         LazySubsets(){}
         
-        LazySubsets( const DataFrame& df) : data_map(){
+        LazySubsets( const DataFrame& df) : data_map(), nr(df.nrows()){
             CharacterVector names = df.names() ;
             for( int i=0; i<df.size(); i++){
                 data_map[as_symbol(names[i])] = df[i] ;    
@@ -20,6 +20,13 @@ namespace dplyr {
         
         virtual SEXP get_variable(SEXP symbol) const {
             DataMap::const_iterator it = data_map.find(symbol) ;
+            if( it == data_map.end() ){
+                std::stringstream s ;
+                s << "variable '"
+                  << CHAR(PRINTNAME(symbol))
+                  << "' not found" ;
+                Rcpp::stop(s.str()) ;
+            }
             return it->second ;
         }
         virtual bool is_summary( SEXP symbol ) const {
@@ -50,11 +57,12 @@ namespace dplyr {
         }
         
         inline int nrows() const {
-            return Rf_length( data_map.begin()->second ) ;  
+            return nr ;
         }
         
     private:
         DataMap data_map ;
+        int nr ;
     } ;
 
 }

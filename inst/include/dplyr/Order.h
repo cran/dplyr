@@ -22,7 +22,7 @@ namespace dplyr {
         } 
         
         OrderVisitors( DataFrame data, CharacterVector names ) : 
-            visitors(data.size()), n(data.size()), nrows( data.nrows() )
+            visitors(data.size()), n(names.size()), nrows( data.nrows() )
         {
             for( int i=0; i<n; i++){
                 String name = names[i] ;
@@ -74,6 +74,7 @@ namespace dplyr {
     } ;
     
     inline Rcpp::IntegerVector OrderVisitors::apply() const {
+        if( nrows == 0 ) return IntegerVector(0); 
         IntegerVector x = seq(0, nrows -1 ) ;
         std::sort( x.begin(), x.end(), OrderVisitors_Compare(*this) ) ;
         return x ;

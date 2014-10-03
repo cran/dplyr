@@ -17,6 +17,30 @@ test_that("select does not lose grouping (#147)", {
   expect_equal(groups(grouped), list(quote(a)))
 })
 
+test_that("select doesn't fail if some names missing", {
+  df1 <- data.frame(x = 1:10, y = 1:10, z = 1:10)
+  df2 <- setNames(df1, c("x", "y", ""))
+  # df3 <- setNames(df1, c("x", "", ""))
+
+  expect_equal(select(df1, x), data.frame(x = 1:10))
+  expect_equal(select(df2, x), data.frame(x = 1:10))
+  # expect_equal(select(df3, x), data.frame(x = 1:10))
+})
+
+# Empty selects -------------------------------------------------
+
+test_that("select with no args returns nothing", {
+  empty <- select(mtcars)
+  expect_equal(ncol(empty), 0)
+  expect_equal(nrow(empty), 32)
+})
+
+test_that("select excluding all vars returns nothing", {
+  expect_equal(dim(select(mtcars, -(mpg:carb))), c(32, 0))
+  expect_equal(dim(select(mtcars, starts_with("x"))), c(32, 0))
+  expect_equal(dim(select(mtcars, -matches("."))), c(32, 0))
+})
+
 # Select variables -----------------------------------------------
 
 test_that("select_vars prefix/suffix matching", {
@@ -32,14 +56,17 @@ test_that("select_vars prefix/suffix matching", {
   expect_equal(select_vars(vars, contains("eee")), c("eee" = "eee"))
 })
 
+test_that("select_vars throws an error if an empty pattern is provided", {
+  vars <- c("abc", "def", "ghi")
+  expect_error(select_vars(vars, starts_with("")))
+  expect_error(select_vars(vars, ends_with("")))
+  expect_error(select_vars(vars, contains("")))
+  expect_error(select_vars(vars, matches("")))
+})
+
 test_that("select_vars can rename variables", {
   vars <- c("a", "b")
   expect_equal(select_vars(vars, b = a, a = b), c("b" = "a", "a" = "b"))
-})
-
-test_that("no inputs selects all vars", {
-  vars <- c("a", "b")
-  expect_equal(select_vars(vars), c("a" = "a", "b" = "b"))
 })
 
 test_that("negative index removes values", {
@@ -99,4 +126,9 @@ test_that("select renames variables (#317)", {
 test_that("select preserves grouping vars", {
   first <- tbls$sqlite %>% group_by(b) %>% select(a)
   expect_equal(tbl_vars(first), c("b", "a"))
+})
+
+test_that("rename handles grouped data (#640)", {
+  res <- data_frame(a = 1, b = 2) %>% group_by(a) %>% rename(c = b)
+  expect_equal(names(res), c("a", "c"))
 })

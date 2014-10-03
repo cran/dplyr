@@ -221,6 +221,12 @@ test_that("comment attribute is white listed (#346)",{
   expect_equal(comment(res$B), "2nd Var" )
 })
 
+test_that("AsIs class is white listed (#453)",{
+  test <- data.frame(A = c(1,1,0,0), B = I(c(2,2,3,3)))
+  res <- group_by(test, B)
+  expect_equal(res$B, test$B )
+})
+
 test_that("names attribute is not retained (#357)", {
   df <- data.frame(x=c(1:3), y=letters[1:3])
   df <- group_by(df, y)
@@ -274,3 +280,60 @@ test_that( "summarise hybrid functions can use summarized variables", {
   expect_identical( res$x, res$mean )
   expect_identical( res$var, rep(NA_real_, 2) )
 })
+
+test_that( "n_distinct refuse to treat anything else than single variable name (#567)", {
+  expect_error(summarise(mtcars, n = n_distinct("mpg")))
+  expect_error(summarise(mtcars, n = n_distinct(mpg*2)))
+})
+
+test_that( "LazySubset is not confused about input data size (#452)", {
+  res <- data.frame(a = c(10, 100)) %>% summarise(b = sum(a), c = sum(a) * 2)
+  expect_equal(res$b, 110)
+  expect_equal(res$c, 220)
+})
+
+test_that( "nth promotes dates and times (#509)", {
+  data <- data_frame( 
+    ID = rep(letters[1:4],each=5), 
+    date = Sys.Date() + 1:20, 
+    time = Sys.time() + 1:20,
+    number = rnorm(20)
+  )
+  res <- data %>% group_by(ID) %>% summarise( date2 = nth(date,2), time2 = nth(time,2))
+  expect_is(res$date2, "Date")
+  expect_is(res$time2, "POSIXct")
+  expect_error(data %>% group_by(ID) %>% summarise(time2 = nth(times,2)) )
+})
+
+test_that( "nth preserves factor data (#509)", {
+  dat  <- data_frame(a = rep(seq(1,20,2),3),b = as.ordered(a))
+  dat1 <- dat %>% group_by(a) %>% summarise(der = nth(b,2))
+  expect_is(dat1$der, "ordered")
+  expect_equal(levels(dat1$der), levels(dat$b))
+})
+
+test_that( "LazyGroupSubsets is robust about columns not from the data (#600)", {
+  foo <- data_frame(x = 1:10, y = 1:10)
+  expect_error( foo %>% group_by(x) %>% summarise(first_y = first(z)), "not found in the dataset" )
+})
+
+test_that( "hybrid eval handles $ and @ (#645)", {
+  tmp <- expand.grid(a = 1:3, b = 0:1, i = 1:10)
+  g   <- tmp %>% group_by(a)
+  
+  res <- g %>% summarise(
+    r = sum(b),
+    n = length(b),
+    p = prop.test(r, n, p = 0.05)$conf.int[1]
+  )
+  expect_equal(names(res), c("a", "r", "n", "p" ))
+  
+  res <- tmp %>% summarise(
+    r = sum(b),
+    n = length(b),
+    p = prop.test(r, n, p = 0.05)$conf.int[1]
+  )
+  expect_equal(names(res), c("r", "n", "p" ))
+  
+})
+

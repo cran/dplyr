@@ -5,6 +5,18 @@
 
 <title>Databases</title>
 
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
 <!-- Styles for R syntax highlighter -->
 <style type="text/css">
    pre .operator,
@@ -45,9 +57,6 @@ var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/<
 hljs.initHighlightingOnLoad();
 </script>
 
-<!-- MathJax scripts -->
-<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-</script>
 
 
 <style type="text/css">
@@ -99,7 +108,9 @@ a:visited {
 pre, img {
   max-width: 100%;
 }
-
+pre {
+  overflow-x: auto;
+}
 pre code {
    display: block; padding: 0.5em;
 }
@@ -214,130 +225,123 @@ hr {
 
 <p>The main new concert here is the <code>src</code>, which is a collection of tables. Use <code>src_sqlite()</code>, <code>src_mysql()</code>, <code>src_postgres()</code> and <code>src_bigquery()</code> to connect to the different databases supported by dplyr.</p>
 
-<p><code>my_db</code> currently has no data in it, so we&#39;ll load it up with the <code>hflights</code> data using the convenient <code>copy_to()</code> function. This is a quick and dirty way of getting data into a database, but it&#39;s not suitable for very large datasets because all the data has to flow through R.</p>
+<p><code>my_db</code> currently has no data in it, so we&#39;ll load it up with the <code>flights</code> data using the convenient <code>copy_to()</code> function. This is a quick and dirty way of getting data into a database, but it&#39;s not suitable for very large datasets because all the data has to flow through R.</p>
 
-<pre><code class="r">data(&quot;hflights&quot;, package = &quot;hflights&quot;)
-hflights_sqlite &lt;- copy_to(my_db, hflights, temporary = FALSE, indexes = list(
-  c(&quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;), &quot;UniqueCarrier&quot;, &quot;TailNum&quot;))
+<pre><code class="r">library(nycflights13)
+flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
+  c(&quot;year&quot;, &quot;month&quot;, &quot;day&quot;), &quot;carrer&quot;, &quot;tailnum&quot;))
 </code></pre>
 
-<p>As you can see, the <code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. <code>copy_to()</code> also executes the SQL <code>ANALYZE</code> comomand: this ensures that the database has up-to-date table statistics and can pick appropriate query optimisations.</p>
+<p>As you can see, the <code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. <code>copy_to()</code> also executes the SQL <code>ANALYZE</code> command: this ensures that the database has up-to-date table statistics and can pick appropriate query optimisations.</p>
 
-<p>For this particular dataset, there&#39;s a built <code>src</code> that will cache <code>hflights</code> in a standard location:</p>
+<p>For this particular dataset, there&#39;s a built <code>src</code> that will cache <code>flights</code> in a standard location:</p>
 
-<pre><code class="r">hflights_sqlite &lt;- tbl(hflights_sqlite(), &quot;hflights&quot;)
+<pre><code class="r">flights_sqlite &lt;- tbl(nycflights13_sqlite(), &quot;flights&quot;)
 </code></pre>
 
-<pre><code>#&gt; Loading required package: RSQLite
+<pre><code>#&gt; Caching nycflights db at /private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite
+#&gt; Loading required package: RSQLite
 #&gt; Loading required package: DBI
 #&gt; Loading required package: RSQLite.extfuns
 </code></pre>
 
-<pre><code class="r">hflights_sqlite
+<pre><code class="r">flights_sqlite
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [227,496 x 21]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [336,776 x 16]
 #&gt; 
-#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
-#&gt; 1  2011     1          1         6    1400    1500            AA       428
-#&gt; 2  2011     1          2         7    1401    1501            AA       428
-#&gt; 3  2011     1          3         1    1352    1502            AA       428
-#&gt; 4  2011     1          4         2    1403    1513            AA       428
-#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
-#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
-#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
-#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
-#&gt;   CancellationCode (chr), Diverted (int)
+#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+#&gt; 1  2013     1   1      517         2      830        11      UA  N14228
+#&gt; 2  2013     1   1      533         4      850        20      UA  N24211
+#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA
+#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB
+#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
+#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)
 </code></pre>
 
 <p>You can also create <code>tbl</code> from arbitrary SQL:</p>
 
-<pre><code class="r">tbl(my_db, sql(&quot;SELECT * FROM hflights&quot;))
+<pre><code class="r">tbl(my_db, sql(&quot;SELECT * FROM flights&quot;))
 </code></pre>
 
 <h2>Basic verbs</h2>
 
 <p>Remote data sources use exactly the same five verbs as local data sources:</p>
 
-<pre><code class="r">select(hflights_sqlite, Year:DayofMonth, DepDelay, ArrDelay)
+<pre><code class="r">select(flights_sqlite, year:day, dep_delay, arr_delay)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [227,496 x 5]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [336,776 x 5]
 #&gt; 
-#&gt;    Year Month DayofMonth DepDelay ArrDelay
-#&gt; 1  2011     1          1        0      -10
-#&gt; 2  2011     1          2        1       -9
-#&gt; 3  2011     1          3       -8       -8
-#&gt; 4  2011     1          4        3        3
-#&gt; ..  ...   ...        ...      ...      ...
+#&gt;    year month day dep_delay arr_delay
+#&gt; 1  2013     1   1         2        11
+#&gt; 2  2013     1   1         4        20
+#&gt; 3  2013     1   1         2        33
+#&gt; 4  2013     1   1        -1       -18
+#&gt; ..  ...   ... ...       ...       ...
 </code></pre>
 
-<pre><code class="r">filter(hflights_sqlite, depDelay &gt; 240)
+<pre><code class="r">filter(flights_sqlite, dep_deply &gt; 240)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [389 x 21]
-#&gt; Filter: depDelay &gt; 240 
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [336,776 x 16]
+#&gt; Filter: dep_deply &gt; 240 
 #&gt; 
-#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
-#&gt; 1  2011     1         28         5    1516    1916            CO         1
-#&gt; 2  2011     1         27         4    2137    2254            CO       150
-#&gt; 3  2011     1         20         4     635     807            CO        59
-#&gt; 4  2011     1         17         1    1838    2109            CO       746
-#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
-#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
-#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
-#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
-#&gt;   CancellationCode (chr), Diverted (int)
+#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+#&gt; 1  2013     1   1      517         2      830        11      UA  N14228
+#&gt; 2  2013     1   1      533         4      850        20      UA  N24211
+#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA
+#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB
+#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
+#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)
 </code></pre>
 
-<pre><code class="r">arrange(hflights_sqlite, Year, Month, DayofMonth)
+<pre><code class="r">arrange(flights_sqlite, year, month, day)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [227,496 x 21]
-#&gt; Arrange: Year, Month, DayofMonth 
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [336,776 x 16]
+#&gt; Arrange: year, month, day 
 #&gt; 
-#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
-#&gt; 1  2011     1          1         6    1400    1500            AA       428
-#&gt; 2  2011     1          1         6     728     840            AA       460
-#&gt; 3  2011     1          1         6    1631    1736            AA      1121
-#&gt; 4  2011     1          1         6    1756    2112            AA      1294
-#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
-#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
-#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
-#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
-#&gt;   CancellationCode (chr), Diverted (int)
+#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+#&gt; 1  2013     1   1      517         2      830        11      UA  N14228
+#&gt; 2  2013     1   1      533         4      850        20      UA  N24211
+#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA
+#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB
+#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
+#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)
 </code></pre>
 
-<pre><code class="r">mutate(hflights_sqlite, speed = AirTime / Distance)
+<pre><code class="r">mutate(flights_sqlite, speed = air_time / distance)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [227,496 x 22]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [336,776 x 17]
 #&gt; 
-#&gt;    Year Month DayofMonth DayOfWeek DepTime ArrTime UniqueCarrier FlightNum
-#&gt; 1  2011     1          1         6    1400    1500            AA       428
-#&gt; 2  2011     1          2         7    1401    1501            AA       428
-#&gt; 3  2011     1          3         1    1352    1502            AA       428
-#&gt; 4  2011     1          4         2    1403    1513            AA       428
-#&gt; ..  ...   ...        ...       ...     ...     ...           ...       ...
-#&gt; Variables not shown: TailNum (chr), ActualElapsedTime (int), AirTime
-#&gt;   (int), ArrDelay (int), DepDelay (int), Origin (chr), Dest (chr),
-#&gt;   Distance (int), TaxiIn (int), TaxiOut (int), Cancelled (int),
-#&gt;   CancellationCode (chr), Diverted (int), speed (int)
+#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
+#&gt; 1  2013     1   1      517         2      830        11      UA  N14228
+#&gt; 2  2013     1   1      533         4      850        20      UA  N24211
+#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA
+#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB
+#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
+#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
+#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl), speed (dbl)
 </code></pre>
 
-<pre><code class="r">summarise(hflights_sqlite, delay = mean(DepTime))
+<pre><code class="r">summarise(flights_sqlite, delay = mean(dep_time))
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
 #&gt; From: &lt;derived table&gt; [?? x 1]
 #&gt; 
 #&gt;    delay
-#&gt; 1   1396
+#&gt; 1   1349
 #&gt; ..   ...
 </code></pre>
 
@@ -355,10 +359,10 @@ everything you want to do then sending that to the database in one step.</p></li
 
 <p>For example, take the following code:</p>
 
-<pre><code class="r">c1 &lt;- filter(hflights_sqlite, DepDelay &gt; 0)
-c2 &lt;- select(c1, Year, Month, DayofMonth, UniqueCarrier, DepDelay, AirTime, Distance)
-c3 &lt;- mutate(c2, Speed = Distance / AirTime * 60)
-c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
+<pre><code class="r">c1 &lt;- filter(flights_sqlite, year == 2013, month == 1, day == 1)
+c2 &lt;- select(c1, year, month, day, carrier, dep_delay, air_time, distance)
+c3 &lt;- mutate(c2, speed = distance / air_time * 60)
+c4 &lt;- arrange(c3, year, month, day, carrier)
 </code></pre>
 
 <p>Suprisingly, this sequence of operations never actually touches the database. It&#39;s not until you ask for the data (e.g. by printing <code>c4</code>) that dplyr generates the SQL and requests the results from the database, and even then it only pulls down 10 rows.</p>
@@ -366,17 +370,17 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpWtcdn7/Rinsta96a7d76b104/dplyr/db/hflights.sqlite]
-#&gt; From: hflights [109,996 x 8]
-#&gt; Filter: DepDelay &gt; 0 
-#&gt; Arrange: Year, Month, DayofMonth, UniqueCarrier 
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmptMkwNm/Rinst5becfe02c09/dplyr/db/nycflights13.sqlite]
+#&gt; From: flights [842 x 8]
+#&gt; Filter: year == 2013, month == 1, day == 1 
+#&gt; Arrange: year, month, day, carrier 
 #&gt; 
-#&gt;    Year Month DayofMonth UniqueCarrier DepDelay AirTime Distance Speed
-#&gt; 1  2011     1          1            AA        8      41      224   300
-#&gt; 2  2011     1          1            AA        1      37      224   360
-#&gt; 3  2011     1          1            AA        1     113      964   480
-#&gt; 4  2011     1          1            AA        6      39      224   300
-#&gt; ..  ...   ...        ...           ...      ...     ...      ...   ...
+#&gt;    year month day carrier dep_delay air_time distance speed
+#&gt; 1  2013     1   1      9E         0      189     1029 326.7
+#&gt; 2  2013     1   1      9E        -9       57      228 240.0
+#&gt; 3  2013     1   1      9E        -3       68      301 265.6
+#&gt; 4  2013     1   1      9E        -6       57      209 220.0
+#&gt; ..  ...   ... ...     ...       ...      ...      ...   ...
 </code></pre>
 
 <p>To pull down all the results use <code>collect()</code>, which returns a <code>tbl_df()</code>:</p>
@@ -384,14 +388,14 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">collect(c4)
 </code></pre>
 
-<pre><code>#&gt; Source: local data frame [109,996 x 8]
+<pre><code>#&gt; Source: local data frame [842 x 8]
 #&gt; 
-#&gt;    Year Month DayofMonth UniqueCarrier DepDelay AirTime Distance Speed
-#&gt; 1  2011     1          1            AA        8      41      224   300
-#&gt; 2  2011     1          1            AA        1      37      224   360
-#&gt; 3  2011     1          1            AA        1     113      964   480
-#&gt; 4  2011     1          1            AA        6      39      224   300
-#&gt; ..  ...   ...        ...           ...      ...     ...      ...   ...
+#&gt;    year month day carrier dep_delay air_time distance speed
+#&gt; 1  2013     1   1      9E         0      189     1029 326.7
+#&gt; 2  2013     1   1      9E        -9       57      228 240.0
+#&gt; 3  2013     1   1      9E        -3       68      301 265.6
+#&gt; 4  2013     1   1      9E        -6       57      209 220.0
+#&gt; ..  ...   ... ...     ...       ...      ...      ...   ...
 </code></pre>
 
 <p>You can see the query dplyr has generated by looking at the <code>query</code> component of the object:</p>
@@ -399,11 +403,11 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 <pre><code class="r">c4$query
 </code></pre>
 
-<pre><code>#&gt; &lt;Query&gt; SELECT &quot;Year&quot; AS &quot;Year&quot;, &quot;Month&quot; AS &quot;Month&quot;, &quot;DayofMonth&quot; AS &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot; AS &quot;UniqueCarrier&quot;, &quot;DepDelay&quot; AS &quot;DepDelay&quot;, &quot;AirTime&quot; AS &quot;AirTime&quot;, &quot;Distance&quot; AS &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
-#&gt; FROM &quot;hflights&quot;
-#&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
-#&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
-#&gt; &lt;SQLiteConnection: DBI CON (43422, 0)&gt;
+<pre><code>#&gt; &lt;Query&gt; SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;carrier&quot; AS &quot;carrier&quot;, &quot;dep_delay&quot; AS &quot;dep_delay&quot;, &quot;air_time&quot; AS &quot;air_time&quot;, &quot;distance&quot; AS &quot;distance&quot;, &quot;distance&quot; / &quot;air_time&quot; * 60.0 AS &quot;speed&quot;
+#&gt; FROM &quot;flights&quot;
+#&gt; WHERE &quot;year&quot; = 2013.0 AND &quot;month&quot; = 1.0 AND &quot;day&quot; = 1.0
+#&gt; ORDER BY &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;carrier&quot;
+#&gt; &lt;SQLiteConnection: DBI CON (23584, 0)&gt;
 </code></pre>
 
 <p>You can also ask the database how it plans to execute the query with <code>explain()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
@@ -412,15 +416,19 @@ c4 &lt;- arrange(c3, Year, Month, DayofMonth, UniqueCarrier)
 </code></pre>
 
 <pre><code>#&gt; &lt;SQL&gt;
-#&gt; SELECT &quot;Year&quot; AS &quot;Year&quot;, &quot;Month&quot; AS &quot;Month&quot;, &quot;DayofMonth&quot; AS &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot; AS &quot;UniqueCarrier&quot;, &quot;DepDelay&quot; AS &quot;DepDelay&quot;, &quot;AirTime&quot; AS &quot;AirTime&quot;, &quot;Distance&quot; AS &quot;Distance&quot;, &quot;Distance&quot; / &quot;AirTime&quot; * 60.0 AS &quot;Speed&quot;
-#&gt; FROM &quot;hflights&quot;
-#&gt; WHERE &quot;DepDelay&quot; &gt; 0.0
-#&gt; ORDER BY &quot;Year&quot;, &quot;Month&quot;, &quot;DayofMonth&quot;, &quot;UniqueCarrier&quot;
+#&gt; SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;carrier&quot; AS &quot;carrier&quot;, &quot;dep_delay&quot; AS &quot;dep_delay&quot;, &quot;air_time&quot; AS &quot;air_time&quot;, &quot;distance&quot; AS &quot;distance&quot;, &quot;distance&quot; / &quot;air_time&quot; * 60.0 AS &quot;speed&quot;
+#&gt; FROM &quot;flights&quot;
+#&gt; WHERE &quot;year&quot; = 2013.0 AND &quot;month&quot; = 1.0 AND &quot;day&quot; = 1.0
+#&gt; ORDER BY &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;carrier&quot;
+#&gt; 
 #&gt; 
 #&gt; &lt;PLAN&gt;
-#&gt;   selectid order from                            detail
-#&gt; 1        0     0    0 SCAN TABLE hflights (~75832 rows)
-#&gt; 2        0     0    0      USE TEMP B-TREE FOR ORDER BY
+#&gt;   selectid order from
+#&gt; 1        0     0    0
+#&gt; 2        0     0    0
+#&gt;                                                                                               detail
+#&gt; 1 SEARCH TABLE flights USING INDEX flights_year_month_day (year=? AND month=? AND day=?) (~923 rows)
+#&gt; 2                                                                       USE TEMP B-TREE FOR ORDER BY
 </code></pre>
 
 <h3>Forcing computation</h3>
@@ -488,7 +496,7 @@ translate_sql(x == 1 &amp;&amp; (y &lt; 2 || z &gt; 3))
 </code></pre>
 
 <pre><code class="r"># R and SQL have different defaults for integers vs reals.
-# In R, 1 is an real, and 1L is an integer
+# In R, 1 is a real, and 1L is an integer
 # In SQL, 1 is an integer, and 1.0 is a real
 translate_sql(1)
 </code></pre>
@@ -514,7 +522,7 @@ translate_sql(1)
 <li>basic aggregations: <code>mean</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>sd</code>, <code>var</code></li>
 </ul>
 
-<p>The basic techniques underying the implementation of <code>translate_sql()</code> are described in the <a href="http://adv-r.had.co.nz/dsl.html">Advanced R book</a>. <code>translate_sql()</code> is built on top of R&#39;s parsing engine and has been carefully design to generate correct sql. It also protects you against SQL injection attacks by correctly escaping strings and variable names as needed by the database that you&#39;re connecting to.</p>
+<p>The basic techniques underying the implementation of <code>translate_sql()</code> are described in the <a href="http://adv-r.had.co.nz/dsl.html">Advanced R book</a>. <code>translate_sql()</code> is built on top of R&#39;s parsing engine and has been carefully designed to generate correct sql. It also protects you against SQL injection attacks by correctly escaping strings and variable names as needed by the database that you&#39;re connecting to.</p>
 
 <p>It&#39;s not possible to provide a perfect translation because databases don&#39;t have all the functions that R does. The goal of dplyr is to provide a semantic translation: to translate what you mean, not the precise details. Even for functions that exist both in databases and R you shouldn&#39;t expect results to be exactly the same; database programmers have different priorities to R core. For example, in R, <code>mean()</code> loops through the data twice in order to get a higher level of numerical accuracy at the cost of being twice as slow. R&#39;s <code>mean()</code> also provides a <code>trim</code> option for computing trimmed means, which databases do not provide. Databases automatically drop NULLs (their equivalent of missing values) whereas in R you have to ask nicely. This means the essense of simple calls like <code>mean(x)</code> will be translated accurately, but more complicated calls like <code>mean(x, trim = 0.5, na.rm = TRUE)</code> will raise an error:</p>
 
@@ -538,13 +546,13 @@ translate_sql(1)
 
 <h2>Grouping</h2>
 
-<p>SQLite lacks window functions, which are needed for grouped mutation and filtering. This means that only really useful operation for grouped sqlite tables in <code>summarise()</code>. The grouped summarise from the introduction translates well - the only difference is that databases always drop NULLs (their equivalent of missing values), so we don&#39;t supply <code>na.rm = TRUE</code>.</p>
+<p>SQLite lacks window functions, which are needed for grouped mutation and filtering. This means that the only really useful operations for grouped sqlite tables are in <code>summarise()</code>. The grouped summarise from the introduction translates well - the only difference is that databases always drop NULLs (their equivalent of missing values), so we don&#39;t supply <code>na.rm = TRUE</code>.</p>
 
-<pre><code class="r">planes &lt;- group_by(hflights_sqlite, TailNum)
+<pre><code class="r">planes &lt;- group_by(flights_sqlite, tailnum)
 delay &lt;- summarise(planes,
   count = n(),
-  dist = mean(Distance),
-  delay = mean(ArrDelay)
+  dist = mean(distance),
+  delay = mean(arr_delay)
 )
 delay &lt;- filter(delay, count &gt; 20, dist &lt; 2000)
 delay_local &lt;- collect(delay)
@@ -560,10 +568,10 @@ delay_local &lt;- collect(delay)
 
 <p><code>src_postgres()</code> has five arguments: <code>dbname</code>, <code>host</code>, <code>port</code>, <code>user</code> and <code>password</code>. If you are running a local postgresql database with the default settings you&#39;ll only need <code>dbname</code>, but in most cases you&#39;ll need all five. dplyr uses the RPostgreSQL package to connect to postgres databases, which means you can&#39;t currently connect to remote databases that require a SSL connection (e.g. Heroku).</p>
 
-<p>For example, the following code allows me to connect to a local postgresql database that contains a copy of the <code>hflights</code> data:</p>
+<p>For example, the following code allows me to connect to a local postgresql database that contains a copy of the <code>flights</code> data:</p>
 
 <pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
-  hflights_postgres &lt;- tbl(src_postgres(&quot;hflights&quot;), &quot;hflights&quot;)
+  flights_postgres &lt;- tbl(src_postgres(&quot;nycflights13&quot;), &quot;flights&quot;)
 }
 </code></pre>
 
@@ -580,17 +588,28 @@ delay_local &lt;- collect(delay)
 <p>The following examples shows the grouped filter and mutate possible with PostgreSQL. The SQL generated from the grouped filter is quite complex because you can&#39;t filter on window functions directly; instead they have to go in a subquery.</p>
 
 <pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
-  daily &lt;- group_by(hflights_postgres, Year, Month, DayofMonth)
+  daily &lt;- group_by(flights_postgres, year, month, day)
 
   # Find the most and least delayed flight each day
-  bestworst &lt;- filter(daily, ArrDelay == min(ArrDelay) ||
-    ArrDelay == max(ArrDelay))
+  bestworst &lt;- daily %&gt;% 
+    select(flight, arr_delay) %&gt;% 
+    filter(arr_delay == min(arr_delay) || arr_delay == max(arr_delay))
   bestworst$query
 
   # Rank each flight within a daily
-  ranked &lt;- mutate(daily, rank = rank(desc(ArrDelay)))
+  ranked &lt;- daily %&gt;% 
+    select(arr_delay) %&gt;% 
+    mutate(rank = rank(desc(arr_delay)))
   ranked$query
 }
+</code></pre>
+
+<pre><code>#&gt; &lt;Query&gt; SELECT &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;arr_delay&quot;, &quot;rank&quot;
+#&gt; FROM (SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;arr_delay&quot; AS &quot;arr_delay&quot;, rank() OVER (PARTITION BY (&quot;year&quot;, &quot;month&quot;, &quot;day&quot;) ORDER BY &quot;arr_delay&quot; DESC) AS &quot;rank&quot;
+#&gt; FROM &quot;flights&quot;) AS &quot;_W6&quot;
+#&gt; An object of class &quot;PostgreSQLConnection&quot;
+#&gt; Slot &quot;Id&quot;:
+#&gt; [1] 23584     1
 </code></pre>
 
 <h3>MySQL and MariaDB</h3>
@@ -603,11 +622,11 @@ delay_local &lt;- collect(delay)
 
 <p>Bigquery is a hosted database server provided by google. To connect, you need to provide your <code>project</code>, <code>dataset</code> and optionally a project for <code>billing</code> (if billing for <code>project</code> isn&#39;t enabled). After you create the src, your web browser will open and ask you to authenticate. Your credentials are stored in a local cache, so you should only need to do this once.</p>
 
-<p>Bigquery supports only a single SQL statement: <a href="https://developers.google.com/bigquery/query-reference">SELECT</a>. Fortunately this is all you need for data analysis, and within SELECT bigquery provides comprehensive coverage similar level to postgresql.</p>
+<p>Bigquery supports only a single SQL statement: <a href="https://developers.google.com/bigquery/query-reference">SELECT</a>. Fortunately this is all you need for data analysis, and within SELECT bigquery provides comprehensive coverage at a similar level to postgresql.</p>
 
 <h2>Picking a database</h2>
 
-<p>If you don&#39;t already have a database, here&#39;s some advice from my experiences setting up and running all of them. SQLite is by far the easiest to get started with, but the lack of window functions make it limited for data analysis. PostgreSQL is not too much harder to use and has a wide range of built in functions. Don&#39;t bother with MySQL/MariaDB: it&#39;s a pain to set up and the documentation is subpar. Google bigquery might be a good fit if you have very large data, or you&#39;re willing to pay (a small amount of) money for someone else to look after your database.</p>
+<p>If you don&#39;t already have a database, here&#39;s some advice from my experiences setting up and running all of them. SQLite is by far the easiest to get started with, but the lack of window functions makes it limited for data analysis. PostgreSQL is not too much harder to use and has a wide range of built in functions. Don&#39;t bother with MySQL/MariaDB: it&#39;s a pain to set up and the documentation is subpar. Google bigquery might be a good fit if you have very large data, or you&#39;re willing to pay (a small amount of) money for someone else to look after your database.</p>
 
 </body>
 

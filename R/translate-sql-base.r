@@ -93,7 +93,11 @@ base_scalar <- sql_translator(
   as.character = function(x) build_sql("CAST(", x, " AS TEXT)"),
 
   c = function(...) escape(c(...)),
-  `:` = function(from, to) escape(from:to)
+  `:` = function(from, to) escape(from:to),
+
+  between = function(x, left, right) {
+    build_sql(x, " BETWEEN ", left, " AND ", right)
+  }
 )
 
 base_symbols <- sql_translator(
@@ -158,10 +162,10 @@ base_win <- sql_translator(
     over(build_sql("NTH_VALUE", list(x)), partition_group(), order %||% partition$order())
   },
   first = function(x, order = NULL) {
-    over(sql("FIRST_VALUE()"), partition_group(), order %||% partition_order())
+    over(build_sql("FIRST_VALUE", list(x)), partition_group(), order %||% partition_order())
   },
   last = function(x, order = NULL) {
-    over(sql("LAST_VALUE()"), partition_group(), order %||% partition_order())
+    over(build_sql("LAST_VALUE", list(x)), partition_group(), order %||% partition_order())
   },
 
   lead = function(x, n = 1L, default = NA, order = NULL) {
@@ -180,6 +184,9 @@ base_win <- sql_translator(
   },
 
   order_by = function(order_by, expr) {
-    over(expr, partition_group(), order_by)
+    old <- set_partition(partition_group(), order_by)
+    on.exit(set_partition(old))
+
+    expr
   }
 )

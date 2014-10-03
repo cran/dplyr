@@ -32,19 +32,25 @@ test_that("joins preserve grouping", {
   for (tbl in tbls) {
     g <- group_by(tbl, x)
 
-    expect_equal(groups(inner_join(g, g)), groups(g))
-    expect_equal(groups(left_join(g, g)), groups(g))
-    expect_equal(groups(semi_join(g, g)), groups(g))
-    expect_equal(groups(anti_join(g, g)), groups(g))
+    expect_equal(groups(inner_join(g, g, by = c("x", "y"))), groups(g))
+    expect_equal(groups(left_join(g, g, by = c("x", "y"))), groups(g))
+    expect_equal(groups(semi_join(g, g, by = c("x", "y"))), groups(g))
+    expect_equal(groups(anti_join(g, g, by = c("x", "y"))), groups(g))
   }
 })
 
 test_that("constructors drops groups", {
-  dt <- lahman_src("dt") %>% tbl("Batting") %>% group_by(playerID)
-  df <- lahman_src("df") %>% tbl("Batting") %>% group_by(playerID)
+  dt <- lahman_dt() %>% tbl("Batting") %>% group_by(playerID)
+  df <- lahman_df() %>% tbl("Batting") %>% group_by(playerID)
 
   expect_equal(groups(tbl_dt(dt)), NULL)
   expect_equal(groups(tbl_df(df)), NULL)
+})
+
+test_that("grouping by constant adds column (#410)", {
+  grouped <- group_by(mtcars, "cyl") %>% summarise(foo = n())
+  expect_equal(names(grouped), c('"cyl"', "foo"))
+  expect_equal(nrow(grouped), 1L)
 })
 
 # Test full range of variable types --------------------------------------------
@@ -61,11 +67,6 @@ df_var <- data.frame(
 )
 srcs <- temp_srcs(c("df", "dt"))
 var_tbls <- temp_load(srcs, df_var)
-
-group_by_ <- function(x, vars) {
-  call <- as.call(c(quote(group_by), quote(x), lapply(vars, as.symbol)))
-  eval(call)
-}
 
 test_that("local group_by preserves variable types", {
   for(var in names(df_var)) {
@@ -99,9 +100,8 @@ test_that("group_by uses shallow copy", {
 })
 
 test_that("FactorVisitor handles NA. #183", {
-  library(MASS)
-  g <- group_by(survey, M.I)
-  expect_equal(g$M.I, survey$M.I)
+  g <- group_by(MASS::survey, M.I)
+  expect_equal(g$M.I, MASS::survey$M.I)
 })
 
 test_that("group_by orders by groups. #242", {
@@ -148,15 +148,31 @@ test_that("select(group_by(.)) implicitely adds grouping variables (#170)", {
 
 test_that("grouped_df errors on empty vars (#398)",{
   m <- mtcars %>% group_by(cyl)
-  m <- m[1:3,1:3] 
+  attr(m, "vars") <- NULL
+  attr(m, "indices") <- NULL
   expect_error( m %>% do(mpg = mean(.$mpg)) )
 })
 
 test_that("group_by only creates one group for NA (#401)", {
   x <- as.numeric(c(NA,NA,NA,10:1,10:1))
   w <- c(20,30,40,1:10,1:10)*10
-  
+
   n_distinct(x) # 11 OK
   res <- data.frame(x=x,w=w) %>% group_by(x) %>% summarise(n=n())
-  expect_equal(nrow(res), 11L) 
+  expect_equal(nrow(res), 11L)
+})
+
+test_that("data.table invalid .selfref issue (#475)", {
+  dt <- data.table(x=1:5, y=6:10)
+  expect_that((dt %>% group_by(x))[, z := 2L], not(gives_warning()))
+  dt <- data.table(x=1:5, y=6:10)
+  expect_that((dt %>% group_by(x) %>% summarise(z = y^2))[, foo := 1L], not(gives_warning()))
+})
+
+test_that("there can be 0 groups (#486)", {
+  data <- data.frame(a = numeric(0), g = character(0)) %>% group_by(g)
+  expect_equal(length(data$a), 0L)
+  expect_equal(length(data$g), 0L)
+  expect_equal(attr(data, "group_sizes"), integer(0))
+
 })

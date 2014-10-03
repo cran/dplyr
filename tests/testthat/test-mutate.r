@@ -210,3 +210,99 @@ test_that("hybrid evaluator uses correct environment (#403)", {
   res <- func1()
   expect_equal(res$xx, rep(0,nrow(res)) )
 })
+
+test_that("mutate remove variables with = NULL syntax (#462)", {
+  data <- mtcars %>% mutate(cyl = NULL)
+  expect_false( "cyl" %in% names(data) )
+
+  data <- mtcars %>% group_by(disp) %>% mutate(cyl = NULL)
+  expect_false( "cyl" %in% names(data) )
+})
+
+test_that("mutate(rowwise_df) makes a rowwise_df (#463)", {
+  one_mod <- data.frame(grp = "a", x = runif(5,0,1)) %>%
+    tbl_df %>%
+    mutate(y = rnorm(x,x*2,1)) %>%
+    group_by(grp) %>%
+    do(mod = lm(y~x,data = .))
+
+  out <- one_mod %>%
+    mutate(rsq = summary(mod)$r.squared) %>%
+    mutate(aic = AIC(mod))
+
+  expect_is(out, "rowwise_df")
+  expect_equal(nrow(out), 1L)
+  expect_is(out$mod, "list")
+  expect_is(out$mod[[1L]], "lm" )
+})
+
+test_that("mutate allows list columns (#555)", {
+  df  <- data.frame(x = c("a;b", "c;d;e"), stringsAsFactors = FALSE)
+  res <- mutate( df, pieces = strsplit(x, ";"))
+  expect_equal(res$pieces, list(c("a", "b"), c("c", "d", "e")))
+})
+
+test_that("hybrid evaluation goes deep enough (#554)", {
+  res1 <- iris %>% mutate(test = 1 == 2 | row_number() < 10)
+  res2 <- iris %>% mutate(test = row_number() < 10 | 1 == 2)
+  expect_equal(res1,res2)
+})
+
+test_that("hybrid does not segfault when given non existing variable (#569)", {
+  expect_error( mtcars %>% summarise(first(mp)), "variable 'mp' not found" )   
+})
+
+test_that("namespace extraction works in hybrid (#412)", {
+  expect_equal(
+    mutate(mtcars, cyl2 = stats::lag(cyl)), 
+    mutate(mtcars, cyl2 = lag(cyl)) 
+  )  
+})
+
+test_that("hybrid not get in the way of order_by (#169)", {
+  df <- data_frame(x = 10:1, y = 1:10)
+  res <- mutate(df, z = order_by(x, cumsum(y)))  
+  expect_equal(res$z, rev(cumsum(10:1)))
+})
+
+test_that("mutate supports difftime objects (#390)", {
+  df <- data_frame(
+    grp =   c(1, 1,  2, 2),
+    val =   c(1, 3,  4, 6),
+    date1 = c(rep(Sys.Date() - 10, 2), rep(Sys.Date() - 20, 2)),
+    date2 = Sys.Date() + c(1,2,1,2),
+    diffdate = difftime(date2, date1, unit = "days")
+  )
+  
+  res <- df %>% group_by(grp) %>% 
+    mutate(mean_val = mean(val), mean_diffdate = mean(diffdate) )
+  expect_is(res$mean_diffdate, "difftime")
+  expect_equal( as.numeric(res$mean_diffdate), c(11.5,11.5,21.5,21.5)) 
+  
+  res <- df %>% group_by(grp) %>% summarise(dt = mean(diffdate))
+  expect_is( res$dt, "difftime" )
+  expect_equal( as.numeric(res$dt), c(11.5,21.5) )
+})
+
+test_that("mutate works on zero-row grouped data frame (#596)", {
+  dat <- data.frame(a = numeric(0), b = character(0))
+  res <- dat %>% group_by(b) %>% mutate(a2 = a*2)
+  expect_is(res$a2, "numeric")
+  expect_is(res, "grouped_df")
+  expect_equal(res$a2, numeric(0))
+  expect_equal(attr(res, "indices"), list())
+  expect_equal(attr(res, "vars"), list( quote(b) ))
+  expect_equal(attr(res, "group_sizes"), integer(0))
+  expect_equal(attr(res, "biggest_group_size"), 0L)
+})
+
+test_that("Non-ascii column names in version 0.3 are not duplicated (#636)", {
+  res <- data_frame(a = "1", å = "2") %>% mutate_each(funs(as.numeric)) %>% names
+  expect_equal(res, c("a", "å") )
+})
+
+test_that("nested hybrid functions do the right thing (#637)", {
+  res <- mtcars %>% mutate(mean(1))
+  expect_true( all( res[["mean(1)"]] == 1L ) )
+})
+

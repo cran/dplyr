@@ -6,19 +6,19 @@
 #'
 #' @param data a tbl or data frame.
 #' @param vars a list of quoted variables.
+#' @param copy If \code{TRUE}, will make copy of input.
 #' @export
 #' @examples
-#' if (require("data.table")) {
-#' data("hflights", package = "hflights")
-#' hflights_dt <- tbl_dt(hflights)
-#' group_size(group_by(hflights_dt, Year, Month, DayofMonth))
-#' group_size(group_by(hflights_dt, Dest))
+#' if (require("data.table") && require("nycflights13")) {
+#' flights_dt <- tbl_dt(flights)
+#' group_size(group_by(flights_dt, year, month, day))
+#' group_size(group_by(flights_dt, dest))
 #'
-#' monthly <- group_by(hflights_dt, Month)
-#' summarise(monthly, n = n(), delay = mean(ArrDelay))
+#' monthly <- group_by(flights_dt, month)
+#' summarise(monthly, n = n(), delay = mean(arr_delay))
 #' }
-grouped_dt <- function(data, vars) {
-  stopifnot(is.data.table(data))
+grouped_dt <- function(data, vars, copy = TRUE) {
+  stopifnot(data.table::is.data.table(data))
   if (length(vars) == 0) return(tbl_dt(data))
 
   is_name <- vapply(vars, is.name, logical(1))
@@ -27,11 +27,13 @@ grouped_dt <- function(data, vars) {
       call. = FALSE)
   }
 
-  data <- copy(data)
-  setkeyv(data, deparse_all(vars))
-
-  structure(data, vars = vars,
-    class = c("grouped_dt", "tbl_dt", "tbl", class(data)))
+  if (copy) {
+    data <- data.table::copy(data)
+  }
+  data.table::setkeyv(data, deparse_all(vars))
+  data.table::setattr(data, "vars", vars)
+  data.table::setattr(data, "class", c("grouped_dt", "tbl_dt", "tbl", class(data)))
+  data
 }
 
 #' @export
@@ -45,11 +47,11 @@ groups.grouped_dt <- function(x) {
 is.grouped_dt <- function(x) inherits(x, "grouped_dt")
 
 #' @export
-print.grouped_dt <- function(x, ...) {
+print.grouped_dt <- function(x, ..., n = NULL, width = NULL) {
   cat("Source: local data table ", dim_desc(x), "\n", sep = "")
   cat("Groups: ", commas(deparse_all(groups(x))), "\n", sep = "")
   cat("\n")
-  trunc_mat(x)
+  trunc_mat(x, n = n, width = width)
 }
 
 #' @export
@@ -58,23 +60,20 @@ group_size.grouped_dt <- function(x) {
 }
 
 #' @export
-regroup.data.table <- function(x, value) {
-  grouped_dt(x, unname(value))
+n_groups.grouped_dt <- function(x) {
+  env <- dt_env(x, parent.frame())
+  nrow(eval(quote(dt[, list(1), by = vars]), env))
 }
 
 #' @export
-regroup.tbl_dt <- function(x, value) {
-  grouped_dt(x, unname(value))
-}
-
-#' @export
-regroup.grouped_dt <- function(x, value) {
-  grouped_dt(x, unname(value))
+group_by_.data.table <- function(.data, ..., .dots, add = FALSE) {
+  groups <- group_by_prepare(.data, ..., .dots = .dots, add = add)
+  grouped_dt(groups$data, groups$groups)
 }
 
 #' @export
 ungroup.grouped_dt <- function(x) {
-  attr(x, "vars") <- NULL
-  class(x) <- setdiff(class(x), "grouped_dt")
+  data.table::setattr(x, "vars", NULL)
+  data.table::setattr(x, "class", setdiff(class(x), "grouped_dt"))
   x
 }

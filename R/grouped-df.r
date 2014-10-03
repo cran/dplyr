@@ -24,16 +24,21 @@ grouped_df <- function(data, vars, drop = TRUE) {
 is.grouped_df <- function(x) inherits(x, "grouped_df")
 
 #' @export
-print.grouped_df <- function(x, ...) {
+print.grouped_df <- function(x, ..., n = NULL, width = NULL) {
   cat("Source: local data frame ", dim_desc(x), "\n", sep = "")
   cat("Groups: ", commas(deparse_all(groups(x))), "\n", sep = "")
   cat("\n")
-  trunc_mat(x)
+  trunc_mat(x, n = n, width = width)
 }
 
 #' @export
 group_size.grouped_df <- function(x) {
   group_size_grouped_cpp(x)
+}
+
+#' @export
+n_groups.grouped_df <- function(x) {
+  length(attr(x, "indices"))
 }
 
 #' @export
@@ -52,4 +57,9 @@ as.data.frame.grouped_df <- function(x, row.names = NULL,
 #' @export
 ungroup.grouped_df <- function(x) {
   ungroup_grouped_df(x)
+}
+
+#' @export
+`[.grouped_df` <- function(x, i, j, ...) {
+  grouped_df(NextMethod(), groups(x))
 }

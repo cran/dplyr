@@ -50,6 +50,8 @@ copy_to.src_sql <- function(dest, df, name = deparse(substitute(df)),
                             types = NULL, temporary = TRUE, indexes = NULL,
                             analyze = TRUE, ...) {
   assert_that(is.data.frame(df), is.string(name), is.flag(temporary))
+  class(df) <- "data.frame" # avoid S4 dispatch problem in dbSendPreparedQuery
+
   if (isTRUE(db_has_table(dest$con, name))) {
     stop("Table ", name, " already exists.", call. = FALSE)
   }
@@ -58,21 +60,16 @@ copy_to.src_sql <- function(dest, df, name = deparse(substitute(df)),
   names(types) <- names(df)
 
   con <- dest$con
-  sql_begin_trans(con)
-  sql_create_table(con, name, types, temporary = temporary)
-  sql_insert_into(con, name, df)
-  sql_create_indexes(con, name, indexes)
-  if (analyze) sql_analyze(con, name)
-  sql_commit(con)
+  db_begin(con)
+  on.exit(db_rollback(con))
 
-  tbl(dest, name)
-}
+  db_create_table(con, name, types, temporary = temporary)
+  db_insert_into(con, name, df)
+  db_create_indexes(con, name, indexes)
+  if (analyze) db_analyze(con, name)
 
-#' @export
-copy_to.src_bigquery <- function(dest, df, name = deparse(substitute(df)), ...) {
-  job <- insert_upload_job(dest$con$project, dest$con$dataset, name, df,
-    billing = dest$con$billing)
-  wait_for(job)
+  db_commit(con)
+  on.exit(NULL)
 
   tbl(dest, name)
 }
@@ -95,7 +92,7 @@ auto_copy.tbl_sql <- function(x, y, copy = FALSE, ...) {
 
 #' @export
 auto_copy.tbl_dt <- function(x, y, copy = FALSE, ...) {
-  as.data.table(as.data.frame(y))
+  data.table::as.data.table(as.data.frame(y))
 }
 
 #' @export

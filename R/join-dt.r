@@ -3,20 +3,11 @@
 #' See \code{\link{join}} for a description of the general purpose of the
 #' functions.
 #'
+#' @inheritParams join
 #' @param x,y tbls to join
-#' @param by a character vector of variables to join by.  If \code{NULL}, the
-#'   default, \code{join} will do a natural join, using all variables with
-#'   common names across the two tables. A message lists the variables so
-#'   that you can check they're right - to suppress the message, supply
-#'   a character vector.
-#' @param copy If \code{y} is not a data table or \code{\link{tbl_dt}} and
-#'   \code{copy} is \code{TRUE}, \code{y} will be converted into a data table.
 #' @param ... Included for compatibility with generic; otherwise ignored.
 #' @examples
-#' if (require("RSQLite") && require("RSQLite.extfuns")) {
-#' data("Batting", package = "Lahman")
-#' data("Master", package = "Lahman")
-#'
+#' if (require("data.table") && require("Lahman")) {
 #' batting_dt <- tbl_dt(Batting)
 #' person_dt <- tbl_dt(Master)
 #'
@@ -40,13 +31,16 @@ NULL
 
 join_dt <- function(op) {
   template <- substitute(function(x, y, by = NULL, copy = FALSE, ...) {
-    by <- by %||% common_by(x, y)
+    by <- common_by(by, x, y)
+    if (!identical(by$x, by$y)) {
+      stop("Data table joins must be on same key", call. = FALSE)
+    }
     y <- auto_copy(x, y, copy = copy)
 
     x <- copy(x)
     y <- copy(y)
-    setkeyv(x, by)
-    setkeyv(y, by)
+    data.table::setkeyv(x, by$x)
+    data.table::setkeyv(y, by$x)
     out <- op
     grouped_dt(out, groups(x))
   })
@@ -58,15 +52,15 @@ join_dt <- function(op) {
 
 #' @export
 #' @rdname join.tbl_dt
-inner_join.tbl_dt <- join_dt(merge(x, y, by = by, allow.cartesian = TRUE))
+inner_join.data.table <- join_dt(merge(x, y, by = by$x, allow.cartesian = TRUE))
 
 #' @export
 #' @rdname join.tbl_dt
-left_join.tbl_dt  <- join_dt(merge(x, y, by = by, all.x = TRUE, allow.cartesian = TRUE))
+left_join.data.table  <- join_dt(merge(x, y, by = by$x, all.x = TRUE, allow.cartesian = TRUE))
 
 #' @export
 #' @rdname join.tbl_dt
-semi_join.tbl_dt  <- join_dt({
+semi_join.data.table  <- join_dt({
   # http://stackoverflow.com/questions/18969420/perform-a-semi-join-with-data-table
   w <- unique(x[y, which = TRUE, allow.cartesian = TRUE])
   w <- w[!is.na(w)]
@@ -75,4 +69,4 @@ semi_join.tbl_dt  <- join_dt({
 
 #' @export
 #' @rdname join.tbl_dt
-anti_join.tbl_dt <- join_dt(x[!y, allow.cartesian = TRUE])
+anti_join.data.table <- join_dt(x[!y, allow.cartesian = TRUE])

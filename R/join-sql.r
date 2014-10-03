@@ -12,11 +12,6 @@
 #'
 #' @inheritParams join
 #' @param x,y tbls to join
-#' @param by a character vector of variables to join by.  If \code{NULL}, the
-#'   default, \code{join} will do a natural join, using all variables with
-#'   common names across the two tables. A message lists the variables so
-#'   that you can check they're right - to suppress the message, supply
-#'   a character vector.
 #' @param copy If \code{x} and \code{y} are not from the same data source,
 #'   and \code{copy} is \code{TRUE}, then \code{y} will be copied into a
 #'   temporary table in same database as \code{x}. \code{join} will automatically
@@ -88,97 +83,38 @@ NULL
 #' @export
 inner_join.tbl_sql <- function(x, y, by = NULL, copy = FALSE,
                                   auto_index = FALSE, ...) {
-  join_sql(x, y, "inner", by = by, copy = copy, auto_index = auto_index, ...)
+  y <- auto_copy(x, y, copy, indexes = if (auto_index) list(by))
+  sql <- sql_join(x$src$con, x, y, type = "inner", by = by)
+  update(tbl(x$src, sql), group_by = groups(x))
 }
 
 #' @rdname join.tbl_sql
 #' @export
 left_join.tbl_sql <- function(x, y, by = NULL, copy = FALSE,
                                  auto_index = FALSE, ...) {
-  join_sql(x, y, "left", by = by, copy = copy, auto_index = auto_index, ...)
+  y <- auto_copy(x, y, copy, indexes = if (auto_index) list(by))
+  sql <- sql_join(x$src$con, x, y, type = "left", by = by)
+  update(tbl(x$src, sql), group_by = groups(x))
 }
 
 #' @rdname join.tbl_sql
 #' @export
 semi_join.tbl_sql <- function(x, y, by = NULL, copy = FALSE,
                                  auto_index = FALSE, ...) {
-  semi_join_sql(x, y, FALSE, by = by, copy = copy, auto_index = auto_index,
-    ...)
+  y <- auto_copy(x, y, copy, indexes = if (auto_index) list(by))
+  sql <- sql_semi_join(x$src$con, x, y, anti = FALSE, by = by)
+  update(tbl(x$src, sql), group_by = groups(x))
 }
 
 #' @rdname join.tbl_sql
 #' @export
 anti_join.tbl_sql <- function(x, y, by = NULL, copy = FALSE,
                                  auto_index = FALSE, ...) {
-  semi_join_sql(x, y, TRUE, by = by, copy = copy, auto_index = auto_index,
-    ...)
-}
-
-join_sql <- function(x, y, type, by = NULL, copy = FALSE, auto_index = FALSE,
-  ...) {
-  type <- match.arg(type, c("left", "right", "inner", "full"))
-  by <- by %||% common_by(x, y)
-
   y <- auto_copy(x, y, copy, indexes = if (auto_index) list(by))
-
-  # Ensure tables have unique names
-  x_names <- auto_names(x$select)
-  y_names <- auto_names(y$select)
-
-  uniques <- unique_names(x_names, y_names, by)
-  if (is.null(uniques)) {
-    sel_vars <- c(x_names, y_names)
-  } else {
-    x <- update(x, select = setNames(x$select, uniques$x))
-    y <- update(y, select = setNames(y$select, uniques$y))
-
-    sel_vars <- unique(c(uniques$x, uniques$y))
-  }
-  vars <- lapply(c(by, setdiff(sel_vars, by)), as.name)
-
-  join <- switch(type, left = sql("LEFT"), inner = sql("INNER"),
-    right = stop("Right join not supported", call. = FALSE),
-    full = stop("Full join not supported", call. = FALSE))
-
-  from <- build_sql(from(x), "\n\n",
-    join, " JOIN \n\n" ,
-    from(y), "\n\n",
-    "USING ", lapply(by, ident), con = x$src$con)
-
-  update(tbl(x$src, as.join(from), vars = vars), group_by = groups(x))
+  sql <- sql_semi_join(x$src$con, x, y, anti = TRUE, by = by)
+  update(tbl(x$src, sql), group_by = groups(x))
 }
 
-as.join <- function(x) {
-  structure(x, class = c("join", class(x)))
-}
 is.join <- function(x) {
   inherits(x, "join")
-}
-
-semi_join_sql <- function(x, y, anti = FALSE, by = NULL, copy = FALSE,
-  auto_index = FALSE, ...) {
-
-  by <- by %||% common_by(x, y)
-  y <- auto_copy(x, y, copy, indexes = if (auto_index) list(by))
-
-  con <- x$src$con
-  by_escaped <- escape(ident(by), collapse = NULL, con = con)
-  left <- escape(ident("_LEFT"), con = con)
-  right <- escape(ident("_RIGHT"), con = con)
-
-  join <- sql(paste0(left, ".", by_escaped, " = ", right, ".", by_escaped,
-    collapse = " AND "))
-
-  from <- build_sql(
-    'SELECT * FROM ', from(x, "_LEFT"), '\n\n',
-    'WHERE ', if (anti) sql('NOT '), 'EXISTS (\n',
-    '  SELECT 1 FROM ', from(y, "_RIGHT"), '\n',
-    '  WHERE ', join, ')'
-  )
-
-  update(tbl(x$src, from, vars = x$select), group_by = groups(x))
-}
-
-from <- function(x, name = random_table_name()) {
-  build_sql("(", x$query$sql, ") AS ", ident(name), con = x$src$con)
 }

@@ -58,21 +58,22 @@
 #' compare <- models %>% do(aov = anova(.$mod_linear, .$mod_quad))
 #' # compare %>% summarise(p.value = aov$`Pr(>F)`)
 #'
+#' if (require("nycflights13")) {
 #' # You can use it to do any arbitrary computation, like fitting a linear
 #' # model. Let's explore how carrier departure delays vary over the time
-#' data("hflights", package = "hflights")
-#' carriers <- group_by(hflights, UniqueCarrier)
+#' carriers <- group_by(flights, carrier)
 #' group_size(carriers)
 #'
-#' mods <- do(carriers, mod = lm(ArrDelay ~ DepTime, data = .))
+#' mods <- do(carriers, mod = lm(arr_delay ~ dep_time, data = .))
 #' mods %>% do(as.data.frame(coef(.$mod)))
 #' mods %>% summarise(rsq = summary(mod)$r.squared)
 #'
 #' \dontrun{
 #' # This longer example shows the progress bar in action
-#' by_dest <- hflights %>% group_by(Dest) %>% filter(n() > 100)
+#' by_dest <- flights %>% group_by(dest) %>% filter(n() > 100)
 #' library(mgcv)
-#' by_dest %>% do(smooth = gam(ArrDelay ~ s(DepTime) + Month, data = .))
+#' by_dest %>% do(smooth = gam(arr_delay ~ s(dep_time) + month, data = .))
+#' }
 #' }
 do <- function(.data, ...) UseMethod("do")
 
@@ -120,31 +121,48 @@ do.grouped_df <- function(.data, ..., env = parent.frame()) {
 
   args <- dots(...)
   named <- named_args(args)
+  labels <- attr(.data, "labels")
+
+  index <- attr(.data, "indices")
+  n <- length(index)
+  m <- length(args)
+
+  # Special case for zero-group input
+  if (n == 0) {
+    env <- new.env(parent = parent.frame())
+    env$. <- group_data
+
+    out <- vector("list", m)
+    for (j in seq_len(m)) {
+      out[[j]] <- eval(args[[j]], envir = env)
+    }
+
+    if (!named) {
+      return(label_output_dataframe(labels, list(out), groups(.data)))
+    } else {
+      return(label_output_list(labels, list(out), groups(.data)))
+    }
+  }
 
   # Create new environment, inheriting from parent, with an active binding
   # for . that resolves to the current subset. `_i` is found in environment
   # of this function because of usual scoping rules.
-  index <- attr(.data, "indices")
   env <- new.env(parent = parent.frame())
   makeActiveBinding(".", function() {
     group_data[index[[`_i`]] + 1L, , drop = FALSE]
   }, env)
 
-  n <- length(index)
-  m <- length(args)
-
   out <- replicate(m, vector("list", n), simplify = FALSE)
   names(out) <- names(args)
-  p <- Progress(n * m, min_time = 2)
+  p <- progress_estimated(n * m, min_time = 2)
 
   for (`_i` in seq_len(n)) {
     for (j in seq_len(m)) {
       out[[j]][`_i`] <- list(eval(args[[j]], envir = env))
-      p$tick()$show()
+      p$tick()$print()
     }
   }
 
-  labels <- attr(.data, "labels")
   if (!named) {
     label_output_dataframe(labels, out, groups(.data))
   } else {
@@ -174,12 +192,12 @@ do.rowwise_df <- function(.data, ..., env = parent.frame()) {
 
   out <- replicate(m, vector("list", n), simplify = FALSE)
   names(out) <- names(args)
-  p <- Progress(n * m, min_time = 2)
+  p <- progress_estimated(n * m, min_time = 2)
 
   for (`_i` in seq_len(n)) {
     for (j in seq_len(m)) {
       out[[j]][`_i`] <- list(eval(args[[j]], envir = env))
-      p$tick()$show()
+      p$tick()$print()
     }
   }
 
@@ -206,7 +224,7 @@ label_output_dataframe <- function(labels, out, groups) {
     labels <- labels[setdiff(names(labels), names(out))]
 
     # Repeat each row to match data
-    labels <- labels[rep(1:nrow(labels), rows), , drop = FALSE]
+    labels <- labels[rep(seq_len(nrow(labels)), rows), , drop = FALSE]
     rownames(labels) <- NULL
 
     grouped_df(cbind_list(labels, out), groups)
@@ -280,7 +298,7 @@ do.tbl_sql <- function(.data, ..., .chunk_size = 1e4L) {
 
   out <- replicate(m, vector("list", n), simplify = FALSE)
   names(out) <- names(args)
-  p <- Progress(n * m, min_time = 2)
+  p <- progress_estimated(n * m, min_time = 2)
   env <- new.env(parent = parent.frame())
 
   # Create ungrouped data frame suitable for chunked retrieval
@@ -312,7 +330,7 @@ do.tbl_sql <- function(.data, ..., .chunk_size = 1e4L) {
       env$. <- chunk[index[[j]], , drop = FALSE]
       for (k in seq_len(m)) {
         out[[k]][i + j] <<- list(eval(args[[k]], envir = env))
-        p$tick()$show()
+        p$tick()$print()
       }
     }
     i <<- i + (n - 1)
@@ -323,7 +341,7 @@ do.tbl_sql <- function(.data, ..., .chunk_size = 1e4L) {
     env$. <- last_group
     for (k in seq_len(m)) {
       out[[k]][i + 1] <- list(eval(args[[k]], envir = env))
-      p$tick()$show()
+      p$tick()$print()
     }
   }
 

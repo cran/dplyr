@@ -6,7 +6,7 @@ expect_same_in_sql <- function(expr) {
   expr <- substitute(expr)
 
   sql <- translate_sql_q(list(expr))
-  actual <- qry_fetch(test$con, paste0("SELECT ", sql))[[1]]
+  actual <- dbGetQuery(test$con, paste0("SELECT ", sql))[[1]]
 
   exp <- eval(expr, parent.frame())
 
@@ -48,4 +48,10 @@ test_that("Subsetting always evaluated locally", {
   expect_equal(partial_eval(quote(`_var` == x$a)), correct)
   expect_equal(partial_eval(quote(`_var` == x[[2]])), correct)
   expect_equal(partial_eval(quote(`_var` == y[2])), correct)
+})
+
+test_that("between translated to special form (#503)", {
+
+  out <- translate_sql(between(x, 1, 2))
+  expect_equal(out, sql('"x" BETWEEN 1.0 AND 2.0'))
 })

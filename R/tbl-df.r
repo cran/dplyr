@@ -1,9 +1,19 @@
-#' Create a data frame tble.
+#' Create a data frame tbl.
 #'
 #' A data frame tbl wraps a local data frame. The main advantage to using
 #' a \code{tbl_df} over a regular data frame is the printing:
 #' tbl objects only print a few rows and all the columns that fit on one
-#' screen, providing describing the rest of it as text.
+#' screen, describing the rest of it as text.
+#'
+#' @section Methods:
+#'
+#' \code{tbl_df} implements two important base methods:
+#'
+#' \describe{
+#' \item{print}{Only prints the first 10 rows, and the columns that fit on
+#'   screen}
+#' \item{\code{[}}{Never simplifies (drops), so always returns data.frame}
+#' }
 #'
 #' @export
 #' @param data a data frame
@@ -12,7 +22,7 @@
 #' ds
 #' as.data.frame(ds)
 #'
-#' data("Batting", package = "Lahman")
+#' if (require("Lahman") && packageVersion("Lahman") >= "3.0.1") {
 #' batting <- tbl_df(Batting)
 #' dim(batting)
 #' colnames(batting)
@@ -43,10 +53,9 @@
 #' # mutate(stints, cumsum(stints))
 #'
 #' # Joins ---------------------------------------------------------------------
-#' data("Master", "HallOfFame", package = "Lahman")
-#' player_info <- select(tbl_df(Master), playerID, hofID, birthYear)
+#' player_info <- select(tbl_df(Master), playerID, birthYear)
 #' hof <- select(filter(tbl_df(HallOfFame), inducted == "Y"),
-#'  hofID, votedBy, category)
+#'  playerID, votedBy, category)
 #'
 #' # Match players and their hall of fame data
 #' inner_join(player_info, hof)
@@ -56,6 +65,7 @@
 #' semi_join(player_info, hof)
 #' # Find players not in hof
 #' anti_join(player_info, hof)
+#' }
 tbl_df <- function(data) {
   assert_that(is.data.frame(data))
   tbl_df_impl(data)
@@ -87,9 +97,38 @@ as.data.frame.tbl_df <- function(x, row.names = NULL, optional = FALSE, ...) {
 
 #' @rdname dplyr-formatting
 #' @export
-print.tbl_df <- function(x, ..., n = NULL) {
+print.tbl_df <- function(x, ..., n = NULL, width = NULL) {
   cat("Source: local data frame ", dim_desc(x), "\n", sep = "")
   cat("\n")
-  trunc_mat(x, n = n)
+  trunc_mat(x, n = n, width = width)
+}
+
+#' @export
+`[.tbl_df` <- function (x, i, j, drop = FALSE) {
+  if (missing(i) && missing(j)) return(x)
+  if (drop) warning("drop ignored", call. = FALSE)
+
+  # Escape early if nargs() == 2L; ie, column subsetting
+  if (nargs() == 2L) {
+    result <- .subset(x, i)
+    class(result) <- c("tbl_df", "data.frame")
+    attr(result, "row.names") <- .set_row_names(length(x[[1]]))
+    return(result)
+  }
+
+  # First, subset columns
+  if (!missing(j)) {
+    x <- .subset(x, j)
+  }
+
+  # Next, subset rows
+  if (!missing(i)) {
+    x <- lapply(x, `[`, i)
+  }
+
+  # TODO: handle 0 column case
+  class(x) <- c("tbl_df", "data.frame")
+  attr(x, "row.names") <- .set_row_names(length(x[[1]]))
+  x
 }
 

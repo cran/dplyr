@@ -23,11 +23,11 @@ rowwise <- function(data) {
 }
 
 #' @export
-print.rowwise_df <- function(x, ..., n = NULL) {
+print.rowwise_df <- function(x, ..., n = NULL, width = NULL) {
   cat("Source: local data frame ", dim_desc(x), "\n", sep = "")
   cat("Groups: <by row>\n")
   cat("\n")
-  trunc_mat(x, n = n)
+  trunc_mat(x, n = n, width = width)
 }
 
 #' @export
@@ -47,7 +47,15 @@ group_size.rowwise_df <- function(x) {
 }
 
 #' @export
-regroup.rowwise_df <- function(x, value) {
+n_groups.rowwise_df <- function(x) {
+  nrow(x)
+}
+
+#' @export
+group_by_.rowwise_df <- function(.data, ..., .dots, add = FALSE) {
   warning("Grouping rowwise data frame strips rowwise nature", call. = FALSE)
-  grouped_df(ungroup(x), value)
+  .data <- ungroup(.data)
+
+  groups <- group_by_prepare(.data, ..., .dots = .dots, add = add)
+  grouped_df(groups$data, groups$groups)
 }

@@ -12,11 +12,11 @@
 #'   relatively expensive to determine automatically, so is cached throughout
 #'   dplyr. However, you should usually be able to leave this blank and it
 #'   will be determined from the context.
-tbl_sql <- function(subclass, src, from, ..., vars = NULL) {
-  assert_that(is.character(from), length(from) == 1)
+tbl_sql <- function(subclass, src, from, ..., vars = attr(from, "vars")) {
 
 
   if (!is.sql(from)) { # Must be a character string
+    assert_that(length(from) == 1)
     if (isFALSE(db_has_table(src$con, from))) {
       stop("Table ", from, " not found in database ", src$path, call. = FALSE)
     }
@@ -24,7 +24,7 @@ tbl_sql <- function(subclass, src, from, ..., vars = NULL) {
     from <- ident(from)
   } else if (!is.join(from)) { # Must be arbitrary sql
     # Abitrary sql needs to be wrapped into a named subquery
-    from <- build_sql("(", from, ") AS ", ident(unique_name()), con = src$con)
+    from <- sql_subquery(src$con, from, unique_name())
   }
 
   tbl <- make_tbl(c(subclass, "sql"),
@@ -52,11 +52,7 @@ update.tbl_sql <- function(object, ...) {
 
   # Figure out variables
   if (is.null(object$select)) {
-    if (is.ident(object$from)) {
-      var_names <- table_fields(object$src$con, object$from)
-    } else {
-      var_names <- qry_fields(object$src$con, object$from)
-    }
+    var_names <- db_query_fields(object$src$con, object$from)
     vars <- lapply(var_names, as.name)
     object$select <- vars
   }
@@ -94,6 +90,14 @@ group_size.tbl_sql <- function(x) {
   df$n
 }
 
+#' @export
+n_groups.tbl_sql <- function(x) {
+  if (is.null(groups(x))) return(1L)
+
+  x <- update(x, select = groups(x))
+  nrow(compute(distinct(x)))
+}
+
 # Standard data frame methods --------------------------------------------------
 
 #' @export
@@ -104,8 +108,8 @@ as.data.frame.tbl_sql <- function(x, row.names = NULL, optional = NULL,
 
 #' @export
 #' @rdname dplyr-formatting
-print.tbl_sql <- function(x, ..., n = NULL) {
-  cat("Source: ", brief_desc(x$src), "\n", sep = "")
+print.tbl_sql <- function(x, ..., n = NULL, width = NULL) {
+  cat("Source: ", src_desc(x$src), "\n", sep = "")
 
   if (inherits(x$from, "ident")) {
     cat(wrap("From: ", x$from, " ", dim_desc(x)))
@@ -125,10 +129,8 @@ print.tbl_sql <- function(x, ..., n = NULL) {
 
   cat("\n")
 
-  trunc_mat(x, n = n)
+  trunc_mat(x, n = n, width = width)
 }
-
-brief_desc <- function(x) UseMethod("brief_desc")
 
 #' @export
 dimnames.tbl_sql <- function(x) {
@@ -151,12 +153,33 @@ dim.tbl_sql <- function(x) {
 head.tbl_sql <- function(x, n = 6L, ...) {
   assert_that(length(n) == 1, n > 0L)
 
-  build_query(x, limit = n)$fetch()
+  build_query(x, limit = as.integer(n))$fetch()
 }
 
 #' @export
 tail.tbl_sql <- function(x, n = 6L, ...) {
   stop("tail is not supported by sql sources", call. = FALSE)
+}
+
+# Set operations ---------------------------------------------------------------
+
+#' @export
+intersect.tbl_sql <- function(x, y, copy = FALSE, ...) {
+  y <- auto_copy(x, y, copy)
+  sql <- sql_set_op(x$src$con, x, y, "INTERSECT")
+  update(tbl(x$src, sql), group_by = groups(x))
+}
+#' @export
+union.tbl_sql <- function(x, y, copy = FALSE, ...) {
+  y <- auto_copy(x, y, copy)
+  sql <- sql_set_op(x$src$con, x, y, "UNION")
+  update(tbl(x$src, sql), group_by = groups(x))
+}
+#' @export
+setdiff.tbl_sql <- function(x, y, copy = FALSE, ...) {
+  y <- auto_copy(x, y, copy)
+  sql <- sql_set_op(x$src$con, x, y, "EXCEPT")
+  update(tbl(x$src, sql), group_by = groups(x))
 }
 
 # SQL select generation --------------------------------------------------------
@@ -225,6 +248,6 @@ uses_window_fun <- function(x, tbl) {
     calls <- all_calls(x)
   }
 
-  win_f <- ls(envir = translate_env(tbl)$window)
+  win_f <- ls(envir = src_translate_env(tbl)$window)
   any(calls %in% win_f)
 }

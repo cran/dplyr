@@ -24,8 +24,14 @@ You can install:
 * the latest development version from github with
 
     ```R
+    if (packageVersion("devtools") < 1.6) {
+      install.packages("devtools")
+    }
+    devtools::install_github("hadley/lazyeval")
     devtools::install_github("hadley/dplyr")
     ```
+
+You'll probably also want to install the data packages used in most examples: `install.packages(c("hflights", "Lahman"))`.
 
 To get started, read the notes below, then read the intro vignette: `vignette("introduction", package = "dplyr")`. To make the most of dplyr, I also recommend that you familiarise yourself with the principles of [tidy data](http://vita.had.co.nz/papers/tidy-data.html): this will help you get your data into a form that works well with dplyr, ggplot2 and R's many modelling functions.
 
@@ -142,7 +148,7 @@ print(object.size(mod2), unit = "MB")
 
 ### Binary verbs
 
-As well as verbs that work on a single tbl, there are also a set of useful verbs that work with two tbls are a time: joins.  dplyr implements the four most useful joins from SQL:
+As well as verbs that work on a single tbl, there are also a set of useful verbs that work with two tbls at a time: joins.  dplyr implements the four most useful joins from SQL:
 
 * `inner_join(x, y)`: matching x + y
 * `left_join(x, y)`: all x + matching y
@@ -162,5 +168,6 @@ You'll need to be a little careful if you load both plyr and dplyr at the same t
 
 ## Related approaches
 
+* [Blaze](http://blaze.pydata.org)
 * [|Stat](http://hcibib.org/perlman/stat/introman.html)
 * [Pig](http://infolab.stanford.edu/~usriv/papers/pig-latin.pdf)

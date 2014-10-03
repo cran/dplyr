@@ -18,7 +18,7 @@ List rbind__impl( Dots dots ){
         Rcpp::checkUserInterrupt() ;
         
         DataFrame df = dots[i] ;
-        if( !df.size() || !Rf_length(df[0]) ) continue ;
+        if( !df.size() ) continue ;
             
         DataFrameVisitors visitors( df, df.names() ) ;
         int nrows = df.nrows() ;
@@ -41,7 +41,7 @@ List rbind__impl( Dots dots ){
                 columns.push_back( coll );
                 names.push_back(name) ;
             }
-
+            
             if( coll->compatible(source) ){
                 // if the current source is compatible, collect
                 coll->collect( SlicingIndex( k, nrows), source ) ;
@@ -94,7 +94,7 @@ List rbind__impl( Dots dots ){
     out.attr( "names" ) = out_names ;
     delete_all( columns ) ;
     set_rownames( out, n );
-    out.attr( "class" ) = "data.frame" ;
+    out.attr( "class" ) = classes_not_grouped() ;
 
     return out ;
 }
@@ -163,5 +163,51 @@ List cbind_list__impl( DotsOf<DataFrame> dots ){
 // [[Rcpp::export]]
 List cbind_all( StrictListOf<DataFrame, NULL_or_Is<DataFrame> > dots ){
     return cbind__impl( dots ) ;  
+}
+
+// [[Rcpp::export]]
+SEXP combine_all( List data ){
+    int nv = data.size() ;
+    if( nv == 0 ) stop("combine_all needs at least one vector") ;
+    
+    // get the size of the output
+    int n = 0 ;
+    for( int i=0; i<nv; i++){
+        n += Rf_length(data[i]) ;    
+    }
+    
+    // collect
+    Collecter* coll = collecter( data[0], n ) ;
+    coll->collect( SlicingIndex(0, Rf_length(data[0])), data[0] ) ;
+    int k = Rf_length(data[0]) ;
+    
+    for( int i=1; i<nv; i++){
+        SEXP current = data[i] ;
+        int n_current= Rf_length(current) ;
+        if( coll->compatible(current) ){
+            coll->collect( SlicingIndex(k, n_current), current ) ;
+        } else if( coll->can_promote(current) ) {
+            Collecter* new_coll = promote_collecter(current, n, coll) ;
+            new_coll->collect( SlicingIndex(k, n_current), current ) ;
+            new_coll->collect( SlicingIndex(0, k), coll->get() ) ;
+            delete coll ;
+            coll = new_coll ;
+        } else {
+            std::stringstream msg ;
+            msg << "incompatible type at index "
+                << (i+1)
+                << " : "
+                << get_single_class(current)
+                << ", was collecting : "
+                << get_single_class(coll->get())
+            ;
+            stop( msg.str() ) ;
+        }
+        k += n_current ;
+    }
+    
+    RObject out = coll->get() ;
+    delete coll ;
+    return out ;
 }
 

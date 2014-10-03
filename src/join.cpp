@@ -136,16 +136,19 @@ namespace dplyr{
     // -------------- (double,int)
     template <int RTYPE>
     inline size_t hash_double_int( JoinVisitorImpl<REALSXP,RTYPE>& joiner, int i ){
+        // if(i < 0) we need to take data in right
         if( i<0 ){
-            int val = joiner.left[-i-1] ;
+            int val = joiner.right[-i-1] ;
             if( val == NA_INTEGER ) return joiner.LHS_hash_fun( NA_REAL );
             return joiner.LHS_hash_fun( (double)val );
         }
-        return joiner.LHS_hash_fun( joiner.right[i] ) ; 
+        // otherwise take data in left
+        return joiner.LHS_hash_fun( joiner.left[i] ) ; 
     }
     template <>
     inline size_t JoinVisitorImpl<REALSXP,INTSXP>::hash(int i){
-        return  hash_double_int<INTSXP>( *this, i );  
+        size_t res = hash_double_int<INTSXP>( *this, i );
+        return res ;
     }
     template <>
     inline size_t JoinVisitorImpl<REALSXP,LGLSXP>::hash(int i){
@@ -204,13 +207,21 @@ namespace dplyr{
     
     
     // -----------------
-    inline void incompatible_join_visitor(SEXP left, SEXP right, const std::string& name) {
+    inline void incompatible_join_visitor(SEXP left, SEXP right, const std::string& name_left, const std::string& name_right) {
         std::stringstream s ;
-        s << "Can't join on '" << name << "' because of incompatible types (" << get_single_class(left) << "/" << get_single_class(right) << ")" ;
+        s << "Can't join on '" 
+          << name_left 
+          << "' x '"
+          << name_right
+          << "' because of incompatible types (" 
+          << get_single_class(left) 
+          << "/" 
+          << get_single_class(right) 
+          << ")" ;
         stop( s.str() ) ;    
     }
     
-    JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name){
+    JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name_left, const std::string& name_right){
         switch( TYPEOF(left) ){
             case INTSXP:
                 {
@@ -229,11 +240,11 @@ namespace dplyr{
                         case REALSXP:   
                             {
                                 if( lhs_factor ){ 
-                                    incompatible_join_visitor(left, right, name) ;
+                                    incompatible_join_visitor(left, right, name_left, name_right) ;
                                 } else if( is_bare_vector(right) ) {
                                     return new JoinVisitorImpl<INTSXP, REALSXP>( left, right) ;
                                 } else {
-                                    incompatible_join_visitor(left, right, name) ;
+                                    incompatible_join_visitor(left, right, name_left, name_right) ;
                                 }
                                 break ;
                                 // what else: perhaps we can have INTSXP which is a Date and REALSXP which is a Date too ?
@@ -241,7 +252,7 @@ namespace dplyr{
                         case LGLSXP:  
                             {
                                 if( lhs_factor ){
-                                    incompatible_join_visitor(left, right, name) ;
+                                    incompatible_join_visitor(left, right, name_left, name_right) ;
                                 } else {
                                     return new JoinVisitorImpl<INTSXP, LGLSXP>( left, right) ;    
                                 }
@@ -267,12 +278,12 @@ namespace dplyr{
                         {
                             if( Rf_inherits( right, "Date") ){
                                 if(lhs_date) return new DateJoinVisitor(left, right ) ;
-                                incompatible_join_visitor(left, right, name) ;
+                                incompatible_join_visitor(left, right, name_left, name_right) ;
                             }
                             
                             if( Rf_inherits( right, "POSIXct" ) ){
                                 if( lhs_time ) return new POSIXctJoinVisitor(left, right ) ;
-                                incompatible_join_visitor(left, right, name) ;
+                                incompatible_join_visitor(left, right, name_left, name_right) ;
                             }
                             
                             if( is_bare_vector( right ) ){
@@ -336,7 +347,7 @@ namespace dplyr{
             default: break ;
         }
         
-        incompatible_join_visitor(left, right, name) ;
+        incompatible_join_visitor(left, right, name_left, name_right) ;
         return 0 ;
     }
 

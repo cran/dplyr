@@ -59,21 +59,22 @@
 #'
 #' summarise(players, mean_g = mean(G), best_ab = max(AB))
 #' best_year <- filter(players, AB == max(AB) | G == max(G))
-#' progress <- mutate(players, cyear = yearID - min(yearID) + 1,
-#'  rank(desc(AB)), cumsum(AB, yearID))
+#' progress <- mutate(players,
+#'   cyear = yearID - min(yearID) + 1,
+#'   ab_rank = rank(desc(AB)),
+#'   cumulative_ab = order_by(yearID, cumsum(AB)))
 #'
 #' # When you group by multiple level, each summarise peels off one level
 #' per_year <- group_by(batting, playerID, yearID)
 #' stints <- summarise(per_year, stints = max(stint))
 #' filter(stints, stints > 3)
 #' summarise(stints, max(stints))
-#' mutate(stints, cumsum(stints, yearID))
+#' mutate(stints, order_by(yearID, cumsum(stints)))
 #'
 #' # Joins ---------------------------------------------------------------------
-#' player_info <- select(tbl(lahman_postgres(), "Master"), playerID, hofID,
-#'   birthYear)
+#' player_info <- select(tbl(lahman_postgres(), "Master"), playerID, birthYear)
 #' hof <- select(filter(tbl(lahman_postgres(), "HallOfFame"), inducted == "Y"),
-#'  hofID, votedBy, category)
+#'  playerID, votedBy, category)
 #'
 #' # Match players and their hall of fame data
 #' inner_join(player_info, hof)
@@ -98,9 +99,9 @@ src_postgres <- function(dbname = NULL, host = NULL, port = NULL, user = NULL,
 
   user <- user %||% if (in_travis()) "postgres" else ""
 
-  con <- dbi_connect(PostgreSQL(), host = host %||% "", dbname = dbname %||% "",
+  con <- dbConnect(PostgreSQL(), host = host %||% "", dbname = dbname %||% "",
     user = user, password = password %||% "", port = port %||% "", ...)
-  info <- db_info(con)
+  info <- dbGetInfo(con)
 
   src_sql("postgres", con,
     info = info, disco = db_disconnector(con, "postgres"))
@@ -113,7 +114,7 @@ tbl.src_postgres <- function(src, from, ...) {
 }
 
 #' @export
-brief_desc.src_postgres <- function(x) {
+src_desc.src_postgres <- function(x) {
   info <- x$info
   host <- if (info$host == "") "localhost" else info$host
 
@@ -122,7 +123,7 @@ brief_desc.src_postgres <- function(x) {
 }
 
 #' @export
-translate_env.src_postgres <- function(x) {
+src_translate_env.src_postgres <- function(x) {
   sql_variant(
     base_scalar,
     sql_translator(.parent = base_agg,
@@ -137,4 +138,42 @@ translate_env.src_postgres <- function(x) {
     ),
     base_win
   )
+}
+
+# DBI methods ------------------------------------------------------------------
+
+# Doesn't return TRUE for temporary tables
+#' @export
+db_has_table.PostgreSQLConnection <- function(con, table, ...) {
+  table %in% db_list_tables(con)
+}
+
+#' @export
+db_begin.PostgreSQLConnection <- function(con, ...) {
+  dbGetQuery(con, "BEGIN TRANSACTION")
+}
+
+# http://www.postgresql.org/docs/9.3/static/sql-explain.html
+#' @export
+db_explain.PostgreSQLConnection <- function(con, sql, format = "text", ...) {
+  format <- match.arg(format, c("text", "json", "yaml", "xml"))
+
+  exsql <- build_sql("EXPLAIN ",
+    if (!is.null(format)) build_sql("(FORMAT ", sql(format), ") "),
+    sql)
+  expl <- dbGetQuery(con, exsql)
+
+  paste(expl[[1]], collapse = "\n")
+}
+
+#' @export
+db_insert_into.PostgreSQLConnection <- function(con, table, values, ...) {
+  cols <- lapply(values, escape, collapse = NULL, parens = FALSE, con = con)
+  col_mat <- matrix(unlist(cols, use.names = FALSE), nrow = nrow(values))
+
+  rows <- apply(col_mat, 1, paste0, collapse = ", ")
+  values <- paste0("(", rows, ")", collapse = "\n, ")
+
+  sql <- build_sql("INSERT INTO ", ident(table), " VALUES ", sql(values))
+  dbGetQuery(con, sql)
 }

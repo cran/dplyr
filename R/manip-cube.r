@@ -1,17 +1,30 @@
 #' @export
-select.tbl_cube <- function(.data, ...) {
-  vars <- select_vars(names(.data$mets), ..., env = parent.frame())
+select_.tbl_cube <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+  vars <- select_vars_(names(.data$mets), dots)
+
   .data$mets <- .data$mets[vars]
   .data
 }
 
 #' @export
-filter.tbl_cube <- function(.data, ...) {
-  exprs <- dots(...)
+rename_.tbl_cube <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+  vars <- rename_vars_(names(.data$mets), dots)
 
-  idx <- vapply(exprs, find_index_check, integer(1), names = names(.data$dims))
-  for(i in seq_along(exprs)) {
-    sel <- eval(exprs[[i]], .data$dims, parent.frame())
+  .data$mets <- .data$mets[vars]
+  .data
+}
+
+
+#' @export
+filter_.tbl_cube <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+
+  idx <- vapply(dots, function(d) find_index_check(d$expr, names(.data$dims)),
+    integer(1))
+  for(i in seq_along(dots)) {
+    sel <- eval(dots[[i]]$expr, .data$dims, dots[[i]]$env)
     sel <- sel & !is.na(sel)
 
     .data$dims[[idx[i]]] <- .data$dims[[idx[i]]][sel]
@@ -43,12 +56,15 @@ find_index <- function(x, names) {
 }
 
 #' @export
-regroup.tbl_cube <- function(x, value) {
-  nms <- names(x$dims)
+group_by_.tbl_cube <- function(.data, ..., .dots, add = FALSE) {
+  groups <- group_by_prepare(.data, ..., .dots = .dots, add = add)
+
+  # Convert symbols to indices
+  nms <- names(groups$data$dims)
   nms_list <- as.list(setNames(seq_along(nms), nms))
 
-  x$group <- unlist(lapply(value, eval, nms_list))
-  x
+  groups$data$groups <- unlist(lapply(groups$group, eval, nms_list))
+  groups$data
 }
 
 #' @export
@@ -61,18 +77,18 @@ groups.tbl_cube <- function(x) {
 # for better performance
 
 #' @export
-summarise.tbl_cube <- function(.data, ...) {
-  exprs <- named_dots(...)
+summarise_.tbl_cube <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+
   out_dims <- .data$dims[.data$group]
   n <- vapply(out_dims, length, integer(1))
 
   out_mets <- list()
-  for (nm in names(exprs)) {
+  for (nm in names(dots)) {
     out_mets[[nm]] <- array(logical(), n)
   }
 
   slices <- expand.grid(lapply(out_dims, seq_along), KEEP.OUT.ATTRS = FALSE)
-
 
   # Loop over each group
   for (i in seq_len(nrow(slices))) {
@@ -81,8 +97,8 @@ summarise.tbl_cube <- function(.data, ...) {
       drop = TRUE)
 
     # Loop over each expression
-    for (j in seq_along(exprs)) {
-      res <- eval(exprs[[j]], mets, parent.frame())
+    for (j in seq_along(dots)) {
+      res <- eval(dots[[j]]$expr, mets, dots[[j]]$env)
       out_mets[[j]][i] <- res
     }
   }
@@ -97,7 +113,7 @@ subs_index <- function(x, i, val, drop = FALSE) {
 
   if (length(i) == 1 && is.atomic(val)) {
     args[[i]] <- quote(val)
-  } else if (length(i) > 1 && is.list(val)) {
+  } else if (length(i) >= 1 && is.list(val)) {
     exprs <- lapply(seq_along(i), function(i) as.call(c(quote(`[[`), quote(val), i)))
     args[i] <- exprs
   } else {

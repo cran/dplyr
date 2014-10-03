@@ -2,7 +2,7 @@
 #define dplyr_JoinVisitorImpl_H
 
 namespace dplyr{
-        
+       
     template <int LHS_RTYPE, int RHS_RTYPE>
     class JoinVisitorImpl : public JoinVisitor, public comparisons_different<LHS_RTYPE, RHS_RTYPE>{
     public:
@@ -103,6 +103,64 @@ namespace dplyr{
         
     } ; 
     
+    template <>
+    class JoinVisitorImpl<STRSXP,STRSXP> : public JoinVisitor, public comparisons<STRSXP>{
+    public:
+        typedef comparisons<STRSXP> Compare ;
+        
+        typedef CharacterVector Vec ;
+        typedef SEXP STORAGE ;
+        typedef boost::hash<STORAGE> hasher ;
+    
+        JoinVisitorImpl( CharacterVector left_, CharacterVector right_ ) : left(left_), right(right_){
+            check_all_same_encoding(left,right) ;
+            // check_all_utf8(left); 
+            // check_all_utf8(right);
+        }
+              
+        inline size_t hash(int i){
+            return hash_fun( get(i) ) ; 
+        }
+        
+        inline bool equal( int i, int j) {
+            return Compare::equal_or_both_na(
+                get(i), get(j) 
+            ) ;  
+        }
+        
+        inline SEXP subset( const std::vector<int>& indices ) {
+            int n = indices.size() ;
+            Vec res = no_init(n) ;
+            for( int i=0; i<n; i++) {
+                res[i] = get(indices[i]) ;
+            }
+            return res ;
+        }
+        inline SEXP subset( const VisitorSetIndexSet<DataFrameJoinVisitors>& set ) {
+            int n = set.size() ;
+            Vec res = no_init(n) ;
+            VisitorSetIndexSet<DataFrameJoinVisitors>::const_iterator it=set.begin() ;
+            for( int i=0; i<n; i++, ++it) {
+                res[i] = get(*it) ;
+            }
+            return res ;    
+        }
+        
+        inline void print(int i){
+            Rcpp::Rcout << get(i) << std::endl ;
+        }
+        
+        
+    protected:
+        CharacterVector left, right ;
+        hasher hash_fun ;
+        
+        inline STORAGE get(int i){
+            return i >= 0 ? left[i] : right[-i-1] ;    
+        }
+        
+    } ;
+    
     class StringLessPredicate : comparisons<STRSXP>{
     public:
         typedef SEXP value_type ;
@@ -117,14 +175,20 @@ namespace dplyr{
             left_ptr(left_.begin()), 
             left_factor_ptr(Rcpp::internal::r_vector_start<STRSXP>(left_.attr("levels")) ), 
             right_ptr(Rcpp::internal::r_vector_start<STRSXP>(right_))
-        {}
+        {
+            check_all_same_encoding(right_, left_.attr("levels")) ; 
+            // check_all_utf8(right_) ;
+            // check_all_utf8(left_.attr("levels")) ;
+        }
             
         inline size_t hash(int i){
             return string_hash( get(i) ) ;
         }
         
         inline bool equal( int i, int j){
-            return get(i) == get(j) ;     
+            SEXP left  = get(i) ;
+            SEXP right = get(j) ;
+            return left == right ;     
         }
         
         inline void print(int i){
@@ -172,14 +236,20 @@ namespace dplyr{
             right_ptr(right_.begin()), 
             right_factor_ptr(Rcpp::internal::r_vector_start<STRSXP>(right_.attr("levels")) ), 
             left_ptr(Rcpp::internal::r_vector_start<STRSXP>(left_))
-        {}
-            
+        {
+            check_all_same_encoding(left_,right_.attr("levels")) ;
+            // check_all_utf8(left_) ;
+            // check_all_utf8(right_.attr("levels")) ;
+        }
+                
         inline size_t hash(int i){ 
             return string_hash( get(i) ) ;
         }
         
         inline bool equal( int i, int j){
-            return get(i) == get(j) ;     
+            SEXP left = get(i) ;
+            SEXP right = get(j) ;
+            return left == right ;     
         }
         
         inline void print(int i){
@@ -211,13 +281,17 @@ namespace dplyr{
         boost::hash<SEXP> string_hash ;
     
         inline SEXP get(int i){
+            SEXP res ;
             if( i>=0 ){
-                return left_ptr[i] ;
+                res = left_ptr[i] ;
             } else {
                 int index = -i-1 ;
-                if( right_ptr[index] == NA_INTEGER ) return NA_STRING ;
-                return right_factor_ptr[ index - 1 ] ;
+                if( right_ptr[index] == NA_INTEGER ) res = NA_STRING ;
+                res = right_factor_ptr[ right_ptr[index] - 1 ] ;
             }
+            
+            
+            return res ;
         }
         
     } ;
@@ -357,7 +431,7 @@ namespace dplyr{
     PROMOTE_JOIN_VISITOR(DateJoinVisitor)
     PROMOTE_JOIN_VISITOR(POSIXctJoinVisitor)
     
-    JoinVisitor* join_visitor( SEXP, SEXP, const std::string& ) ;
+    JoinVisitor* join_visitor( SEXP, SEXP, const std::string&, const std::string& ) ;
 }
 
 #endif

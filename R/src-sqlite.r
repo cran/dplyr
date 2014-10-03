@@ -66,10 +66,9 @@
 #' summarise(stints, max(stints))
 #'
 #' # Joins ---------------------------------------------------------------------
-#' player_info <- select(tbl(lahman_sqlite(), "Master"), playerID, hofID,
-#'   birthYear)
+#' player_info <- select(tbl(lahman_sqlite(), "Master"), playerID, birthYear)
 #' hof <- select(filter(tbl(lahman_sqlite(), "HallOfFame"), inducted == "Y"),
-#'  hofID, votedBy, category)
+#'  playerID, votedBy, category)
 #'
 #' # Match players and their hall of fame data
 #' inner_join(player_info, hof)
@@ -88,22 +87,35 @@
 #' }
 #' }
 src_sqlite <- function(path, create = FALSE) {
-  if (!require("RSQLite")) {
+  if (!requireNamespace("RSQLite", quietly = TRUE)) {
     stop("RSQLite package required to connect to sqlite db", call. = FALSE)
-  }
-  if (!require("RSQLite.extfuns")) {
-    stop("RSQLite.extfuns package required to effectively use sqlite db",
-      call. = FALSE)
   }
 
   if (!create && !file.exists(path)) {
     stop("Path does not exist and create = FALSE", call. = FALSE)
   }
 
-  con <- dbi_connect(SQLite(), dbname = path)
-  info <- db_info(con)
+  con <- dbConnect(RSQLite::SQLite(), path)
+  load_extension(con)
+
+  info <- dbGetInfo(con)
 
   src_sql("sqlite", con, path = path, info = info)
+}
+
+load_extension <- function(con) {
+  if (packageVersion("RSQLite") >= 1) {
+    RSQLite::initExtension(con)
+    return()
+  }
+
+  require("RSQLite")
+  if (!require("RSQLite.extfuns")) {
+    stop("RSQLite.extfuns package required to effectively use sqlite db",
+      call. = FALSE)
+  }
+
+  RSQLite.extfuns::init_extensions(con)
 }
 
 #' @export
@@ -113,16 +125,76 @@ tbl.src_sqlite <- function(src, from, ...) {
 }
 
 #' @export
-brief_desc.src_sqlite <- function(x) {
+src_desc.src_sqlite <- function(x) {
   paste0("sqlite ", x$info$serverVersion, " [", x$path, "]")
 }
 
 #' @export
-translate_env.src_sqlite <- function(x) {
+src_translate_env.src_sqlite <- function(x) {
   sql_variant(
     base_scalar,
     sql_translator(.parent = base_agg,
       sd = sql_prefix("stdev")
     )
   )
+}
+
+# DBI methods ------------------------------------------------------------------
+
+# Doesn't include temporary tables
+#' @export
+db_list_tables.SQLiteConnection <- function(con) {
+  sql <- "SELECT name FROM
+    (SELECT * FROM sqlite_master UNION ALL
+     SELECT * FROM sqlite_temp_master)
+    WHERE type = 'table' OR type = 'view'
+    ORDER BY name"
+
+  dbGetQuery(con, sql)[[1]]
+}
+
+# Doesn't return TRUE for temporary tables
+#' @export
+db_has_table.SQLiteConnection <- function(con, table, ...) {
+  table %in% db_list_tables(con)
+}
+
+#' @export
+db_query_fields.SQLiteConnection <- function(con, sql, ...) {
+  rs <- dbSendQuery(con, paste0("SELECT * FROM ", sql))
+  on.exit(dbClearResult(rs))
+
+  names(fetch(rs, 0L))
+}
+
+# http://sqlite.org/lang_explain.html
+#' @export
+db_explain.SQLiteConnection <- function(con, sql, ...) {
+  exsql <- build_sql("EXPLAIN QUERY PLAN ", sql)
+  expl <- dbGetQuery(con, exsql)
+  rownames(expl) <- NULL
+  out <- capture.output(print(expl))
+
+  paste(out, collapse = "\n")
+}
+
+#' @export
+db_begin.SQLiteConnection <- function(con, ...) {
+  if (packageVersion("RSQLite") < 1) {
+    RSQLite::dbBeginTransaction(con)
+  } else {
+    DBI::dbBegin(con)
+  }
+}
+
+#' @export
+db_insert_into.SQLiteConnection <- function(con, table, values, ...) {
+  params <- paste(rep("?", ncol(values)), collapse = ", ")
+
+  sql <- build_sql("INSERT INTO ", table, " VALUES (", sql(params), ")")
+
+  res <- RSQLite::dbSendPreparedQuery(con, sql, bind.data = values)
+  DBI::dbClearResult(res)
+
+  TRUE
 }

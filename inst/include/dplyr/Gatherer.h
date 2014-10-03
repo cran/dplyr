@@ -40,6 +40,7 @@ namespace dplyr {
         inline void grab(SEXP data, const SlicingIndex& indices){
             int n = Rf_length(data) ;
             
+            check_type(data) ;
             if(n == indices.size() ){
                 grab_along( data, indices ) ;
             } else if( n == 1) {
@@ -57,16 +58,19 @@ namespace dplyr {
         
         void grab_along( SEXP subset, const SlicingIndex& indices ){
             int n = indices.size();
+            STORAGE* ptr = Rcpp::internal::r_vector_start<RTYPE>( subset ) ;
+            for( int j=0; j<n; j++){
+                data[ indices[j] ] = ptr[j] ;
+            }
+        }
+        
+        void check_type(SEXP subset){
             if( TYPEOF(subset) != RTYPE ){
                 std::stringstream s ;
                 s << "incompatible types, expecting a " 
                   << vector_class<RTYPE>()
                   << " vector" ;
                 stop( s.str() ); 
-            }
-            STORAGE* ptr = Rcpp::internal::r_vector_start<RTYPE>( subset ) ;
-            for( int j=0; j<n; j++){
-                data[ indices[j] ] = ptr[j] ;
             }
         }
         
@@ -102,6 +106,28 @@ namespace dplyr {
     } ;
     
     template <int RTYPE, typename Data, typename Subsets>
+    class DifftimeGatherer : public GathererImpl<RTYPE,Data,Subsets> {
+    public:
+        typedef GathererImpl<RTYPE,Data,Subsets> Base ;
+        
+        DifftimeGatherer( Shield<SEXP>& first, SlicingIndex& indices, GroupedCallProxy<Data,Subsets>& proxy_, const Data& gdf_ ) : 
+             GathererImpl<RTYPE,Data,Subsets>(first,indices,proxy_,gdf_), 
+             units( Rf_getAttrib(first, Rf_install("units")) ) 
+        {}
+             
+        SEXP collect(){
+            Vector<RTYPE> res( Base::collect() ) ;
+            res.attr( "class" ) = "difftime" ;
+            res.attr( "units" ) = units ;
+            return res ;
+        }
+    private:
+        SEXP classes ;
+        CharacterVector units ;
+    } ;
+    
+    
+    template <int RTYPE, typename Data, typename Subsets>
     class ConstantGathererImpl : public Gatherer {
     public:
         ConstantGathererImpl( Vector<RTYPE> constant, int n ) : value( n, Rcpp::internal::r_vector_start<RTYPE>(constant)[0] ){}
@@ -130,6 +156,26 @@ namespace dplyr {
         Vector<RTYPE> value ;
         SEXP classes ;
     } ;
+    
+    template <int RTYPE, typename Data, typename Subsets>
+    class ConstantDifftimeGatherer : public ConstantGathererImpl<RTYPE, Data, Subsets> {
+    public:
+        ConstantDifftimeGatherer( Vector<RTYPE> constant, int n ) : 
+            ConstantGathererImpl<RTYPE,Data,Subsets>( constant, n), 
+            units(constant.attr("units"))
+        {}
+        
+        inline SEXP collect() {
+            Vector<RTYPE> out = ConstantGathererImpl<RTYPE,Data,Subsets>::collect() ;
+            out.attr("class") = "difftime" ;
+            out.attr("units") = units ; 
+            return out ;
+        }
+        
+    private:
+        Vector<RTYPE> value ;
+        CharacterVector units ;
+    } ;
 
     template <typename Data, typename Subsets>
     inline Gatherer* constant_gatherer(SEXP x, int n){
@@ -139,12 +185,14 @@ namespace dplyr {
                     return new ConstantGathererImpl<INTSXP,Data,Subsets>( x, n ) ;
             }
             case REALSXP: {
+                    if( Rf_inherits(x, "difftime" )) return new ConstantDifftimeGatherer<REALSXP,Data,Subsets>(x,n) ;
                     if( Rf_inherits(x, "POSIXct" )) return new ConstantTypedGatherer<REALSXP,Data,Subsets>(x,n, get_time_classes() ) ;
                     if( Rf_inherits(x, "Date" )) return new ConstantTypedGatherer<REALSXP,Data,Subsets>(x,n, get_date_classes() ) ;
                     return new ConstantGathererImpl<REALSXP,Data,Subsets>( x, n ) ;
             }
             case LGLSXP: return new ConstantGathererImpl<LGLSXP,Data,Subsets>( x, n ) ;
             case STRSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
+            case VECSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
             default: break ;
         }
         return 0 ;
@@ -163,12 +211,14 @@ namespace dplyr {
                 }
             case REALSXP:
                 {
+                    if( Rf_inherits(first, "difftime" ) ) return new DifftimeGatherer<REALSXP,Data,Subsets>(first, indices, proxy, gdf ) ;
                     if( Rf_inherits(first, "POSIXct" ) ) return new TypedGatherer<REALSXP,Data,Subsets>(first, indices, proxy, gdf, get_time_classes() ) ;
                     if( Rf_inherits(first, "Date") ) return new TypedGatherer<REALSXP,Data,Subsets>(first, indices, proxy, gdf, get_date_classes() ) ;
                     return new GathererImpl<REALSXP,Data,Subsets>( first, indices, proxy, gdf ) ;
                 }
             case LGLSXP:  return new GathererImpl<LGLSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             case STRSXP:  return new GathererImpl<STRSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
+            case VECSXP:  return new GathererImpl<VECSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             default: break ;
         }
         

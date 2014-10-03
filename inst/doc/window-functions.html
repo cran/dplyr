@@ -5,6 +5,18 @@
 
 <title>Window functions and grouped mutate/filter</title>
 
+<script type="text/javascript">
+window.onload = function() {
+  var imgs = document.getElementsByTagName('img'), i, img;
+  for (i = 0; i < imgs.length; i++) {
+    img = imgs[i];
+    // center an image if it is the only element of its parent
+    if (img.parentElement.childElementCount === 1)
+      img.parentElement.style.textAlign = 'center';
+  }
+};
+</script>
+
 <!-- Styles for R syntax highlighter -->
 <style type="text/css">
    pre .operator,
@@ -45,9 +57,6 @@ var hljs=new function(){function m(p){return p.replace(/&/gm,"&amp;").replace(/<
 hljs.initHighlightingOnLoad();
 </script>
 
-<!-- MathJax scripts -->
-<script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-</script>
 
 
 <style type="text/css">
@@ -99,7 +108,9 @@ a:visited {
 pre, img {
   max-width: 100%;
 }
-
+pre {
+  overflow-x: auto;
+}
 pre code {
    display: block; padding: 0.5em;
 }
@@ -202,7 +213,12 @@ hr {
 <p>Window functions are used in conjunction with <code>mutate</code> and <code>filter</code> to solve a wide range of problems, some of which are shown below:</p>
 
 <pre><code class="r">library(Lahman)
-batting &lt;- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
+</code></pre>
+
+<pre><code>#&gt; Warning: package &#39;Lahman&#39; was built under R version 3.1.1
+</code></pre>
+
+<pre><code class="r">batting &lt;- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
 batting &lt;- arrange(batting, playerID, yearID, teamID)
 players &lt;- group_by(batting, playerID)
 
@@ -316,10 +332,10 @@ summarise(by_team_quartile, mean(G))
 <pre><code>#&gt; Source: local data frame [4 x 2]
 #&gt; 
 #&gt;   quartile mean(G)
-#&gt; 1        1   5.325
-#&gt; 2        2  24.808
-#&gt; 3        3  77.073
-#&gt; 4        4 373.976
+#&gt; 1        1   5.356
+#&gt; 2        2  24.912
+#&gt; 3        3  77.289
+#&gt; 4        4 373.693
 </code></pre>
 
 <p>All ranking functions rank from lowest to highest so that small input values get small ranks. Use <code>desc()</code> to rank from highest to lowest.</p>
@@ -372,11 +388,11 @@ arrange(wrong, year)
 
 <pre><code>#&gt;   year value running
 #&gt; 1 2000     0      51
-#&gt; 2 2001     1      51
+#&gt; 2 2001     1      26
 #&gt; 3 2002     4      55
-#&gt; 4 2003     9      34
-#&gt; 5 2004    16      50
-#&gt; 6 2005    25      25
+#&gt; 4 2003     9      25
+#&gt; 5 2004    16      16
+#&gt; 6 2005    25      51
 </code></pre>
 
 <pre><code class="r">right &lt;- mutate(scrambled, running = order_by(year, cumsum(value)))
@@ -433,7 +449,7 @@ filter(players, G &lt; median(G))
 <pre><code class="r">mutate(players, career_year = yearID - min(yearID) + 1)
 </code></pre>
 
-<pre><code>#&gt; Source: local data frame [96,600 x 8]
+<pre><code>#&gt; Source: local data frame [97,889 x 8]
 #&gt; Groups: playerID
 #&gt; 
 #&gt;     playerID yearID teamID  G AB R H career_year
@@ -449,14 +465,14 @@ filter(players, G &lt; median(G))
 <pre><code class="r">mutate(players, G_z = (G - mean(G)) / sd(G))
 </code></pre>
 
-<pre><code>#&gt; Source: local data frame [96,600 x 8]
+<pre><code>#&gt; Source: local data frame [97,889 x 8]
 #&gt; Groups: playerID
 #&gt; 
 #&gt;     playerID yearID teamID  G AB R H     G_z
-#&gt; 1  aardsda01   2004    SFN 11  0 0 0 -1.0065
-#&gt; 2  aardsda01   2006    CHN 45  2 0 0  0.3393
-#&gt; 3  aardsda01   2007    CHA 25  0 0 0 -0.4524
-#&gt; 4  aardsda01   2008    BOS 47  1 0 0  0.4184
+#&gt; 1  aardsda01   2004    SFN 11  0 0 0 -1.1168
+#&gt; 2  aardsda01   2006    CHN 45  2 0 0  0.3297
+#&gt; 3  aardsda01   2007    CHA 25  0 0 0 -0.5212
+#&gt; 4  aardsda01   2008    BOS 47  1 0 0  0.4148
 #&gt; ..       ...    ...    ... .. .. . .     ...
 </code></pre>
 
@@ -544,6 +560,13 @@ aggregate or a cumulative aggregate.</p></li>
 }
 </code></pre>
 
+<pre><code>#&gt; &lt;SQL&gt; avg(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS UNBOUNDED PRECEDING)
+#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
+#&gt; &lt;SQL&gt; NTILE(2.0) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
+#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot;)
+</code></pre>
+
 <p>If the tbl has been arranged previously, then that ordering will be used for the order clause:</p>
 
 <pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
@@ -552,6 +575,11 @@ aggregate or a cumulative aggregate.</p></li>
   print(translate_sql(rank(), tbl = players_by_year, window = TRUE))
   print(translate_sql(lag(G), tbl = players_by_year, window = TRUE))
 }
+</code></pre>
+
+<pre><code>#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot; ROWS UNBOUNDED PRECEDING)
+#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
+#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
 </code></pre>
 
 <p>There are some challenges when translating window functions between R and SQL, because dplyr tries to keep the window functions as similar as possible to both the existing R analogues and to the SQL functions. This means that there are three ways to control the order clause depending on which window function you&#39;re using:</p>

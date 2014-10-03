@@ -97,8 +97,31 @@ test_that("arrange handles 0-rows data frames", {
 })
 
 test_that("arrange implements special case (#369)", {
-  d <- mtcars %>% group_by(cyl,disp) %>% arrange()
-  expect_false( is.unsorted( d[, c( "cyl", "disp" ) ] ) )
-  indices <- unlist( attr( d, "indices" ) )
-  expect_equal( indices, seq(0, nrow(d)-1) )
+  d1 <- mtcars %>% group_by(cyl,disp) %>% arrange() %>% as.data.frame()
+  d2 <- mtcars %>% arrange(cyl, disp)
+
+  expect_equal(d1, d2)
 })
+
+test_that("grouped arrange sorts first by group (#491)", {
+  df1 <- mtcars %>% group_by(cyl) %>% arrange(disp) %>% ungroup()
+  df2 <- mtcars %>% arrange(cyl, disp) %>% tbl_df()
+
+  expect_equal(df1, df2)
+})
+
+test_that("arrange keeps the grouping structure (#605)", {
+  dat <- data_frame(x = 4:1, g = c('b','b','a','a'))
+  res <- dat %>% group_by(g) %>% arrange()
+  expect_is(res, "grouped_df" )
+  expect_false(is.unsorted(res$g))
+  expect_equal(res$x, c(2,1,4,3))
+  expect_equal(res$g, c("a", "a", "b", "b"))
+  
+  res <- dat %>% group_by(g) %>% arrange(x)
+  expect_is(res, "grouped_df")
+  expect_false(is.unsorted(res$g))
+  expect_true(all(summarise(res, sorted = ! is.unsorted(x) )$sorted))
+  expect_equal(attr(res,"indices"), list( c(0,1), c(2,3)) )
+})
+

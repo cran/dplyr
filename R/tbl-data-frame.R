@@ -1,8 +1,9 @@
 # Grouping methods ------------------------------------------------------------
 
 #' @export
-regroup.data.frame <- function(x, value) {
-  grouped_df(x, value)
+group_by_.data.frame <- function(.data, ..., .dots, add = FALSE) {
+  groups <- group_by_prepare(.data, ..., .dots = .dots, add = add)
+  grouped_df(groups$data, groups$groups)
 }
 
 #' @export
@@ -11,34 +12,55 @@ groups.data.frame <- function(x) NULL
 #' @export
 ungroup.data.frame <- function(x) x
 
+#' @export
+group_size.data.frame <- function(x) nrow(x)
+
+#' @export
+n_groups.data.frame <- function(x) 1L
+
 # Manipulation functions ------------------------------------------------------
 
 # These could potentially be rewritten to avoid any copies, but since this
 # is just a convenience layer, I didn't bother. They should still be fast.
 
 #' @export
-filter.data.frame <- function(.data, ...) {
-  as.data.frame(filter(tbl_df(.data), ...))
+filter_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  as.data.frame(filter_(tbl_df(.data), .dots = dots))
 }
 #' @export
-summarise.data.frame <- function(.data, ...) {
-  as.data.frame(summarise(tbl_df(.data), ...))
+slice_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  as.data.frame(slice_(tbl_df(.data), .dots = dots))
 }
 #' @export
-mutate.data.frame <-  function(.data, ...) {
-  tbl <- tbl_df(.data)
-  res <- mutate.tbl_df(tbl, ...)
-  as.data.frame(res)
+summarise_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  as.data.frame(summarise_(tbl_df(.data), .dots = dots))
 }
 #' @export
-arrange.data.frame <- function(.data, ...) {
-  as.data.frame(arrange(tbl_df(.data), ...))
+mutate_.data.frame <-  function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  as.data.frame(mutate_(tbl_df(.data), .dots = dots))
 }
 #' @export
-select.data.frame <- function(.data, ...) {
-  vars <- select_vars(names(.data), ..., env = parent.frame())
+arrange_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ..., all_named = TRUE)
+  as.data.frame(arrange_(tbl_df(.data), .dots = dots))
+}
+#' @export
+select_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+  vars <- select_vars_(names(.data), dots)
   select_impl(.data, vars)
 }
+#' @export
+rename_.data.frame <- function(.data, ..., .dots) {
+  dots <- lazyeval::all_dots(.dots, ...)
+  vars <- rename_vars_(names(.data), dots)
+  select_impl(.data, vars)
+}
+
 
 # Joins ------------------------------------------------------------------------
 
@@ -61,6 +83,21 @@ semi_join.data.frame <- function(x, y, by = NULL, copy = FALSE, ...) {
 anti_join.data.frame <- function(x, y, by = NULL, copy = FALSE, ...) {
   as.data.frame(anti_join(tbl_df(x), y, by = by, copy = copy, ...))
 }
+
+# Set operations ---------------------------------------------------------------
+
+#' @export
+intersect.data.frame <- function(x, y, ...) intersect_data_frame(x, y)
+
+#' @export
+union.data.frame <-     function(x, y, ...) union_data_frame(x, y)
+
+#' @export
+setdiff.data.frame <-   function(x, y, ...) setdiff_data_frame(x, y)
+
+#' @export
+setequal.data.frame <-  function(x, y, ...) equal_data_frame(x, y)
+
 
 # Misc -------------------------------------------------------------------------
 

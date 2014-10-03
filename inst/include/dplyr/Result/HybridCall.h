@@ -58,14 +58,16 @@ namespace dplyr {
                     return true ;
                 }
                 
-                return replace( CDR(call) ) ;
+                return replace( CDR(call)) ;
                 
             }
             return false ;
         }
         
         bool replace( SEXP p ){
+            
             SEXP obj = CAR(p) ;
+            
             if( TYPEOF(obj) == LANGSXP ){
                 Result* res = get_handler(obj, subsets, env) ;
                 if(res){
@@ -73,7 +75,7 @@ namespace dplyr {
                     return true ;
                 }
                 
-                return replace( CDR(obj) ) ;   
+                if( replace( CDR(obj) ) ) return true ;   
             }     
             
             if( TYPEOF(p) == LISTSXP ){

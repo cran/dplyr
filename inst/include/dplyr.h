@@ -62,9 +62,35 @@ inline SEXP shared_SEXP(SEXP x){
     return x ;  
 }
 void check_supported_type(SEXP) ;
-SEXP pairlist_shallow_copy(SEXP) ;
-void copy_attributes(SEXP, SEXP) ;
-void copy_most_attributes(SEXP, SEXP); 
+
+inline SEXP pairlist_shallow_copy(SEXP p){
+    Shield<SEXP> attr( Rf_cons(CAR(p), R_NilValue) ) ;
+    SEXP q = attr ;
+    SET_TAG(q, TAG(p)) ;
+    p = CDR(p) ;
+    while( !Rf_isNull(p) ){
+        Shield<SEXP> s( Rf_cons(CAR(p), R_NilValue) ) ;
+        SETCDR(q, s) ;
+        q = CDR(q) ;
+        SET_TAG(q, TAG(p)) ;
+        p = CDR(p) ;
+    }
+    return attr ;   
+}
+
+inline void copy_attributes(SEXP out, SEXP data){
+    SEXP att = ATTRIB(data) ;
+    if( !Rf_isNull(att) ){
+        SET_ATTRIB( out, pairlist_shallow_copy(ATTRIB(data)) ) ;
+    }
+    SET_OBJECT( out, OBJECT(data) );
+}
+
+// same as copy_attributes but without names
+inline void copy_most_attributes(SEXP out, SEXP data){
+    copy_attributes(out,data) ;
+    Rf_setAttrib( out, R_NamesSymbol, R_NilValue ) ;
+}
 
 // currently [[Rcpp::register]] does nothing.
 //
@@ -121,5 +147,46 @@ void registerHybridHandler( const char* , HybridHandler ) ;
 
 void check_not_groups(const CharacterVector& result_names, const GroupedDataFrame& gdf) ;
 void check_not_groups(const CharacterVector& result_names, const RowwiseDataFrame& gdf) ;
+
+void check_not_groups(const LazyDots& dots, const GroupedDataFrame& gdf) ;
+void check_not_groups(const LazyDots& dots, const RowwiseDataFrame& gdf) ;
+
+template <typename Data>
+SEXP strip_group_attributes(Data df){
+  Shield<SEXP> attribs( Rf_cons( dplyr::classes_not_grouped(), R_NilValue ) ) ;
+  SET_TAG(attribs, Rf_install("class") ) ;
+
+  SEXP p = ATTRIB(df) ;
+  std::vector<SEXP> black_list(8) ;
+  black_list[0] = Rf_install("indices") ;
+  black_list[1] = Rf_install("vars") ;
+  black_list[2] = Rf_install("index") ;
+  black_list[3] = Rf_install("labels") ;
+  black_list[4] = Rf_install("drop") ;
+  black_list[5] = Rf_install("group_sizes") ;
+  black_list[6] = Rf_install("biggest_group_size") ;
+  black_list[7] = Rf_install("class") ;
+
+  SEXP q = attribs ;
+  while( ! Rf_isNull(p) ){
+    SEXP tag = TAG(p) ;
+    if( std::find( black_list.begin(), black_list.end(), tag ) == black_list.end() ){
+      Shield<SEXP> s( Rf_cons( CAR(p), R_NilValue) ) ;
+      SETCDR(q,s) ;
+      q = CDR(q) ;
+      SET_TAG(q, tag) ;
+    }
+
+    p = CDR(p) ;
+  }
+  return attribs ;
+}
+
+template <typename T>
+CharacterVector names( const T& obj ){
+    SEXP x = obj ;
+    return Rf_getAttrib(x, Rf_install("names" ) ) ;    
+}
+
 
 #endif

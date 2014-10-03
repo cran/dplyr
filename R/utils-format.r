@@ -4,6 +4,10 @@
 #' @param n Number of rows to show. If \code{NULL}, the default, will print
 #'   all rows if less than option \code{dplyr.print_max}. Otherwise, will
 #'   print \code{dplyr.print_min}
+#' @param width Width of text output to generate. This defaults to NULL, which
+#'   means use \code{getOption("width")} and only display the columns that
+#'   fit on one screen. You can also set \code{option(dplyr.width = Inf)} to
+#'   override this default and always print all columns.
 #' @keywords internal
 #' @examples
 #' dim_desc(mtcars)
@@ -29,7 +33,7 @@ dim_desc <- function(x) {
 
 #' @export
 #' @rdname dplyr-formatting
-trunc_mat <- function(x, n = NULL) {
+trunc_mat <- function(x, n = NULL, width = NULL) {
   rows <- nrow(x)
   if (!is.na(rows) && rows == 0) return()
 
@@ -50,7 +54,7 @@ trunc_mat <- function(x, n = NULL) {
 
   mat <- format(df, justify = "left")
 
-  width <- getOption("width")
+  width <- width %||% getOption("dplyr.width", NULL) %||% getOption("width")
 
   values <- c(format(rownames(mat))[[1]], unlist(mat[1, ]))
   names <- c("", colnames(mat))
@@ -90,9 +94,9 @@ wrap <- function(..., indent = 0) {
   paste0(wrapped, collapse = "\n")
 }
 
-ruler <- function() {
-  x <- seq_len(getOption("width"))
-  y <- ifelse(x %% 10 == 0, x %>% 10, ifelse(x %% 5 == 0, "+", "-"))
+ruler <- function(width = getOption("width")) {
+  x <- seq_len(width)
+  y <- ifelse(x %% 10 == 0, x %/% 10, ifelse(x %% 5 == 0, "+", "-"))
   cat(y, "\n", sep = "")
   cat(x %% 10, "\n", sep = "")
 }

@@ -12,21 +12,23 @@ df_var <- data.frame(
 )
 
 test_that("rbind_list works on key types", {
+  exp <- tbl_df( rbind( df_var, df_var, df_var ) ) 
   expect_equal(
     rbind_list( df_var, df_var, df_var) ,
-    rbind( df_var, df_var, df_var )
+    exp
   )
 })
 
 test_that("rbind_list reorders columns", {
   columns <- seq_len(ncol(df_var))
+  exp <- tbl_df( rbind( df_var, df_var, df_var ) )
   expect_equal(
     rbind_list(
       df_var,
       df_var[, sample(columns)],
       df_var[, sample(columns)]
     ),
-    rbind( df_var, df_var, df_var )
+    exp
   )
 })
 
@@ -123,3 +125,29 @@ test_that( "Collecter_Impl<INTSXP> can collect LGLSXP. #321", {
   expect_equal( res$x, c(1:3, NA) )
 })
 
+test_that("rbind_all handles list columns (#463)", {
+  dfl <- data.frame(x = I(list(1:2, 1:3, 1:4)))
+  res <- rbind_all(list(dfl, dfl))
+  expect_equal(rep(dfl$x,2L), res$x)
+})
+
+test_that("rbind_all creates tbl_df object", {
+  res <- rbind_list(tbl_df(mtcars))
+  expect_is( res, "tbl_df" )  
+})
+
+test_that("string vectors are filled with NA not blanks before collection (#595)", {
+  one <- mtcars[1:10, -10]
+  two <- mtcars[11:32, ]
+  two$char_col <- letters[1:22]
+  
+  res <- rbind_list(one, two)
+  expect_true( all(is.na(res$char_col[1:10])) )  
+})
+
+test_that("rbind handles data frames with no rows (#597)",{
+  empty <- data.frame(result = numeric())
+  expect_equal(rbind_list(empty), tbl_df(empty))
+  expect_equal(rbind_list(empty, empty), tbl_df(empty))
+  expect_equal(rbind_list(empty, empty, empty), tbl_df(empty))  
+})
