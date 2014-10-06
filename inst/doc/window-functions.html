@@ -387,12 +387,12 @@ arrange(wrong, year)
 </code></pre>
 
 <pre><code>#&gt;   year value running
-#&gt; 1 2000     0      51
-#&gt; 2 2001     1      26
-#&gt; 3 2002     4      55
-#&gt; 4 2003     9      25
-#&gt; 5 2004    16      16
-#&gt; 6 2005    25      51
+#&gt; 1 2000     0      55
+#&gt; 2 2001     1       5
+#&gt; 3 2002     4       4
+#&gt; 4 2003     9      30
+#&gt; 5 2004    16      21
+#&gt; 6 2005    25      55
 </code></pre>
 
 <pre><code class="r">right &lt;- mutate(scrambled, running = order_by(year, cumsum(value)))

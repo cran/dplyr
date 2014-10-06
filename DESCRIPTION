@@ -1,6 +1,6 @@
 Package: dplyr
 Type: Package
-Version: 0.3
+Version: 0.3.0.1
 Title: A Grammar of Data Manipulation
 Description: A fast, consistent tool for working with data frame like objects,
     both in memory and out of memory.
@@ -39,11 +39,11 @@ Collate: 'RcppExports.R' 'all-equal.r' 'bench-compare.r' 'cbind.r'
         'top-n.R' 'translate-sql-helpers.r' 'translate-sql-base.r'
         'translate-sql-window.r' 'translate-sql.r' 'type-sum.r'
         'utils-dt.R' 'utils-format.r' 'utils.r' 'view.r' 'zzz.r'
-Packaged: 2014-10-03 21:10:49 UTC; hadley
+Packaged: 2014-10-06 12:40:02 UTC; hadley
 Author: Hadley Wickham [aut, cre],
   Romain Francois [aut],
   RStudio [cph]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-10-04 06:39:05
+Date/Publication: 2014-10-08 05:21:23
