@@ -447,7 +447,7 @@ select(flights, -(year:day))
 
 <p>This function works similarly to the <code>select</code> argument to the <code>base::subset()</code>. It&#39;s its own function in dplyr, because the dplyr philosophy is to have small functions that each do one thing well.</p>
 
-<p>There are a number of helper functions you can use within <code>select()</code>, like <code>starts_with()</code>, <code>ends_with()</code>, <code>matches()</code> and <code>contains()</code>. Theese let you quickly match larger blocks of variable that meet some criterion. See <code>?select</code> for more details.</p>
+<p>There are a number of helper functions you can use within <code>select()</code>, like <code>starts_with()</code>, <code>ends_with()</code>, <code>matches()</code> and <code>contains()</code>. These let you quickly match larger blocks of variable that meet some criterion. See <code>?select</code> for more details.</p>
 
 <p>You can rename variables with <code>select()</code> by using named arguments:</p>
 
@@ -606,10 +606,10 @@ select(flights, -(year:day))
 <pre><code>#&gt; Source: local data frame [10 x 16]
 #&gt; 
 #&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
-#&gt; 1  2013    11  14     1926        -4     2158        -6      DL  N321NB
-#&gt; 2  2013     1  12     1729         0     2025       -15      UA  N33284
-#&gt; 3  2013     9  23     1532        -3     1904         5      UA  N595UA
-#&gt; 4  2013     8   2      756        -3     1010       -16      DL  N690DL
+#&gt; 1  2013     9  30     2104        -6     2323       -18      EV  N17560
+#&gt; 2  2013    11   8      859        -1     1135        -4      DL  N3771K
+#&gt; 3  2013     3  17     2110        73     2232        77      EV  N14148
+#&gt; 4  2013     8  23     2013         2     2257         3      UA  N87527
 #&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
 #&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
 #&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)
@@ -621,10 +621,10 @@ select(flights, -(year:day))
 <pre><code>#&gt; Source: local data frame [3,368 x 16]
 #&gt; 
 #&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
-#&gt; 1  2013     5   2      557        -3      817         2      FL  N336AT
-#&gt; 2  2013     2  17     1218        -2     1325       -25      MQ  N519MQ
-#&gt; 3  2013    11  12     1801         1     1948        29      US  N702UW
-#&gt; 4  2013    10  10     1519       119     1801        96      UA  N441UA
+#&gt; 1  2013     8  17      533        -7      825       -15      AA  N5DVAA
+#&gt; 2  2013     2  27     1828        28     1949         9      UA  N821UA
+#&gt; 3  2013     8  15     1654        71     1921        41      UA  N504UA
+#&gt; 4  2013     4   8     1724        -5     2008       -42      UA  N839UA
 #&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...
 #&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time
 #&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)

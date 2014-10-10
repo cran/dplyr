@@ -221,17 +221,17 @@ hr {
 <pre><code class="r">location(iris)
 </code></pre>
 
-<pre><code>## &lt;0x7fae6dc445b0&gt;
+<pre><code>## &lt;0x7fe6fc350670&gt;
 ## Variables:
-##  * Sepal.Length: &lt;0x7fae6724be00&gt;
-##  * Sepal.Width:  &lt;0x7fae6ae64600&gt;
-##  * Petal.Length: &lt;0x7fae6ae7c200&gt;
-##  * Petal.Width:  &lt;0x7fae6e22aa00&gt;
-##  * Species:      &lt;0x7fae62f759e0&gt;
+##  * Sepal.Length: &lt;0x7fe6f804a200&gt;
+##  * Sepal.Width:  &lt;0x7fe6f803aa00&gt;
+##  * Petal.Length: &lt;0x7fe6fd2b0200&gt;
+##  * Petal.Width:  &lt;0x7fe6f651ce00&gt;
+##  * Species:      &lt;0x7fe6f1e8e810&gt;
 ## Attributes:
-##  * names:        &lt;0x7fae6dc44618&gt;
-##  * row.names:    &lt;0x7fae62f75c60&gt;
-##  * class:        &lt;0x7fae6de53fc8&gt;
+##  * names:        &lt;0x7fe6fc3506d8&gt;
+##  * row.names:    &lt;0x7fe6f1e6c540&gt;
+##  * class:        &lt;0x7fe6f2889ec8&gt;
 </code></pre>
 
 <p>It&#39;s useful to know the memory address, because if the address changes, then you know R has made a copy. Copies are bad because it takes time to copy a vector. This isn&#39;t usually a bottleneck if you have a few thousand values, but if you have millions or tens of millions it starts to take up a significant amount of time. Unnecessary copies are also bad because they take up memory.</p>
@@ -242,17 +242,17 @@ hr {
 location(iris2)
 </code></pre>
 
-<pre><code>## &lt;0x7fae6dc445b0&gt;
+<pre><code>## &lt;0x7fe6fc350670&gt;
 ## Variables:
-##  * Sepal.Length: &lt;0x7fae6724be00&gt;
-##  * Sepal.Width:  &lt;0x7fae6ae64600&gt;
-##  * Petal.Length: &lt;0x7fae6ae7c200&gt;
-##  * Petal.Width:  &lt;0x7fae6e22aa00&gt;
-##  * Species:      &lt;0x7fae62f759e0&gt;
+##  * Sepal.Length: &lt;0x7fe6f804a200&gt;
+##  * Sepal.Width:  &lt;0x7fe6f803aa00&gt;
+##  * Petal.Length: &lt;0x7fe6fd2b0200&gt;
+##  * Petal.Width:  &lt;0x7fe6f651ce00&gt;
+##  * Species:      &lt;0x7fe6f1e8e810&gt;
 ## Attributes:
-##  * names:        &lt;0x7fae6dc44618&gt;
-##  * row.names:    &lt;0x7fae62f9a340&gt;
-##  * class:        &lt;0x7fae6de53fc8&gt;
+##  * names:        &lt;0x7fe6fc3506d8&gt;
+##  * row.names:    &lt;0x7fe6f1e6fed0&gt;
+##  * class:        &lt;0x7fe6f2889ec8&gt;
 </code></pre>
 
 <p>Rather than carefully comparing long memory locations, we can instead use the <code>dplyr::changes()</code> function to highlights changes between two versions of a data frame. This shows us that <code>iris</code> and <code>iris2</code> are identical: both names point to the same location in memory.</p>
@@ -271,11 +271,11 @@ changes(iris, iris2)
 
 <pre><code>## Changed variables:
 ##              old            new           
-## Sepal.Length 0x7fae6724be00 0x7fae6d750c00
+## Sepal.Length 0x7fe6f804a200 0x7fe6f88d7e00
 ## 
 ## Changed attributes:
 ##              old            new           
-## row.names    0x7fae62fa1590 0x7fae62fa1810
+## row.names    0x7fe6f1ea2a10 0x7fe6f1ea2c90
 </code></pre>
 
 <p>(This was not the case prior to R 3.1.0: R created a deep copy of the entire data frame.)</p>
@@ -288,13 +288,13 @@ changes(iris3, iris)
 
 <pre><code>## Changed variables:
 ##              old            new           
-## Sepal.Length 0x7fae6e015800 0x7fae6724be00
+## Sepal.Length 0x7fe6fc686c00 0x7fe6f804a200
 ## 
 ## Changed attributes:
 ##              old            new           
-## class        0x7fae63fdf128 0x7fae6de53fc8
-## names        0x7fae6ad30140 0x7fae6dc44618
-## row.names    0x7fae62fc70e0 0x7fae62fc7360
+## class        0x7fe6fa42b6b8 0x7fe6f2889ec8
+## names        0x7fe6f3140948 0x7fe6fc3506d8
+## row.names    0x7fe6f1edfa80 0x7fe6f1edfd00
 </code></pre>
 
 <p>It&#39;s smart enough to create only one new column: all the other columns continue to point at their old locations. You might notice that the attributes have still been copied. This has little impact on performance because the attributes are usually short vectors and copying makes the internal dplyr code considerably simpler.</p>

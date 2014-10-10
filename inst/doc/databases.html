@@ -239,7 +239,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">flights_sqlite &lt;- tbl(nycflights13_sqlite(), &quot;flights&quot;)
 </code></pre>
 
-<pre><code>#&gt; Caching nycflights db at /private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite
+<pre><code>#&gt; Caching nycflights db at /private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite
 #&gt; Loading required package: RSQLite
 #&gt; Loading required package: DBI
 #&gt; Loading required package: RSQLite.extfuns
@@ -248,7 +248,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">flights_sqlite
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [336,776 x 16]
 #&gt; 
 #&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
@@ -273,7 +273,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">select(flights_sqlite, year:day, dep_delay, arr_delay)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [336,776 x 5]
 #&gt; 
 #&gt;    year month day dep_delay arr_delay
@@ -287,7 +287,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">filter(flights_sqlite, dep_deply &gt; 240)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [336,776 x 16]
 #&gt; Filter: dep_deply &gt; 240 
 #&gt; 
@@ -304,7 +304,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">arrange(flights_sqlite, year, month, day)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [336,776 x 16]
 #&gt; Arrange: year, month, day 
 #&gt; 
@@ -321,7 +321,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">mutate(flights_sqlite, speed = air_time / distance)
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [336,776 x 17]
 #&gt; 
 #&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum
@@ -337,7 +337,7 @@ flights_sqlite &lt;- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 <pre><code class="r">summarise(flights_sqlite, delay = mean(dep_time))
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: &lt;derived table&gt; [?? x 1]
 #&gt; 
 #&gt;    delay
@@ -370,7 +370,7 @@ c4 &lt;- arrange(c3, year, month, day, carrier)
 <pre><code class="r">c4
 </code></pre>
 
-<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/Rtmpf8k8tG/Rinst673874702719/dplyr/db/nycflights13.sqlite]
+<pre><code>#&gt; Source: sqlite 3.7.17 [/private/tmp/RtmpSrTWx8/Rinst4edb46fd96ae/dplyr/db/nycflights13.sqlite]
 #&gt; From: flights [842 x 8]
 #&gt; Filter: year == 2013, month == 1, day == 1 
 #&gt; Arrange: year, month, day, carrier 
@@ -407,7 +407,7 @@ c4 &lt;- arrange(c3, year, month, day, carrier)
 #&gt; FROM &quot;flights&quot;
 #&gt; WHERE &quot;year&quot; = 2013.0 AND &quot;month&quot; = 1.0 AND &quot;day&quot; = 1.0
 #&gt; ORDER BY &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;carrier&quot;
-#&gt; &lt;SQLiteConnection: DBI CON (26477, 0)&gt;
+#&gt; &lt;SQLiteConnection: DBI CON (20235, 0)&gt;
 </code></pre>
 
 <p>You can also ask the database how it plans to execute the query with <code>explain()</code>. The output for SQLite is explained in more detail on the <a href="http://www.sqlite.org/eqp.html">SQLite website</a> and is helpful if you&#39;re trying to figure out what indexes are being used.</p>
@@ -602,14 +602,6 @@ delay_local &lt;- collect(delay)
     mutate(rank = rank(desc(arr_delay)))
   ranked$query
 }
-</code></pre>
-
-<pre><code>#&gt; &lt;Query&gt; SELECT &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;arr_delay&quot;, &quot;rank&quot;
-#&gt; FROM (SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;arr_delay&quot; AS &quot;arr_delay&quot;, rank() OVER (PARTITION BY (&quot;year&quot;, &quot;month&quot;, &quot;day&quot;) ORDER BY &quot;arr_delay&quot; DESC) AS &quot;rank&quot;
-#&gt; FROM &quot;flights&quot;) AS &quot;_W6&quot;
-#&gt; An object of class &quot;PostgreSQLConnection&quot;
-#&gt; Slot &quot;Id&quot;:
-#&gt; [1] 26477     1
 </code></pre>
 
 <h3>MySQL and MariaDB</h3>

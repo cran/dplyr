@@ -387,12 +387,12 @@ arrange(wrong, year)
 </code></pre>
 
 <pre><code>#&gt;   year value running
-#&gt; 1 2000     0      55
-#&gt; 2 2001     1       5
+#&gt; 1 2000     0       0
+#&gt; 2 2001     1      55
 #&gt; 3 2002     4       4
-#&gt; 4 2003     9      30
-#&gt; 5 2004    16      21
-#&gt; 6 2005    25      55
+#&gt; 4 2003     9      13
+#&gt; 5 2004    16      54
+#&gt; 6 2005    25      38
 </code></pre>
 
 <pre><code class="r">right &lt;- mutate(scrambled, running = order_by(year, cumsum(value)))
@@ -560,13 +560,6 @@ aggregate or a cumulative aggregate.</p></li>
 }
 </code></pre>
 
-<pre><code>#&gt; &lt;SQL&gt; avg(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
-#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS UNBOUNDED PRECEDING)
-#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
-#&gt; &lt;SQL&gt; NTILE(2.0) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)
-#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot;)
-</code></pre>
-
 <p>If the tbl has been arranged previously, then that ordering will be used for the order clause:</p>
 
 <pre><code class="r">if (has_lahman(&quot;postgres&quot;)) {
@@ -575,11 +568,6 @@ aggregate or a cumulative aggregate.</p></li>
   print(translate_sql(rank(), tbl = players_by_year, window = TRUE))
   print(translate_sql(lag(G), tbl = players_by_year, window = TRUE))
 }
-</code></pre>
-
-<pre><code>#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot; ROWS UNBOUNDED PRECEDING)
-#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
-#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)
 </code></pre>
 
 <p>There are some challenges when translating window functions between R and SQL, because dplyr tries to keep the window functions as similar as possible to both the existing R analogues and to the SQL functions. This means that there are three ways to control the order clause depending on which window function you&#39;re using:</p>
