@@ -1,6 +1,7 @@
 ## ----, echo = FALSE, message = FALSE-------------------------------------
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
-knitr::opts_chunk$set(tidy = FALSE, comment = "#>")
 
 ## ----, results = "hide"--------------------------------------------------
 library(Lahman)

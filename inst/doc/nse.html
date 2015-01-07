@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2014-10-10" />
+<meta name="date" content="2015-01-07" />
 
 <title>Non-standard evaluation</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Non-standard evaluation</h1>
-<h4 class="date"><em>2014-10-10</em></h4>
+<h4 class="date"><em>2015-01-07</em></h4>
 </div>
 
 
@@ -64,18 +64,18 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co"># NSE version:</span>
 <span class="kw">summarise</span>(mtcars, <span class="kw">mean</span>(mpg))
 <span class="co">#&gt;   mean(mpg)</span>
-<span class="co">#&gt; 1     20.09</span>
+<span class="co">#&gt; 1  20.09062</span>
 
 <span class="co"># SE versions:</span>
 <span class="kw">summarise_</span>(mtcars, ~<span class="kw">mean</span>(mpg))
 <span class="co">#&gt;   mean(mpg)</span>
-<span class="co">#&gt; 1     20.09</span>
+<span class="co">#&gt; 1  20.09062</span>
 <span class="kw">summarise_</span>(mtcars, <span class="kw">quote</span>(<span class="kw">mean</span>(mpg)))
 <span class="co">#&gt;   mean(mpg)</span>
-<span class="co">#&gt; 1     20.09</span>
+<span class="co">#&gt; 1  20.09062</span>
 <span class="kw">summarise_</span>(mtcars, <span class="st">&quot;mean(mpg)&quot;</span>)
 <span class="co">#&gt;   mean(mpg)</span>
-<span class="co">#&gt; 1     20.09</span></code></pre>
+<span class="co">#&gt; 1  20.09062</span></code></pre>
 <p>There are three ways to quote inputs that dplyr understands:</p>
 <ul>
 <li>With a formula, <code>~ mean(mpg)</code>.</li>
@@ -91,7 +91,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <span class="co"># know which environment to look in</span>
 constant2 &lt;-<span class="st"> </span>function(n) <span class="kw">quote</span>(n)
 <span class="kw">summarise_</span>(mtcars, <span class="kw">constant2</span>(<span class="dv">4</span>))
-<span class="co">#&gt; Error: binding not found: 'n'</span></code></pre>
+<span class="co">#&gt; Error in eval(expr, envir, enclos): binding not found: 'n'</span></code></pre>
 </div>
 <div id="setting-variable-names" class="section level2">
 <h2>Setting variable names</h2>
@@ -100,11 +100,11 @@ constant2 &lt;-<span class="st"> </span>function(n) <span class="kw">quote</span
 dots &lt;-<span class="st"> </span><span class="kw">list</span>(~<span class="kw">mean</span>(mpg), ~n)
 <span class="kw">summarise_</span>(mtcars, <span class="dt">.dots =</span> dots)
 <span class="co">#&gt;   mean(mpg)  n</span>
-<span class="co">#&gt; 1     20.09 10</span>
+<span class="co">#&gt; 1  20.09062 10</span>
 
 <span class="kw">summarise_</span>(mtcars, <span class="dt">.dots =</span> <span class="kw">setNames</span>(dots, <span class="kw">c</span>(<span class="st">&quot;mean&quot;</span>, <span class="st">&quot;count&quot;</span>)))
-<span class="co">#&gt;    mean count</span>
-<span class="co">#&gt; 1 20.09    10</span></code></pre>
+<span class="co">#&gt;       mean count</span>
+<span class="co">#&gt; 1 20.09062    10</span></code></pre>
 </div>
 <div id="mixing-constants-and-variables" class="section level2">
 <h2>Mixing constants and variables</h2>

@@ -1,10 +1,7 @@
 ## ----, echo = FALSE, message = FALSE-------------------------------------
-library(dplyr)
-knitr::opts_chunk$set(
-  comment = "#>",
-  error = FALSE,
-  tidy = FALSE)
+knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+library(dplyr)
 
 ## ----, eval = FALSE------------------------------------------------------
 #  my_db <- src_sqlite("my_db.sqlite3", create = T)
@@ -12,7 +9,7 @@ options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 ## ----, eval = FALSE------------------------------------------------------
 #  library(nycflights13)
 #  flights_sqlite <- copy_to(my_db, flights, temporary = FALSE, indexes = list(
-#    c("year", "month", "day"), "carrer", "tailnum"))
+#    c("year", "month", "day"), "carrier", "tailnum"))
 
 ## ------------------------------------------------------------------------
 flights_sqlite <- tbl(nycflights13_sqlite(), "flights")
@@ -72,8 +69,8 @@ translate_sql(glob(x, y))
 translate_sql(x %like% "ab*")
 
 ## ------------------------------------------------------------------------
-planes <- group_by(flights_sqlite, tailnum)
-delay <- summarise(planes,
+by_tailnum <- group_by(flights_sqlite, tailnum)
+delay <- summarise(by_tailnum,
   count = n(),
   dist = mean(distance),
   delay = mean(arr_delay)

@@ -2,10 +2,10 @@
 #define dplyr_LazySubsets_H
 
 namespace dplyr {
-     
+        
     class LazySubsets {
     public:
-        typedef dplyr_hash_map<SEXP,SEXP> DataMap ;
+        typedef dplyr_hash_map<Name,SEXP> DataMap ;
         typedef DataMap::const_iterator const_iterator ;
         
         LazySubsets(){}
@@ -13,6 +13,10 @@ namespace dplyr {
         LazySubsets( const DataFrame& df) : data_map(), nr(df.nrows()){
             CharacterVector names = df.names() ;
             for( int i=0; i<df.size(); i++){
+                SEXP column = df[i] ;
+                if( Rf_inherits( column, "matrix" ) ){
+                    stop( "matrix as column is not supported" ) ;    
+                }
                 data_map[as_symbol(names[i])] = df[i] ;    
             }
         }
@@ -21,11 +25,7 @@ namespace dplyr {
         virtual SEXP get_variable(SEXP symbol) const {
             DataMap::const_iterator it = data_map.find(symbol) ;
             if( it == data_map.end() ){
-                std::stringstream s ;
-                s << "variable '"
-                  << CHAR(PRINTNAME(symbol))
-                  << "' not found" ;
-                Rcpp::stop(s.str()) ;
+                stop( "variable '%s' not found", CHAR(PRINTNAME(symbol)) ) ;
             }
             return it->second ;
         }

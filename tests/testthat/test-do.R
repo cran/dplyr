@@ -66,6 +66,14 @@ test_that("empty inputs give empty outputs (#597)", {
   expect_equal(out, data.frame(b = character()) %>% group_by(b))
 })
 
+test_that("grouped do evaluates args in correct environment", {
+  a <- 10
+  f <- function(a) {
+    mtcars %>% group_by(cyl) %>% do(a = a)
+  }
+  expect_equal(f(100)$a, list(100, 100, 100))
+})
+
 # Ungrouped data frames --------------------------------------------------------
 
 test_that("ungrouped data frame with unnamed argument returns data frame", {
@@ -81,13 +89,65 @@ test_that("ungrouped data frame with named argument returns list data frame", {
   expect_equal(out$y, list(2:10))
 })
 
+test_that("ungrouped do evaluates args in correct environment", {
+  a <- 10
+  f <- function(a) {
+    mtcars %>% do(a = a)
+  }
+  expect_equal(f(100)$a, list(100))
+})
+
+# Zero row inputs --------------------------------------------------------------
+
+test_that("empty data frames give consistent outputs", {
+  dat <- data_frame(x = numeric(0), g = character(0))
+  grp <- dat %>% group_by(g)
+  emt <- grp %>% filter(FALSE)
+
+  dat %>% do(data.frame()) %>% type_sum() %>%
+    expect_equal(character())
+  dat %>% do(data.frame(y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(y = "int"))
+  dat %>% do(data.frame(.)) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr"))
+  dat %>% do(data.frame(., y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr", y = "int"))
+  dat %>% do(y = ncol(.)) %>% type_sum() %>%
+    expect_equal(c(y = "list"))
+
+  # Grouped data frame should have same col types as ungrouped, with addition
+  # of grouping variable
+  grp %>% do(data.frame()) %>% type_sum() %>%
+    expect_equal(c(g = "chr"))
+  grp %>% do(data.frame(y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(g = "chr", y = "int"))
+  grp %>% do(data.frame(.)) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr"))
+  grp %>% do(data.frame(., y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr", y = "int"))
+  grp %>% do(y = ncol(.)) %>% type_sum() %>%
+    expect_equal(c(g = "chr", y = "list"))
+
+  # A empty grouped dataset should have same types as grp
+  emt %>% do(data.frame()) %>% type_sum() %>%
+    expect_equal(c(g = "chr"))
+  emt %>% do(data.frame(y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(g = "chr", y = "int"))
+  emt %>% do(data.frame(.)) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr"))
+  emt %>% do(data.frame(., y = integer(0))) %>% type_sum() %>%
+    expect_equal(c(x = "dbl", g = "chr", y = "int"))
+  emt %>% do(y = ncol(.)) %>% type_sum() %>%
+    expect_equal(c(g = "chr", y = "list"))
+})
+
 # Data tables  -----------------------------------------------------------------
 
 test_that("named argument become list columns", {
   out <- grp$dt %>% do(nrow = nrow(.), ncol = ncol(.))
   expect_equal(out$nrow, list(1, 2, 3))
   # doesn't including grouping columns
-  expect_equal(out$ncol, list(2, 2, 2))
+  expect_equal(out$ncol, list(3, 3, 3))
 })
 
 test_that("unnamed results bound together by row", {
@@ -98,13 +158,30 @@ test_that("unnamed results bound together by row", {
   expect_equal(first$x, c(1, 2, 4))
 })
 
+test_that("grouped_dt do evaluates args in correct env", {
+  a <- 10
+  f <- function(a) {
+    grp$dt %>% do(a = a)
+  }
+  expect_equal(f(20)$a, list(20, 20, 20))
+})
+
+test_that("grouped_dt passes all columns", {
+  out <- mtcars %>%
+    tbl_dt() %>%
+    select(mpg, cyl) %>%
+    group_by(cyl) %>%
+    do(n = names(.))
+
+  expect_equal(out$n[[1]], c("mpg", "cyl"))
+})
+
 # SQLite -----------------------------------------------------------------------
 
 test_that("named argument become list columns", {
   out <- grp$sqlite %>% do(nrow = nrow(.), ncol = ncol(.))
   expect_equal(out$nrow, list(1, 2, 3))
-  # Currently get one extra column (grouping variable repeated)
-  expect_equal(out$ncol, list(4, 4, 4))
+  expect_equal(out$ncol, list(3, 3, 3))
 })
 
 test_that("unnamed results bound together by row", {
@@ -117,7 +194,12 @@ test_that("unnamed results bound together by row", {
 
 test_that("Results respect select", {
   smaller <- grp$sqlite %>% select(g, x) %>% do(ncol = ncol(.))
-  expect_equal(smaller$ncol, list(3, 3, 3))
+  expect_equal(smaller$ncol, list(2, 2, 2))
+})
+
+test_that("grouping column not repeated", {
+  out <- grp$sqlite %>% do(names = names(.))
+  expect_equal(out$names[[1]], c("g", "x", "y"))
 })
 
 test_that("results independent of chunk_size", {

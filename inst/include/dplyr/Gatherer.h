@@ -46,13 +46,7 @@ namespace dplyr {
             } else if( n == 1) {
                 grab_rep( Rcpp::internal::r_vector_start<RTYPE>(data)[0], indices ) ;    
             } else {
-                std::stringstream s ;
-                s << "incompatible size ("
-                  << n
-                  << "), expecting "
-                  << indices.size()
-                  << " (the group size) or 1" ;
-                stop( s.str() ) ;        
+                stop ("incompatible size (%d), expecting %d (the group size) or 1" ) ;
             }
         }
         
@@ -66,11 +60,7 @@ namespace dplyr {
         
         void check_type(SEXP subset){
             if( TYPEOF(subset) != RTYPE ){
-                std::stringstream s ;
-                s << "incompatible types, expecting a " 
-                  << vector_class<RTYPE>()
-                  << " vector" ;
-                stop( s.str() ); 
+                stop( "incompatible types, expecting a %s vector", vector_class<RTYPE>() ) ;
             }
         }
         
@@ -176,11 +166,31 @@ namespace dplyr {
         Vector<RTYPE> value ;
         CharacterVector units ;
     } ;
+    
+    template <typename Data, typename Subsets>
+    class ConstantFactorGatherer : public ConstantGathererImpl<INTSXP, Data, Subsets> {
+    public:
+        typedef ConstantGathererImpl<INTSXP, Data, Subsets> Parent ;
+        ConstantFactorGatherer( SEXP x, int n ) : Parent(x,n), source(x) {}
+        
+        inline SEXP collect(){
+            IntegerVector out = Parent::collect() ;
+            copy_most_attributes(out, source) ;
+            return out ;
+        }
+        
+    private:
+        IntegerVector source ;
+    } ;
 
     template <typename Data, typename Subsets>
     inline Gatherer* constant_gatherer(SEXP x, int n){
+        if( Rf_inherits(x, "POSIXlt" ) ){
+            stop("`mutate` does not support `POSIXlt` results");    
+        }
         switch( TYPEOF(x) ){
             case INTSXP: {
+                    if( Rf_inherits(x, "factor")) return new ConstantFactorGatherer<Data,Subsets>( x, n ) ;
                     if( Rf_inherits(x, "Date" )) return new ConstantTypedGatherer<INTSXP,Data,Subsets>(x,n, get_date_classes() ) ;
                     return new ConstantGathererImpl<INTSXP,Data,Subsets>( x, n ) ;
             }
@@ -192,6 +202,7 @@ namespace dplyr {
             }
             case LGLSXP: return new ConstantGathererImpl<LGLSXP,Data,Subsets>( x, n ) ;
             case STRSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
+            case CPLXSXP: return new ConstantGathererImpl<CPLXSXP,Data,Subsets>( x, n ) ;
             case VECSXP: return new ConstantGathererImpl<STRSXP,Data,Subsets>( x, n ) ;
             default: break ;
         }
@@ -203,6 +214,9 @@ namespace dplyr {
         typename Data::group_iterator git = gdf.group_begin() ;
         SlicingIndex indices = *git ;
         Shield<SEXP> first( proxy.get(indices) ) ;
+        if( Rf_inherits(first, "POSIXlt" ) ){
+            stop("`mutate` does not support `POSIXlt` results");    
+        }
         switch( TYPEOF(first) ){
             case INTSXP:  
                 {
@@ -219,6 +233,7 @@ namespace dplyr {
             case LGLSXP:  return new GathererImpl<LGLSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             case STRSXP:  return new GathererImpl<STRSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             case VECSXP:  return new GathererImpl<VECSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
+            case CPLXSXP: return new GathererImpl<CPLXSXP,Data,Subsets> ( first, indices, proxy, gdf ) ;
             default: break ;
         }
         

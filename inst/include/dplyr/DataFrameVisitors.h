@@ -21,38 +21,45 @@ namespace dplyr {
                                     
             DataFrameVisitors( const Rcpp::DataFrame& data_) :
                 data(data_), 
-                visitors()
+                visitors(), 
+                visitor_names(data.names()),
+                nvisitors(visitor_names.size())
             {
-                visitor_names = data.names() ;
-                nvisitors =  visitor_names.size() ;
+                       
                 for( int i=0; i<nvisitors; i++){
-                   visitors.push_back( visitor(data[i]) ) ;     
+                    visitors.push_back( visitor( data[i] ) ) ;    
                 }
             }
             DataFrameVisitors( const Rcpp::DataFrame& data_, const Rcpp::CharacterVector& names ) : 
                 data(data_), 
-                visitors()
+                visitors(), 
+                visitor_names(names), 
+                nvisitors(visitor_names.size())
             {
+                
                 std::string name ;
                 int n = names.size() ;
-                nvisitors = 0 ;
-                std::vector<std::string> visitor_names_ ;
                 for( int i=0; i<n; i++){
                     name = (String)names[i] ;
-                    SEXP column = data[name] ;
-                    if( column != R_NilValue ){
-                        nvisitors++ ;
-                        visitor_names_.push_back( name ) ;
-                        visitors.push_back( visitor( column ) ) ;
+                    SEXP column ; 
+                    
+                    try{ 
+                        column = data[name] ; 
+                    } catch( ... ){
+                        stop( "unknown column '%s' ", name ) ;
                     }
+                    
+                    visitors.push_back( visitor( column ) ) ;
+                    
                 }
-                visitor_names = wrap( visitor_names_ );
+                
             } 
             
             ~DataFrameVisitors(){
                 delete_all( visitors );
-            }
-        
+            }     
+            
+            
             template <typename Container>
             DataFrame subset( const Container& index, const CharacterVector& classes ) const {
                 List out(nvisitors);
@@ -60,6 +67,7 @@ namespace dplyr {
                    out[k] = get(k)->subset(index) ;    
                 }
                 structure( out, Rf_length(out[0]) , classes) ;
+                
                 return (SEXP)out ;
             }
             
@@ -72,7 +80,7 @@ namespace dplyr {
             
         private:
             
-            void structure( List& x, int nrows, CharacterVector classes ) const {
+            inline void structure( List& x, int nrows, CharacterVector classes ) const {
                 x.attr( "class" ) = classes ;
                 set_rownames(x, nrows) ;
                 x.names() = visitor_names ;
@@ -85,6 +93,11 @@ namespace dplyr {
           
     inline DataFrame subset( DataFrame data, LogicalVector test, CharacterVector select, CharacterVector classes ){
         DataFrameVisitors visitors( data, select ) ;
+        return visitors.subset(test, classes ) ;
+    }
+
+    inline DataFrame subset( DataFrame data, LogicalVector test, CharacterVector classes ){
+        DataFrameVisitors visitors( data ) ;
         return visitors.subset(test, classes ) ;
     }
 

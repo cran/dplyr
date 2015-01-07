@@ -114,21 +114,6 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
-// cbind_list__impl
-List cbind_list__impl(DotsOf<DataFrame> dots);
-RcppExport SEXP dplyr_cbind_list__impl(SEXP dotsSEXP) {
-BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< DotsOf<DataFrame> >::type dots(dotsSEXP );
-        List __result = cbind_list__impl(dots);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
-END_RCPP
-}
 // cbind_all
 List cbind_all(StrictListOf<DataFrame, NULL_or_Is<DataFrame> > dots);
 RcppExport SEXP dplyr_cbind_all(SEXP dotsSEXP) {
@@ -153,6 +138,22 @@ BEGIN_RCPP
         Rcpp::RNGScope __rngScope;
         Rcpp::traits::input_parameter< List >::type data(dataSEXP );
         SEXP __result = combine_all(data);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// combine_vars
+SEXP combine_vars(std::vector<std::string> vars, ListOf<IntegerVector> xs);
+RcppExport SEXP dplyr_combine_vars(SEXP varsSEXP, SEXP xsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< std::vector<std::string> >::type vars(varsSEXP );
+        Rcpp::traits::input_parameter< ListOf<IntegerVector> >::type xs(xsSEXP );
+        SEXP __result = combine_vars(vars, xs);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -259,6 +260,24 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< CharacterVector >::type by_x(by_xSEXP );
         Rcpp::traits::input_parameter< CharacterVector >::type by_y(by_ySEXP );
         DataFrame __result = right_join_impl(x, y, by_x, by_y);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// outer_join_impl
+DataFrame outer_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y);
+RcppExport SEXP dplyr_outer_join_impl(SEXP xSEXP, SEXP ySEXP, SEXP by_xSEXP, SEXP by_ySEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DataFrame >::type x(xSEXP );
+        Rcpp::traits::input_parameter< DataFrame >::type y(ySEXP );
+        Rcpp::traits::input_parameter< CharacterVector >::type by_x(by_xSEXP );
+        Rcpp::traits::input_parameter< CharacterVector >::type by_y(by_ySEXP );
+        DataFrame __result = outer_join_impl(x, y, by_x, by_y);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -554,21 +573,6 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
-// tbl_df_impl
-DataFrame tbl_df_impl(DataFrame df);
-RcppExport SEXP dplyr_tbl_df_impl(SEXP dfSEXP) {
-BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP );
-        DataFrame __result = tbl_df_impl(df);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
-END_RCPP
-}
 // split_indices
 std::vector<std::vector<int> > split_indices(IntegerVector group, int groups);
 RcppExport SEXP dplyr_split_indices(SEXP groupSEXP, SEXP groupsSEXP) {
@@ -579,6 +583,21 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< IntegerVector >::type group(groupSEXP );
         Rcpp::traits::input_parameter< int >::type groups(groupsSEXP );
         std::vector<std::vector<int> > __result = split_indices(group, groups);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// gp
+unsigned short gp(SEXP x);
+RcppExport SEXP dplyr_gp(SEXP xSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< SEXP >::type x(xSEXP );
+        unsigned short __result = gp(x);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);
@@ -601,6 +620,37 @@ BEGIN_RCPP
     return __sexp_result;
 END_RCPP
 }
+// grouped_indices_grouped_df_impl
+IntegerVector grouped_indices_grouped_df_impl(GroupedDataFrame gdf);
+RcppExport SEXP dplyr_grouped_indices_grouped_df_impl(SEXP gdfSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< GroupedDataFrame >::type gdf(gdfSEXP );
+        IntegerVector __result = grouped_indices_grouped_df_impl(gdf);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// grouped_indices_impl
+IntegerVector grouped_indices_impl(DataFrame data, ListOf<Symbol> symbols);
+RcppExport SEXP dplyr_grouped_indices_impl(SEXP dataSEXP, SEXP symbolsSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP );
+        Rcpp::traits::input_parameter< ListOf<Symbol> >::type symbols(symbolsSEXP );
+        IntegerVector __result = grouped_indices_impl(data, symbols);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
 // select_impl
 DataFrame select_impl(DataFrame df, CharacterVector vars);
 RcppExport SEXP dplyr_select_impl(SEXP dfSEXP, SEXP varsSEXP) {
@@ -611,6 +661,21 @@ BEGIN_RCPP
         Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP );
         Rcpp::traits::input_parameter< CharacterVector >::type vars(varsSEXP );
         DataFrame __result = select_impl(df, vars);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+// strings_addresses
+CharacterVector strings_addresses(CharacterVector s);
+RcppExport SEXP dplyr_strings_addresses(SEXP sSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        Rcpp::traits::input_parameter< CharacterVector >::type s(sSEXP );
+        CharacterVector __result = strings_addresses(s);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);

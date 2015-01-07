@@ -133,9 +133,10 @@ test_that("group_by fails when lists are used as grouping variables (#276)",{
 test_that("original data table not modified by grouping", {
   dt <- data.table(x = 5:1)
   dt2 <- group_by(dt, x)
+  dt2$y <- 1:5
 
   expect_equal(dt$x, 5:1)
-  expect_equal(dt2$x, 1:5)
+  expect_equal(dt$y, NULL)
 })
 
 test_that("select(group_by(.)) implicitely adds grouping variables (#170)", {
@@ -174,5 +175,63 @@ test_that("there can be 0 groups (#486)", {
   expect_equal(length(data$a), 0L)
   expect_equal(length(data$g), 0L)
   expect_equal(attr(data, "group_sizes"), integer(0))
+})
 
+test_that("group_by works with zero-row data frames (#486)", {
+  dfg <- group_by(data.frame(a = numeric(0), b = numeric(0), g = character(0)), g)
+  expect_equal(dim(dfg), c(0, 3))
+  expect_equal(groups(dfg), list(quote(g)))
+  expect_equal(group_size(dfg), integer(0))
+
+  x <- summarise(dfg, n = n())
+  expect_equal(dim(x), c(0, 2))
+  expect_equal(groups(x), NULL)
+
+  x <- mutate(dfg, c = b + 1)
+  expect_equal(dim(x), c(0, 4))
+  expect_equal(groups(x), list(quote(g)))
+  expect_equal(group_size(x), integer(0))
+
+  x <- filter(dfg, a == 100)
+  expect_equal(dim(x), c(0, 3))
+  expect_equal(groups(x), list(quote(g)))
+  expect_equal(group_size(x), integer(0))
+
+  x <- arrange(dfg, a, g)
+  expect_equal(dim(x), c(0, 3))
+  expect_equal(groups(x), list(quote(g)))
+  expect_equal(group_size(x), integer(0))
+
+  x <- select(dfg, a)  # Only select 'a' column; should result in 'g' and 'a'
+  expect_equal(dim(x), c(0, 2))
+  expect_equal(groups(x), list(quote(g)))
+  expect_equal(group_size(x), integer(0))
+})
+
+test_that("grouped_df requires a list of symbols (#665)", {
+  features <- list("feat1", "feat2", "feat3")
+  expect_error( grouped_df(data.frame(feat1=1, feat2=2, feat3=3), features) )
+})
+
+test_that("group_by gives meaningful message with unknow column (#716)",{
+  expect_error( group_by(iris, wrong_name_of_variable), "unknown column" )
+})
+
+test_that("[ on grouped_df preserves grouping if subset includes grouping vars", {
+  df <- data_frame(x = 1:5, ` ` = 6:10)
+  by_x <- df %>% group_by(x)
+  expect_equal(by_x %>% groups(), by_x %>% `[`(1:2) %>% groups)
+
+  # non-syntactic name
+  by_ns <- df %>% group_by(` `)
+  expect_equal(by_ns %>% groups(), by_ns %>% `[`(1:2) %>% groups)
+})
+
+
+test_that("[ on grouped_df drops grouping if subset doesn't include grouping vars", {
+  by_cyl <- mtcars %>% group_by(cyl)
+  no_cyl <- by_cyl %>% `[`(c(1, 3))
+
+  expect_equal(groups(no_cyl), NULL)
+  expect_is(no_cyl, "tbl_df")
 })

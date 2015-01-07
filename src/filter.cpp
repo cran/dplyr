@@ -25,10 +25,7 @@ SEXP assert_correct_filter_subcall(SEXP x, const SymbolSet& set, const Environme
                 } else if( x == Rf_install("F") ){
                     return Rf_ScalarLogical(FALSE) ;    
                 }
-                
-                std::stringstream s ;
-                s << "unknown column : " << CHAR(PRINTNAME(x)) ;
-                stop(s.str());
+                stop( "unknown column : %s", CHAR(PRINTNAME(x)) );
             }
             return res ;
         }
@@ -55,12 +52,7 @@ SEXP and_calls( const LazyDots& dots, const SymbolSet& set, const Environment& e
 
 void check_filter_result(const LogicalVector& test, int n){
     if( test.size() != n ) {
-        std::stringstream s ;
-        s << "incorrect length ("
-          << test.size()
-          << "), expecting: "
-          << n ;
-        stop( s.str() ) ;
+        stop( "incorrect length (%d), expecting: %d", test.size(), n );
     }
 }
 
@@ -217,7 +209,7 @@ SEXP filter_not_grouped( DataFrame df, const LazyDots& dots){
             }
         } else {
             check_filter_result(test, df.nrows());
-            DataFrame res = subset( df, test, df.names(), classes_not_grouped() ) ;
+            DataFrame res = subset( df, test, classes_not_grouped() ) ;
             return res ;
         }
     } else {
@@ -241,13 +233,16 @@ SEXP filter_not_grouped( DataFrame df, const LazyDots& dots){
             }
         }
 
-        DataFrame res = subset( df, test, df.names(), classes_not_grouped() ) ;
+        DataFrame res = subset( df, test, classes_not_grouped() ) ;
         return res ;
     }
 }
 
 // [[Rcpp::export]]
 SEXP filter_impl( DataFrame df, LazyDots dots){
+    if( df.nrows() == 0 || Rf_isNull(df) ) {
+        return df ;
+    }
     check_valid_colnames(df) ;
     assert_all_white_list(df) ;
     

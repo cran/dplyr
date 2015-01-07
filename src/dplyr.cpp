@@ -43,7 +43,7 @@ Result* simple_prototype(  SEXP call, const LazySubsets& subsets, int nargs ){
         // anything else: expressions, constants ...
         // workaround for now : we just let R deal with it
         // of course this needs some specializations, i.e. sum(1) does not need R to get involved
-        return 0 ;    
+        return 0 ;
     }
 
     if( nargs == 1 ){
@@ -69,13 +69,17 @@ template< template <int, bool> class Tmpl, bool narm>
 Result* minmax_prototype_impl(SEXP arg, bool is_summary){
     switch( TYPEOF(arg) ){
         case INTSXP:
+            {
             if( Rf_inherits(arg, "Date" ) || Rf_inherits(arg, "POSIXct" ) )
                 return typed_processor( Tmpl<INTSXP, narm>(arg, is_summary), arg  ) ;
             return new Tmpl<INTSXP,narm>( arg, is_summary ) ;
+            }
         case REALSXP:
+            {
             if( Rf_inherits(arg, "Date" ) || Rf_inherits(arg, "POSIXct" ) || Rf_inherits(arg, "difftime" ) )
-                return typed_processor( Tmpl<INTSXP, narm>(arg, is_summary), arg  ) ;
+                return typed_processor( Tmpl<REALSXP, narm>(arg, is_summary), arg  ) ;
             return new Tmpl<REALSXP,narm>( arg, is_summary ) ;
+            }
         default: break ;
     }
     return 0 ;
@@ -158,7 +162,7 @@ Result* count_distinct_prototype(SEXP call, const LazySubsets& subsets, int){
 }
 
 Result* row_number_prototype(SEXP call, const LazySubsets& subsets, int nargs ){
-    if( nargs >  1 ) return 0;
+    if( nargs >  1 || subsets.size() == 0 ) return 0;
 
     if( nargs == 0 ) return new RowNumber_0() ;
 
@@ -170,22 +174,27 @@ Result* row_number_prototype(SEXP call, const LazySubsets& subsets, int nargs ){
           if( subsets.count(data) ) data = subsets.get_variable(data) ;
           else return 0 ;
         }
-        switch( TYPEOF(data) ){
-            case INTSXP:  return new RowNumber<INTSXP,  false>( data ) ;
-            case REALSXP: return new RowNumber<REALSXP, false>( data ) ;
-            case STRSXP:  return new RowNumber<STRSXP,  false>( data ) ;
-            default: break;
+        if (Rf_length(data) == subsets.nrows() ){
+            switch( TYPEOF(data) ){
+                case INTSXP:  return new RowNumber<INTSXP,  false>( data ) ;
+                case REALSXP: return new RowNumber<REALSXP, false>( data ) ;
+                case STRSXP:  return new RowNumber<STRSXP,  false>( data ) ;
+                default: break;
+            }
         }
+        return 0 ;
     }
     if( TYPEOF(data) == SYMSXP ){
       if( subsets.count(data) ) data = subsets.get_variable(data) ;
       else return 0 ;
     }
-    switch( TYPEOF(data) ){
-        case INTSXP:  return new RowNumber<INTSXP,true>( data ) ;
-        case REALSXP: return new RowNumber<REALSXP,true>( data ) ;
-        case STRSXP: return new RowNumber<STRSXP,true>( data ) ;
-        default: break;
+    if (Rf_length(data) == subsets.nrows() ){
+        switch( TYPEOF(data) ){
+            case INTSXP:  return new RowNumber<INTSXP,true>( data ) ;
+            case REALSXP: return new RowNumber<REALSXP,true>( data ) ;
+            case STRSXP: return new RowNumber<STRSXP,true>( data ) ;
+            default: break;
+        }
     }
     // we don't know how to handle it.
     return 0 ;
@@ -266,49 +275,94 @@ Result* rank_impl_prototype(SEXP call, const LazySubsets& subsets, int nargs ){
     return 0 ;
 }
 
-Result* lead_prototype(SEXP call, const LazySubsets& subsets, int nargs){
-    if( nargs != 2 ) return 0 ;
-    Armor<SEXP> data( CADR(call) );
-    int n = as<int>( CADDR(call) );
-    if( TYPEOF(data) == SYMSXP ){
-      if( subsets.count(data) ) data = subsets.get_variable(data) ;
-      else return 0 ;
+struct LeadLag{
+
+    LeadLag( SEXP call ) : data(R_NilValue), n(1), ok(true) {
+
+        SEXP p = CDR(call) ;
+        SEXP tag = TAG(p) ;
+        if( tag != R_NilValue && tag != Rf_install("x") ) {
+            ok = false ;
+            return ;
+        }
+        data = CAR(p) ;
+
+        p = CDR(p);
+        if( p != R_NilValue ){
+            tag = TAG(p) ;
+            if( tag != R_NilValue && tag != Rf_install("n") ) {
+                ok = false ;
+                return ;
+            }
+
+            try{
+                n = as<int>( CAR(p) );
+            } catch( ... ){
+                SEXP n_ = CADDR(call);
+                std::stringstream s ;
+                stop( "could not convert second argument to an integer. type=%s, length = %d",
+                    type2name(n_), Rf_length(n_) ) ;
+            }
+        }
     }
-    switch( TYPEOF(data) ){
-        case INTSXP:
-            if( Rf_inherits(data, "Date") ) return new TypedLead<INTSXP>(data, n, get_date_classes() ) ;
-            return new Lead<INTSXP>(data, n) ;
-        case REALSXP:
-            if( Rf_inherits(data, "difftime") ) return new DifftimeLead<REALSXP>(data, n ) ;
-            if( Rf_inherits(data, "POSIXct") ) return new TypedLead<REALSXP>(data, n, get_time_classes() ) ;
-            if( Rf_inherits(data, "Date") ) return new TypedLead<REALSXP>(data, n, get_date_classes() ) ;
-            return new Lead<REALSXP>(data, n) ;
-        case STRSXP: return new Lead<STRSXP>(data, n) ;
-        case LGLSXP: return new Lead<LGLSXP>(data, n) ;
-        default: break ;
+
+    Armor<SEXP> data ;
+    int n ;
+
+    bool ok ;
+
+} ;
+
+Result* lead_prototype(SEXP call, const LazySubsets& subsets, int nargs){
+    LeadLag args(call) ;
+    if( !args.ok ) return 0 ;
+    Armor<SEXP>& data = args.data ;
+    int n = args.n ;
+
+    if( TYPEOF(data) == SYMSXP && subsets.count(data) ) {
+        data = subsets.get_variable(data) ;
+
+        switch( TYPEOF(data) ){
+            case INTSXP:
+                if( Rf_inherits(data, "Date") ) return new TypedLead<INTSXP>(data, n, get_date_classes() ) ;
+                return new Lead<INTSXP>(data, n) ;
+            case REALSXP:
+                if( Rf_inherits(data, "difftime") ) return new DifftimeLead<REALSXP>(data, n ) ;
+                if( Rf_inherits(data, "POSIXct") ) return new TypedLead<REALSXP>(data, n, get_time_classes() ) ;
+                if( Rf_inherits(data, "Date") ) return new TypedLead<REALSXP>(data, n, get_date_classes() ) ;
+                return new Lead<REALSXP>(data, n) ;
+            case STRSXP: return new Lead<STRSXP>(data, n) ;
+            case LGLSXP: return new Lead<LGLSXP>(data, n) ;
+            default: break ;
+        }
+
     }
     return 0 ;
 }
 
 Result* lag_prototype(SEXP call, const LazySubsets& subsets, int nargs){
-    if( nargs != 2 ) return 0 ;
-    Armor<SEXP> data( CADR(call) );
-    int n = as<int>( CADDR(call) );
-    if( TYPEOF(data) == SYMSXP ){
-      if( subsets.count(data) ) data = subsets.get_variable(data) ;
-      else return 0 ;
-    }
-    switch( TYPEOF(data) ){
-        case INTSXP:
-            if( Rf_inherits(data, "Date") ) return new TypedLag<INTSXP>(data, n, get_date_classes() ) ;
-            return new Lag<INTSXP>(data, n) ;
-        case REALSXP:
-            if( Rf_inherits(data, "POSIXct") ) return new TypedLag<REALSXP>(data, n, get_time_classes() ) ;
-            if( Rf_inherits(data, "Date") ) return new TypedLag<REALSXP>(data, n, get_date_classes() ) ;
-            return new Lag<REALSXP>(data, n) ;
-        case STRSXP: return new Lag<STRSXP>(data, n) ;
-        case LGLSXP: return new Lag<LGLSXP>(data, n) ;
-        default: break ;
+    LeadLag args(call) ;
+    if( !args.ok ) return 0 ;
+
+    Armor<SEXP>& data = args.data ;
+    int n = args.n ;
+
+    if( TYPEOF(data) == SYMSXP && subsets.count(data) ){
+        data = subsets.get_variable(data) ;
+
+        switch( TYPEOF(data) ){
+            case INTSXP:
+                if( Rf_inherits(data, "Date") ) return new TypedLag<INTSXP>(data, n, get_date_classes() ) ;
+                return new Lag<INTSXP>(data, n) ;
+            case REALSXP:
+                if( Rf_inherits(data, "POSIXct") ) return new TypedLag<REALSXP>(data, n, get_time_classes() ) ;
+                if( Rf_inherits(data, "Date") ) return new TypedLag<REALSXP>(data, n, get_date_classes() ) ;
+                return new Lag<REALSXP>(data, n) ;
+            case STRSXP: return new Lag<STRSXP>(data, n) ;
+            case LGLSXP: return new Lag<LGLSXP>(data, n) ;
+            default: break ;
+        }
+
     }
     return 0 ;
 }
@@ -338,6 +392,11 @@ Result* first_noorder_default( Vector<RTYPE> data, Vector<RTYPE> def ){
      return new Without<RTYPE>(data, def[0] );
 }
 
+template <int RTYPE, template <int> class Without >
+Result* first_noorder_default__typed( Vector<RTYPE> data, Vector<RTYPE> def ){
+     return typed_processor( Without<RTYPE>(data, def[0] ), data );
+}
+
 template <int RTYPE, template <int, int> class With>
 Result* first_with( Vector<RTYPE> data, SEXP order ){
     switch( TYPEOF(order) ){
@@ -350,11 +409,34 @@ Result* first_with( Vector<RTYPE> data, SEXP order ){
 }
 
 template <int RTYPE, template <int, int> class With>
+Result* first_with__typed( Vector<RTYPE> data, SEXP order ){
+    switch( TYPEOF(order) ){
+    case INTSXP:  return typed_processor( With<RTYPE, INTSXP>( data, order ), data );
+    case REALSXP: return typed_processor( With<RTYPE, REALSXP>( data, order ), data );
+    case STRSXP:  return typed_processor( With<RTYPE, STRSXP>( data, order ), data );
+    default: break ;
+    }
+    return 0 ;
+}
+
+
+template <int RTYPE, template <int, int> class With>
 Result* first_with_default( Vector<RTYPE> data, SEXP order, Vector<RTYPE> def ){
     switch( TYPEOF(order) ){
-    case INTSXP: return new With<RTYPE, INTSXP>( data, order, def[0] );
+    case INTSXP:  return new With<RTYPE, INTSXP>( data, order, def[0] );
     case REALSXP: return new With<RTYPE, REALSXP>( data, order, def[0] );
-    case STRSXP: return new With<RTYPE, STRSXP>( data, order, def[0] );
+    case STRSXP:  return new With<RTYPE, STRSXP>( data, order, def[0] );
+    default: break ;
+    }
+    return 0 ;
+}
+
+template <int RTYPE, template <int, int> class With>
+Result* first_with_default__typed( Vector<RTYPE> data, SEXP order, Vector<RTYPE> def ){
+    switch( TYPEOF(order) ){
+    case INTSXP:  return typed_processor( With<RTYPE, INTSXP>( data, order, def[0]  ), data );
+    case REALSXP: return typed_processor( With<RTYPE, REALSXP>( data, order, def[0] ), data );
+    case STRSXP:  return typed_processor( With<RTYPE, STRSXP>( data, order, def[0]  ), data );
     default: break ;
     }
     return 0 ;
@@ -376,8 +458,18 @@ Result* first_prototype( SEXP call, const LazySubsets& subsets, int nargs){
     // easy case : just a single variable: first(x)
     if( nargs == 1 ){
         switch( TYPEOF(data) ){
-        case INTSXP: return new Without<INTSXP>(data) ;
-        case REALSXP: return new Without<REALSXP>(data) ;
+        case INTSXP: {
+                if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "factor" ) )
+                    return typed_processor( Without<INTSXP>(data), data ) ;
+
+                return new Without<INTSXP>(data) ;
+        }
+        case REALSXP: {
+                if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime" ) )
+                    return typed_processor( Without<REALSXP>(data), data ) ;
+
+                return new Without<REALSXP>(data) ;
+        }
         case STRSXP: return new Without<STRSXP>(data) ;
         default: break ;
         }
@@ -404,40 +496,66 @@ Result* first_prototype( SEXP call, const LazySubsets& subsets, int nargs){
         // handle cases
         if( def == R_NilValue ){
 
-            // then we know order_by is not NULL, we only handle the case where
-            // order_by is a symbol and that symbol is in the data
-            if( TYPEOF(order_by) != SYMSXP || ! subsets.count(order_by) ){
-                stop("invalid order_by") ;
-            }
-            order_by = subsets.get_variable(order_by) ;
+            // then we know order_by is not NULL
+            if( TYPEOF(order_by) == SYMSXP && subsets.count(order_by) ){
 
-            switch( TYPEOF(data) ){
-                case INTSXP: return first_with<INTSXP, With>( data, order_by ) ;
-                case REALSXP: return first_with<REALSXP, With>( data, order_by ) ;
-                case STRSXP: return first_with<STRSXP, With>( data, order_by ) ;
-                default: break ;
+                // the optimized case, when order_by is a variable from the data set
+                order_by = subsets.get_variable(order_by) ;
+
+                switch( TYPEOF(data) ){
+                    case INTSXP: {
+                        if( Rf_inherits(data, "factor") || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "Date" ) )
+                            return first_with__typed<INTSXP, With>( data, order_by) ;
+                        return first_with<INTSXP, With>( data, order_by ) ;
+                    }
+                    case REALSXP: {
+                        if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime") )
+                            return first_with__typed<REALSXP, With>( data, order_by) ;
+                        return first_with<REALSXP, With>( data, order_by ) ;
+                    }
+                    case STRSXP: return first_with<STRSXP, With>( data, order_by ) ;
+                    default: break ;
+                }
             }
 
         } else {
             if( order_by == R_NilValue ){
                 switch( TYPEOF(data) ){
-                    case INTSXP: return first_noorder_default<INTSXP, Without>(data, def) ;
-                    case REALSXP: return first_noorder_default<REALSXP, Without>(data, def) ;
+                    case INTSXP: {
+                        if( Rf_inherits(data, "factor") || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "Date" ) )
+                            return first_noorder_default__typed<INTSXP, Without>(data, def) ;
+                        return first_noorder_default<INTSXP, Without>(data, def) ;
+                    }
+                    case REALSXP: {
+                        if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime") )
+                            return first_noorder_default__typed<REALSXP, Without>(data, def) ;
+                        return first_noorder_default<REALSXP, Without>(data, def) ;
+                    }
                     case STRSXP: return first_noorder_default<STRSXP, Without>(data, def) ;
                     default: break ;
                 }
             } else {
-                if( TYPEOF(order_by) != SYMSXP || ! subsets.count(order_by) ){
-                    stop("invalid order_by") ;
-                }
-                order_by = subsets.get_variable(order_by) ;
+                if( TYPEOF(order_by) == SYMSXP && subsets.count(order_by) ){
+                    order_by = subsets.get_variable(order_by) ;
 
-                switch( TYPEOF(data) ){
-                    case INTSXP: return first_with_default<INTSXP, With>(data, order_by, def) ;
-                    case REALSXP: return first_with_default<REALSXP,With>(data, order_by, def) ;
-                    case STRSXP: return first_with_default<STRSXP,With>(data, order_by, def) ;
-                    default: break ;
+                    switch( TYPEOF(data) ){
+                        case INTSXP: {
+                            if( Rf_inherits(data, "factor") || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "Date" ) )
+                                return first_with_default__typed<INTSXP, With>(data, order_by, def) ;
+
+                            return first_with_default<INTSXP, With>(data, order_by, def) ;
+                        }
+                        case REALSXP: {
+                            if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime") )
+                                return first_with_default__typed<REALSXP,With>(data, order_by, def) ;
+
+                            return first_with_default<REALSXP,With>(data, order_by, def) ;
+                        }
+                        case STRSXP: return first_with_default<STRSXP,With>(data, order_by, def) ;
+                        default: break ;
+                    }
                 }
+
             }
         }
 
@@ -507,6 +625,33 @@ Result* nth_with_default__typed( Vector<RTYPE> data, int idx, SEXP order, Vector
 }
 
 
+Result* in_prototype( SEXP call, const LazySubsets& subsets, int nargs){
+    SEXP lhs = CADR(call) ;
+    SEXP rhs = CADDR(call) ;
+
+    // if lhs is not a symbol, let R handle it
+    if( TYPEOF(lhs) != SYMSXP ) return 0 ;
+
+    // if the lhs is not in the data, let R handle it
+    if( !subsets.count(lhs) ) return 0 ;
+
+    SEXP v = subsets.get_variable(lhs) ;
+
+    // if the type of the data is not the same as the type of rhs,
+    // including if it needs evaluation, let R handle it
+    if( TYPEOF(v) != TYPEOF(rhs) ) return 0 ;
+
+    // otherwise use hybrid version
+    switch( TYPEOF(v) ){
+    case STRSXP: return new In<STRSXP>(v, rhs) ;
+    default: break ;
+    }
+
+    // type not handled
+    return 0 ;
+
+}
+
 Result* nth_prototype( SEXP call, const LazySubsets& subsets, int nargs){
     // has to have at least two arguments
     if( nargs < 2 ) return 0 ;
@@ -518,9 +663,7 @@ Result* nth_prototype( SEXP call, const LazySubsets& subsets, int nargs){
     SEXP data = CADR(call) ;
     if( TYPEOF(data) == SYMSXP ) {
         if( ! subsets.count(data) ){
-            std::stringstream s ;
-            s << "could not find variable '" << CHAR(PRINTNAME(data)) << "'" ;
-            stop(s.str()) ;
+            stop( "could not find variable '%s'", CHAR(PRINTNAME(data)) );
         }
         data = subsets.get_variable(data) ;
     }
@@ -531,7 +674,10 @@ Result* nth_prototype( SEXP call, const LazySubsets& subsets, int nargs){
     }
     SEXP nidx = CADDR(call) ;
     if( ( TYPEOF(nidx) != REALSXP && TYPEOF(nidx) != INTSXP ) || LENGTH(nidx) != 1 ){
-        stop("'n' should be a scalar integer") ;
+        // we only know how to handle the case where nidx is a length one
+        // integer or numeric. In any other case, e.g. an expression for R to evaluate
+        // we just fallback to R evaluation (#734)
+        return 0 ;
     }
     int idx = as<int>(nidx) ;
 
@@ -583,28 +729,28 @@ Result* nth_prototype( SEXP call, const LazySubsets& subsets, int nargs){
 
             // then we know order_by is not NULL, we only handle the case where
             // order_by is a symbol and that symbol is in the data
-            if( TYPEOF(order_by) != SYMSXP || ! subsets.count(order_by) ){
-                stop("invalid order_by") ;
-            }
-            order_by = subsets.get_variable(order_by) ;
+            if( TYPEOF(order_by) == SYMSXP && subsets.count(order_by) ){
+                order_by = subsets.get_variable(order_by) ;
 
-            switch( TYPEOF(data) ){
-                case LGLSXP: return nth_with<LGLSXP>( data, idx, order_by ) ;
-                case INTSXP:
-                    {
-                        if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "factor" ) )
-                            return nth_with__typed<INTSXP>( data, idx, order_by ) ;
-                        return nth_with<INTSXP>( data, idx, order_by ) ;
-                    }
-                case REALSXP:
-                    {
-                        if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime") )
-                            return nth_with__typed<REALSXP>( data, idx, order_by ) ;
-                        return nth_with<REALSXP>( data, idx, order_by ) ;
-                    }
-                case STRSXP: return nth_with<STRSXP>( data, idx, order_by ) ;
-                default: break ;
+                switch( TYPEOF(data) ){
+                    case LGLSXP: return nth_with<LGLSXP>( data, idx, order_by ) ;
+                    case INTSXP:
+                        {
+                            if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "factor" ) )
+                                return nth_with__typed<INTSXP>( data, idx, order_by ) ;
+                            return nth_with<INTSXP>( data, idx, order_by ) ;
+                        }
+                    case REALSXP:
+                        {
+                            if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime") )
+                                return nth_with__typed<REALSXP>( data, idx, order_by ) ;
+                            return nth_with<REALSXP>( data, idx, order_by ) ;
+                        }
+                    case STRSXP: return nth_with<STRSXP>( data, idx, order_by ) ;
+                    default: break ;
+                }
             }
+
 
         } else {
             if( order_by == R_NilValue ){
@@ -626,26 +772,26 @@ Result* nth_prototype( SEXP call, const LazySubsets& subsets, int nargs){
                     default: break ;
                 }
             } else {
-                if( TYPEOF(order_by) != SYMSXP || ! subsets.count(order_by) ){
-                    stop("invalid order_by") ;
-                }
-                order_by = subsets.get_variable(order_by) ;
+                if( TYPEOF(order_by) == SYMSXP && subsets.count(order_by) ){
+                    order_by = subsets.get_variable(order_by) ;
 
-                switch( TYPEOF(data) ){
-                    case LGLSXP: return nth_with_default<LGLSXP>(data, idx, order_by, def) ;
-                    case INTSXP: {
-                            if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "POSIXct" ) )
-                                return nth_with_default__typed<INTSXP>( data, idx, order_by, def ) ;
-                            return nth_with_default<INTSXP>(data, idx, order_by, def) ;
+                    switch( TYPEOF(data) ){
+                        case LGLSXP: return nth_with_default<LGLSXP>(data, idx, order_by, def) ;
+                        case INTSXP: {
+                                if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits( data, "POSIXct" ) )
+                                    return nth_with_default__typed<INTSXP>( data, idx, order_by, def ) ;
+                                return nth_with_default<INTSXP>(data, idx, order_by, def) ;
+                        }
+                        case REALSXP: {
+                                if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime" ) )
+                                    return nth_with_default__typed<REALSXP>( data, idx, order_by, def ) ;
+                                return nth_with_default<REALSXP>(data, idx, order_by, def) ;
+                        }
+                        case STRSXP: return nth_with_default<STRSXP>(data, idx, order_by, def) ;
+                        default: break ;
                     }
-                    case REALSXP: {
-                            if( Rf_inherits( data, "Date" ) || Rf_inherits( data, "POSIXct" ) || Rf_inherits(data, "difftime" ) )
-                                return nth_with_default__typed<REALSXP>( data, idx, order_by, def ) ;
-                            return nth_with_default<REALSXP>(data, idx, order_by, def) ;
-                    }
-                    case STRSXP: return nth_with_default<STRSXP>(data, idx, order_by, def) ;
-                    default: break ;
                 }
+
             }
         }
 
@@ -679,12 +825,15 @@ HybridHandlerMap& get_handlers(){
         // handlers[ Rf_install( "cummin")          ] = cumfun_prototype<CumMin> ;
         // handlers[ Rf_install( "cummax")          ] = cumfun_prototype<CumMax> ;
 
-        // handlers[ Rf_install( "lead" )           ] = lead_prototype ;
-        // handlers[ Rf_install( "lag" )            ] = lag_prototype ;
+        handlers[ Rf_install( "lead" )           ] = lead_prototype ;
+        handlers[ Rf_install( "lag" )            ] = lag_prototype ;
 
         handlers[ Rf_install( "first" ) ] = first_prototype<dplyr::First, dplyr::FirstWith> ;
         handlers[ Rf_install( "last" ) ]  = first_prototype<dplyr::Last, dplyr::LastWith> ;
         handlers[ Rf_install( "nth" ) ]  = nth_prototype ;
+
+        // handlers[ Rf_install( "%in%" ) ] = in_prototype ;
+
     }
     return handlers ;
 }
@@ -761,18 +910,28 @@ DataFrame subset( DataFrame df, const Index& indices, CharacterVector columns, C
 }
 
 template <typename Index>
+DataFrame subset( DataFrame df, const Index& indices, CharacterVector classes){
+    DataFrameVisitors visitors(df) ;
+    return visitors.subset(indices, classes) ;
+}
+
+template <typename Index>
 DataFrame subset( DataFrame x, DataFrame y, const Index& indices_x, const Index& indices_y, CharacterVector by_x, CharacterVector by_y , CharacterVector classes ){
     // first the joined columns
-    DataFrameJoinVisitors join_visitors(x, y, by_x, by_y) ;
+    DataFrameJoinVisitors join_visitors(x, y, by_x, by_y, false) ;
     int n_join_visitors = join_visitors.size() ;
 
     // then columns from x but not y
     CharacterVector all_x_columns = x.names() ;
+    std::vector<bool> joiner( all_x_columns.size() ) ;
     CharacterVector x_columns( all_x_columns.size() - n_join_visitors ) ;
     for( int i=0, k=0; i<all_x_columns.size(); i++){
         SEXP name = all_x_columns[i] ;
         if( std::find(by_x.begin(), by_x.end(), name) == by_x.end() ) {
+            joiner[i] = false ;
             x_columns[k++] = name ;
+        } else {
+            joiner[i] = true ;
         }
     }
     DataFrameVisitors visitors_x(x, x_columns) ;
@@ -794,35 +953,35 @@ DataFrame subset( DataFrame x, DataFrame y, const Index& indices_x, const Index&
     int nrows = indices_x.size() ;
     List out(n_join_visitors+nv_x+nv_y);
     CharacterVector names(n_join_visitors+nv_x+nv_y) ;
-    int k=0;
-
+    
+    int index_join_visitor = 0 ;
+    int index_x_visitor = 0 ;
     // ---- join visitors
-    for( ; k<n_join_visitors; k++){
-        out[k] = join_visitors.get(k)->subset(indices_x) ;
-        names[k] = by_x[k] ;
-    }
-
-    for( int i=0; i<nv_x; k++, i++){
-        out[k] = visitors_x.get(i)->subset(indices_x) ;
-        String col_name = x_columns[i] ;
-
-        if( std::find( by_x.begin(), by_x.end(), col_name.get_sexp() ) != by_x.end() ){
-            // if the variable is from by_x, just use it verbatim
-        } else if( std::find(y_columns.begin(), y_columns.end(), col_name.get_sexp()) != y_columns.end() ) {
-            // if it is not, but is also in y, then suffix with .x
-            col_name += ".x" ;
+    for( int i=0; i<all_x_columns.size(); i++){
+        String col_name = all_x_columns[i] ;
+        if( joiner[i] ){
+            JoinVisitor* v = join_visitors.get(col_name) ;
+            out[i] = v->subset(indices_x) ;
+            index_join_visitor++ ;
         } else {
-            // otherwise just use verbatim
+            // not from by_x, but is also in y, so we suffix with .x
+            if( std::find(y_columns.begin(), y_columns.end(), col_name.get_sexp()) != y_columns.end() ) {
+                col_name += ".x" ;        
+            }
+            
+            out[i] = visitors_x.get(index_x_visitor)->subset(indices_x) ;  
+            index_x_visitor++ ;
         }
-
-        names[k] = col_name ;
+        names[i] = col_name ;
     }
+
+    int k = index_join_visitor +  index_x_visitor ;
     for( int i=0; i<nv_y; i++, k++){
         String col_name = y_columns[i] ;
 
         // we suffix by .y if this column is in x_columns
 
-        if( std::find(x_columns.begin(), x_columns.end(), col_name.get_sexp()) != x_columns.end() ){
+        if( std::find(all_x_columns.begin(), all_x_columns.end(), col_name.get_sexp()) != all_x_columns.end() ){
             col_name += ".y" ;
         }
 
@@ -859,15 +1018,45 @@ void push_back( Container& x, typename Container::value_type value, int n ){
         x.push_back( value ) ;
 }
 
+std::string get_unsupported_attributes( SEXP v ){
+    SEXP att = ATTRIB(v) ;
+    std::stringstream s ;
+    int i = 0 ;
+    
+    // only allow R_Names. as in R's do_isvector
+    while( att != R_NilValue ){
+        SEXP tag = TAG(att) ;
+        if( !( tag == R_NamesSymbol || tag == Rf_install("comment") ) ) {
+            if( i > 0 ) s << ", " ;
+            i++ ;
+            s << CHAR(PRINTNAME(tag)) ;
+        }
+        att = CDR(att) ;    
+    }
+    
+    return s.str() ; 
+}
+
 void assert_all_white_list(const DataFrame& data){
     // checking variables are on the white list
     int nc = data.size() ;
     for( int i=0; i<nc; i++){
         if( !white_list(data[i]) ){
-            std::stringstream ss ;
             CharacterVector names = data.names() ;
-            ss << "column '" << names[i] << "' has unsupported type" ;
-            stop(ss.str()) ;
+            String name_i = names[i] ;
+            SEXP v = data[i] ;
+            
+            SEXP klass = Rf_getAttrib(v, R_ClassSymbol) ;
+            if( !Rf_isNull(klass) ){
+                stop( "column '%s' has unsupported type : %s",
+                    name_i.get_cstring() , get_single_class(v) );
+            }
+            
+            std::string unsupported_attributes = get_unsupported_attributes(v) ;
+            
+            stop( "column '%s' of type %s has unsupported attributes: %s",
+                    name_i.get_cstring() , get_single_class(v), unsupported_attributes );    
+            
         }
     }
 }
@@ -875,7 +1064,7 @@ void assert_all_white_list(const DataFrame& data){
 // [[Rcpp::export]]
 DataFrame semi_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y ){
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(x, y, by_x, by_y) ;
+    DataFrameJoinVisitors visitors(x, y, by_x, by_y, true) ;
     Map map(visitors);
 
     // train the map in terms of x
@@ -904,7 +1093,7 @@ DataFrame semi_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, Charac
 // [[Rcpp::export]]
 DataFrame anti_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y){
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(x, y, by_x, by_y) ;
+    DataFrameJoinVisitors visitors(x, y, by_x, by_y, true) ;
     Map map(visitors);
 
     // train the map in terms of x
@@ -929,7 +1118,7 @@ DataFrame anti_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, Charac
 // [[Rcpp::export]]
 DataFrame inner_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y){
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(x, y, by_x, by_y) ;
+    DataFrameJoinVisitors visitors(x, y, by_x, by_y, true) ;
     Map map(visitors);
 
     int n_x = x.nrows(), n_y = y.nrows() ;
@@ -937,36 +1126,23 @@ DataFrame inner_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, Chara
     std::vector<int> indices_x ;
     std::vector<int> indices_y ;
 
-    if( n_x <= n_y ){
-        // train the map in terms of x
-        train_push_back( map, n_x ) ;
-
-        for( int i=0; i<n_y; i++){
-            // find indices for rows in x that match the row i in y
-            Map::iterator it = map.find(-i-1) ;
-            if( it != map.end() ){
-                push_back( indices_x, it->second );
-                push_back( indices_y, i, it->second.size() ) ;
-            }
-        }
-    } else {
-        train_push_back_right( map, n_y ) ;
-
-        for( int i=0; i<n_x; i++){
-            Map::iterator it = map.find(i) ;
-            if( it != map.end() ){
-                push_back_right( indices_y, it->second );
-                push_back( indices_x, i, it->second.size() ) ;
-            }
-        }
+    train_push_back_right( map, n_y ) ;
+    
+    for( int i=0; i<n_x; i++){
+        Map::iterator it = map.find(i) ;
+        if( it != map.end() ){
+            push_back_right( indices_y, it->second );
+            push_back( indices_x, i, it->second.size() ) ;
+        } 
     }
+    
     return subset( x, y, indices_x, indices_y, by_x, by_y, x.attr( "class") );
 }
 
 // [[Rcpp::export]]
 DataFrame left_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y ){
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(y, x, by_y, by_x) ;
+    DataFrameJoinVisitors visitors(y, x, by_y, by_x, true) ;
     Map map(visitors);
 
     // train the map in terms of y
@@ -993,10 +1169,10 @@ DataFrame left_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, Charac
 // [[Rcpp::export]]
 DataFrame right_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y){
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(x, y, by_x, by_y) ;
+    DataFrameJoinVisitors visitors(x, y, by_x, by_y, true) ;
     Map map(visitors);
 
-    // train the map in terms of y
+    // train the map in terms of x
     train_push_back( map, x.nrows() ) ;
 
     std::vector<int> indices_x ;
@@ -1010,10 +1186,54 @@ DataFrame right_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, Chara
             push_back( indices_x,    it->second ) ;
             push_back( indices_y, i, it->second.size() ) ;
         } else {
-            indices_x.push_back(-1) ; // mark NA
+            indices_x.push_back(-i-1) ; // point to the i-th row in the right table
             indices_y.push_back(i) ;
         }
     }
+    return subset( x, y, indices_x, indices_y, by_x, by_y, x.attr( "class" ) ) ;
+}
+
+// [[Rcpp::export]]
+DataFrame outer_join_impl( DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y ){
+    typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
+    DataFrameJoinVisitors visitors(y, x, by_y, by_x, true) ;
+    Map map(visitors);
+
+    // train the map in terms of y
+    train_push_back( map, y.nrows() ) ;
+
+    std::vector<int> indices_x ;
+    std::vector<int> indices_y ;
+
+    int n_x = x.nrows(), n_y = y.nrows() ;
+
+    // get both the matches and the rows from left but not right
+    for( int i=0; i<n_x; i++){
+        // find a row in y that matches row i in x
+        Map::iterator it = map.find(-i-1) ;
+        if( it != map.end() ){
+            push_back( indices_y,    it->second ) ;
+            push_back( indices_x, i, it->second.size() ) ;
+        } else {
+            indices_y.push_back(-1) ; // mark NA
+            indices_x.push_back(i) ;
+        }
+    }
+
+    // train a new map in terms of x this time
+    DataFrameJoinVisitors visitors2(x,y,by_x,by_y, false) ;
+    Map map2(visitors2);
+    train_push_back( map2, x.nrows() ) ;
+
+    for( int i=0; i<n_y; i++){
+        // try to find row in x that matches this row of y
+        Map::iterator it = map2.find(-i-1) ;
+        if( it == map2.end() ){
+            indices_x.push_back(-i-1) ;
+            indices_y.push_back(i) ;
+        }
+    }
+
     return subset( x, y, indices_x, indices_y, by_x, by_y, x.attr( "class" ) ) ;
 }
 
@@ -1188,7 +1408,7 @@ dplyr::BoolResult equal_data_frame(DataFrame x, DataFrame y, bool ignore_col_ord
     if( !compat ) return compat ;
 
     typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map ;
-    DataFrameJoinVisitors visitors(x, y, x.names(), x.names() ) ;
+    DataFrameJoinVisitors visitors(x, y, x.names(), x.names(), true ) ;
     Map map(visitors);
 
     // train the map in both x and y
@@ -1266,7 +1486,7 @@ DataFrame union_data_frame( DataFrame x, DataFrame y){
         stop( "not compatible" );
 
     typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set ;
-    DataFrameJoinVisitors visitors(x, y, x.names(), x.names() ) ;
+    DataFrameJoinVisitors visitors(x, y, x.names(), x.names(), true) ;
     Set set(visitors);
 
     train_insert( set, x.nrows() ) ;
@@ -1281,7 +1501,7 @@ DataFrame intersect_data_frame( DataFrame x, DataFrame y){
         stop( "not compatible" );
 
     typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set ;
-    DataFrameJoinVisitors visitors(x, y, x.names(), x.names() ) ;
+    DataFrameJoinVisitors visitors(x, y, x.names(), x.names(), true ) ;
     Set set(visitors);
 
     train_insert( set, x.nrows() ) ;
@@ -1305,7 +1525,7 @@ DataFrame setdiff_data_frame( DataFrame x, DataFrame y){
         stop( "not compatible" );
 
     typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set ;
-    DataFrameJoinVisitors visitors(y, x, y.names(), y.names() ) ;
+    DataFrameJoinVisitors visitors(y, x, y.names(), y.names(), true ) ;
     Set set(visitors);
 
     train_insert( set, y.nrows() ) ;
@@ -1329,7 +1549,7 @@ IntegerVector match_data_frame( DataFrame x, DataFrame y){
         stop( "not compatible" );
 
     typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set ;
-    DataFrameJoinVisitors visitors(y, x, x.names(), x.names() ) ;
+    DataFrameJoinVisitors visitors(y, x, x.names(), x.names(), true ) ;
     Set set(visitors);
 
     train_insert( set, y.nrows() ) ;
@@ -1364,15 +1584,15 @@ DataFrame build_index_cpp( DataFrame data ){
         vars[i] = PRINTNAME(symbols[i]) ;
 
         const char* name = vars[i] ;
-        SEXP v = data[name] ;
+        SEXP v  ;
+        try{
+            v = data[name] ;
+        } catch(...){
+           stop( "unknown column '%s'", name );
+        }
         if( !white_list(v) || TYPEOF(v) == VECSXP ){
-            std::stringstream ss ;
-            ss << "cannot group column "
-               << name
-               <<", of class '"
-               << get_single_class(v)
-               << "'" ;
-            stop(ss.str()) ;
+            stop( "cannot group column %s, of class '%s'",
+                name, get_single_class(v) ) ;
         }
     }
 
@@ -1488,9 +1708,7 @@ public:
         }
 
         if( n_neg > 0 && n_pos > 0 ){
-            std::stringstream s;
-            s << "found " << n_pos << " positive indices and " << n_neg << " negative indices" ;
-            stop(s.str()) ;
+            stop( "found %d positive indices and %d negative indices", n_pos, n_neg );
         }
 
     }
@@ -1589,7 +1807,7 @@ SEXP slice_not_grouped( const DataFrame& df, const LazyDots& dots){
     int nr = df.nrows() ;
 
     IntegerVector test = check_filter_integer_result(proxy.eval()) ;
-    
+
     int n = test.size() ;
 
     // count the positive and negatives
@@ -1713,9 +1931,7 @@ SEXP mutate_grouped(const DataFrame& df, const LazyDots& dots){
             } else {
                 SEXP v = env.find(CHAR(PRINTNAME(call))) ;
                 if( Rf_isNull(v) ){
-                    std::stringstream s ;
-                    s << "unknown variable: " << CHAR(PRINTNAME(call)) ;
-                    stop(s.str());
+                    stop( "unknown variable: %s", CHAR(PRINTNAME(call)) );
                 } else if( Rf_length(v) == 1){
                     Replicator* rep = constant_replicator<Data>(v, gdf.nrows() );
                     variable = __( rep->collect() );
@@ -1796,6 +2012,9 @@ SEXP mutate_not_grouped(DataFrame df, const LazyDots& dots){
 
         check_supported_type(result, name) ;
 
+        if( Rf_inherits(result, "POSIXlt") ){
+            stop("`mutate` does not support `POSIXlt` results");
+        }
         if( Rf_length(result) == df.nrows() ){
             // ok
         } else if( Rf_length(result) == 1 ){
@@ -1804,13 +2023,7 @@ SEXP mutate_not_grouped(DataFrame df, const LazyDots& dots){
             result = __( gather->collect() ) ;
             delete gather ;
         } else {
-            std::stringstream s ;
-            s << "wrong result size ("
-              << Rf_length(result)
-              << "), expected "
-              << df.nrows()
-              << " or 1" ;
-            stop(s.str()) ;
+            stop( "wrong result size (%d), expected %d or 1", Rf_length(result), df.nrows() ) ;
         }
 
         call_proxy.input( name, result ) ;
@@ -1898,9 +2111,7 @@ SEXP n_distinct(SEXP x){
     SlicingIndex everything(0, n);
     boost::scoped_ptr<Result> res( count_distinct_result(x) );
     if( !res ){
-        std::stringstream ss ;
-        ss << "cannot handle object of type" << type2name(x) ;
-        stop( ss.str() ) ;
+        stop( "cannot handle object of type %s", type2name(x) );
     }
     return res->process(everything) ;
 }
@@ -1922,11 +2133,6 @@ DataFrame ungroup_grouped_df( DataFrame df){
 }
 
 // [[Rcpp::export]]
-DataFrame tbl_df_impl( DataFrame df){
-  return ungroup_grouped_df(df);
-}
-
-// [[Rcpp::export]]
 std::vector<std::vector<int> > split_indices(IntegerVector group, int groups) {
   std::vector<std::vector<int> > ids(groups);
 
@@ -1938,3 +2144,11 @@ std::vector<std::vector<int> > split_indices(IntegerVector group, int groups) {
   return ids;
 }
 
+
+// simple internal debugging function to access the gp part of the SEXP
+// only meant for internal use in dplyr debugging
+
+// [[Rcpp::export]]
+unsigned short gp( SEXP x){
+    return reinterpret_cast<sxpinfo_struct*>(x)->gp ;
+}

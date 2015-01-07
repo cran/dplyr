@@ -26,6 +26,10 @@ filter_ <- function(.data, ..., .dots) {
 
 #' Select rows by position.
 #'
+#' Slice does not work with relational databases because they have no
+#' intrinsic notion of row order. If you want to perform the equivalent
+#' operation, use \code{\link{filter}()} and \code{\link{row_number}()}.
+#'
 #' @family single table verbs
 #' @param .data A tbl. All main verbs are S3 generics and provide methods
 #'   for \code{\link{tbl_df}}, \code{\link{tbl_dt}} and \code{\link{tbl_sql}}.
@@ -39,6 +43,13 @@ filter_ <- function(.data, ..., .dots) {
 #'
 #' by_cyl <- group_by(mtcars, cyl)
 #' slice(by_cyl, 1:2)
+#'
+#' # Equivalent code using filter that will also work with databases,
+#' # but won't be as fast for in-memory data. For many databases, you'll
+#' # need to supply an explicit variable to use to compute the row number.
+#' filter(mtcars, row_number() == 1L)
+#' filter(mtcars, row_number() == n())
+#' filter(mtcars, between(row_number(), 5, n()))
 slice <- function(.data, ...) {
   slice_(.data, .dots = lazyeval::lazy_dots(...))
 }
@@ -50,6 +61,12 @@ slice_ <- function(.data, ..., .dots) {
 }
 
 #' Summarise multiple values to a single value.
+#'
+#' @section Backend variations:
+#'
+#' Data frames are the only backend that supports creating a variable and
+#' using it in the same summary. See examples for more details.
+#' you create
 #'
 #' @export
 #' @inheritParams filter
@@ -64,8 +81,21 @@ slice_ <- function(.data, ..., .dots) {
 #' @examples
 #' summarise(mtcars, mean(disp))
 #' summarise(group_by(mtcars, cyl), mean(disp))
-#'
 #' summarise(group_by(mtcars, cyl), m = mean(disp), sd = sd(disp))
+#'
+#' # With data frames, you can create and immediately use summaries
+#' by_cyl <- mtcars %>% group_by(cyl)
+#' by_cyl %>% summarise(a = n(), b = a + 1)
+#'
+#' \dontrun{
+#' # You can't with data tables or databases
+#' by_cyl_dt <- mtcars %>% tbl_dt() %>% group_by(cyl)
+#' by_cyl_dt %>% summarise(a = n(), b = a + 1)
+#'
+#' by_cyl_db <- src_sqlite(":memory:", create = TRUE) %>%
+#'   copy_to(mtcars) %>% group_by(cyl)
+#' by_cyl_db %>% summarise(a = n(), b = a + 1)
+#' }
 summarise <- function(.data, ...) {
   summarise_(.data, .dots = lazyeval::lazy_dots(...))
 }
@@ -234,6 +264,9 @@ arrange_ <- function(.data, ..., .dots) {
 #' # Rename variables:
 #' # * select() keeps only the variables you specify
 #' select(iris, petal_length = Petal.Length)
+#' # Renaming multiple variables uses a prefix:
+#' select(iris, petal = starts_with("Petal"))
+#'
 #' # * rename() keeps all variables
 #' rename(iris, petal_length = Petal.Length)
 #'
@@ -261,7 +294,7 @@ rename <- function(.data, ...) {
 
 #' @rdname select
 #' @export
-rename_ <- function(.data, ...) {
+rename_ <- function(.data, ..., .dots) {
   UseMethod("rename_")
 }
 

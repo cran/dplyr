@@ -55,14 +55,14 @@ test_that("rbind_list doesn't promote factor to numeric", {
   df1 <- data.frame( a = 1:5, b = 1:5 )
   df2 <- data.frame( a = 1:5, b = factor(letters[1:5]) )
 
-  expect_error(rbind_list( df1, df2 ), "not compatible")
+  expect_error(rbind_list( df1, df2 ), "incompatible type")
 })
 
 test_that("rbind_list doesn't coerce integer to factor", {
   df1 <- data.frame( a = 1:10, b = 1:10 )
   df2 <- data.frame( a = 1:5, b = factor(letters[1:5]) )
 
-  expect_error( rbind_list( df1, df2 ), "not compatible" )
+  expect_error( rbind_list( df1, df2 ), "incompatible type" )
 })
 
 test_that( "rbind_list coerces factor to character when levels don't match", {
@@ -151,3 +151,23 @@ test_that("rbind handles data frames with no rows (#597)",{
   expect_equal(rbind_list(empty, empty), tbl_df(empty))
   expect_equal(rbind_list(empty, empty, empty), tbl_df(empty))  
 })
+
+test_that("rbind handles all NA columns (#493)", {
+  mydata <- list(
+    data.frame(x=c("foo", "bar")),
+    data.frame(x=NA)
+  )
+  res <- rbind_all(mydata)
+  expect_true( is.na(res$x[3]) )
+  expect_is( res$x, "factor" )
+  
+  mydata <- list(
+    data.frame(x=NA),
+    data.frame(x=c("foo", "bar"))
+  )
+  res <- rbind_all(mydata)
+  expect_true( is.na(res$x[1]) )
+  expect_is( res$x, "factor" )
+  
+})
+

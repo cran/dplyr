@@ -5,8 +5,8 @@ namespace dplyr {
         
     class LazyGroupedSubsets : public LazySubsets {
     public:
-        typedef dplyr_hash_map<SEXP, GroupedSubset*> GroupedSubsetMap ;
-        typedef dplyr_hash_map<SEXP, SEXP> ResolvedSubsetMap ;
+        typedef dplyr_hash_map<Name, GroupedSubset*> GroupedSubsetMap ;
+        typedef dplyr_hash_map<Name, SEXP> ResolvedSubsetMap ;
         
         LazyGroupedSubsets( const GroupedDataFrame& gdf_ ): gdf(gdf_), subset_map(), resolved_map(), owner(true) {
             int max_size = gdf.max_group_size() ;
@@ -37,11 +37,7 @@ namespace dplyr {
         SEXP get_variable( SEXP symbol ) const {
             GroupedSubsetMap::const_iterator it = subset_map.find( symbol );
             if( it == subset_map.end() ){
-                std::stringstream s ;
-                s << "variable '" 
-                  << CHAR(PRINTNAME(symbol))
-                  << "' not found in the dataset" ;
-                stop(s.str()) ;
+                stop( "variable '%s' not found in the dataset",CHAR(PRINTNAME(symbol)) ) ;
             }
             return it->second->get_variable() ;  
         }

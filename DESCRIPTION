@@ -1,6 +1,6 @@
 Package: dplyr
 Type: Package
-Version: 0.3.0.2
+Version: 0.4.0
 Title: A Grammar of Data Manipulation
 Description: A fast, consistent tool for working with data frame like objects,
     both in memory and out of memory.
@@ -11,39 +11,38 @@ Authors@R: as.person(c(
     ))
 URL: https://github.com/hadley/dplyr
 BugReports: https://github.com/hadley/dplyr/issues
-Depends: R (>= 3.1)
-Imports: assertthat, utils, R6, Rcpp, magrittr, lazyeval (>= 0.1.8),
+Depends: R (>= 3.0.2)
+Imports: assertthat, utils, R6, Rcpp, magrittr, lazyeval (>= 0.1.10),
         DBI (>= 0.3)
-Suggests: RSQLite, RSQLite.extfuns, RMySQL, RPostgreSQL, data.table,
+Suggests: RSQLite (>= 1.0.0), RMySQL, RPostgreSQL, data.table,
         testthat, knitr, microbenchmark, ggplot2, mgcv, Lahman (>=
         3.0-1), nycflights13, methods
 VignetteBuilder: knitr
 LazyData: yes
 LinkingTo: Rcpp (>= 0.11.3), BH (>= 1.51.0-2)
 License: MIT + file LICENSE
-Collate: 'RcppExports.R' 'all-equal.r' 'bench-compare.r' 'cbind.r'
-        'chain.r' 'cluster.R' 'colwise.R' 'compute-collect.r'
-        'copy-to.r' 'data-lahman.r' 'data-nasa.r' 'data-nycflights13.r'
+Collate: 'RcppExports.R' 'all-equal.r' 'bench-compare.r' 'chain.r'
+        'cluster.R' 'colwise.R' 'compute-collect.r' 'copy-to.r'
+        'data-lahman.r' 'data-nasa.r' 'data-nycflights13.r'
         'data-temp.r' 'data.r' 'dataframe.R' 'dbi-s3.r' 'desc.r'
         'distinct.R' 'do.r' 'dplyr.r' 'explain.r' 'failwith.r' 'funs.R'
-        'glimpse.R' 'group-by.r' 'group-size.r' 'grouped-df.r'
-        'grouped-dt.r' 'id.r' 'inline.r' 'join-df.r' 'join-dt.r'
-        'join-sql.r' 'join.r' 'lead-lag.R' 'location.R' 'manip-cube.r'
-        'manip-df.r' 'manip-dt.r' 'manip-sql.r' 'manip.r' 'nth-value.R'
-        'order-by.R' 'over.R' 'partial-eval.r' 'progress.R' 'query.r'
-        'rank.R' 'rbind.r' 'rowwise.r' 'sample.R' 'select-utils.R'
+        'glimpse.R' 'group-by.r' 'group-indices.R' 'group-size.r'
+        'grouped-df.r' 'grouped-dt.r' 'id.r' 'inline.r' 'join.r'
+        'lead-lag.R' 'location.R' 'manip.r' 'nth-value.R' 'order-by.R'
+        'over.R' 'partial-eval.r' 'progress.R' 'query.r' 'rank.R'
+        'rbind.r' 'rowwise.r' 'sample.R' 'select-utils.R'
         'select-vars.R' 'sets.r' 'sql-escape.r' 'sql-star.r'
         'src-local.r' 'src-mysql.r' 'src-postgres.r' 'src-sql.r'
-        'src-sqlite.r' 'src.r' 'tally.R' 'tbl-cube.r'
-        'tbl-data-frame.R' 'tbl-df.r' 'tbl-dt.r' 'tbl-sql.r' 'tbl.r'
-        'top-n.R' 'translate-sql-helpers.r' 'translate-sql-base.r'
+        'src-sqlite.r' 'src.r' 'tally.R' 'tbl-cube.r' 'tbl-df.r'
+        'tbl-dt.r' 'tbl-sql.r' 'tbl.r' 'top-n.R'
+        'translate-sql-helpers.r' 'translate-sql-base.r'
         'translate-sql-window.r' 'translate-sql.r' 'type-sum.r'
         'utils-dt.R' 'utils-format.r' 'utils.r' 'view.r' 'zzz.r'
-Packaged: 2014-10-10 11:51:23 UTC; hadley
+Packaged: 2015-01-07 22:59:41 UTC; hadley
 Author: Hadley Wickham [aut, cre],
   Romain Francois [aut],
   RStudio [cph]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-10-11 07:43:41
+Date/Publication: 2015-01-08 11:12:43

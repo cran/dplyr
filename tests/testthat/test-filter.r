@@ -90,7 +90,7 @@ test_that( "filter handles simple symbols", {
 })
 
 test_that("filter handlers scalar results", {
-  expect_equal( filter(mtcars, min(mpg)>0 ), mtcars )
+  expect_equivalent( filter(mtcars, min(mpg)>0 ), mtcars )
   expect_equal( filter(group_by(mtcars,cyl), min(mpg)>0 ), group_by(mtcars,cyl) )
 })
 
@@ -141,7 +141,7 @@ test_that("filter handles $ correctly (#278)", {
 })
 
 test_that( "filter returns the input data if no parameters are given", {
-  expect_equal( filter(mtcars), mtcars )
+  expect_equivalent( filter(mtcars), mtcars )
 })
 
 test_that( "$ does not end call traversing. #502", {
@@ -189,5 +189,45 @@ X
 
   datesDF$X <- as.POSIXlt(datesDF$X)
   expect_error(filter(datesDF, X > as.POSIXlt("2014-03-13")), "has unsupported type")
+})
+
+test_that( "filter handles complex vectors (#436)", {
+  d <- data.frame(x=1:10, y=1:10+2i)
+  expect_equal(filter(d, x<4)$y, 1:3+2i)
+  expect_equal(filter(d, Re(y)<4)$y, 1:3+2i)
+})
+
+test_that("%in% works as expected (#126)", {
+  df <- data_frame( a = c("a", "b", "ab"), g = c(1,1,2) )
+
+  res <- df %>% filter( a %in% letters )
+  expect_equal(nrow(res), 2L)
+
+  res <- df %>% group_by(g) %>% filter( a %in% letters )
+  expect_equal(nrow(res), 2L)
+
+})
+
+test_that("row_number does not segfault with example from #781", {
+  z <- data.frame(a=c(1,2,3))
+  b <- "a"
+  res <- z %>% filter(row_number(b) == 2)
+  expect_equal( nrow(res), 0L )
+})
+
+
+# data.table --------------------------------------------------------------
+
+test_that("filter succeeds even if column called V1 (#615)", {
+  dt <- data.table(x = 1:10 ,V1 = 0)
+  out <- dt %>% group_by(V1) %>% filter(x > 5)
+
+  expect_equal(nrow(out), 5)
+})
+
+test_that("filter correctly handles empty data frames (#782)", {
+  res <- data_frame() %>% filter(F)
+  expect_equal( nrow(res), 0L )
+  expect_true( is.null(names(res)) )
 })
 

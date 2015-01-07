@@ -28,10 +28,11 @@
 #' # Here we'll use the Lahman database: to create your own local copy,
 #' # run lahman_sqlite()
 #'
-#' \donttest{
-#' if (require("RSQLite") && has_lahman("sqlite")) {
+#' \dontrun{
+#' if (requireNamespace("RSQLite") && has_lahman("sqlite")) {
+#' lahman_s <- lahman_sqlite()
 #' # Methods -------------------------------------------------------------------
-#' batting <- tbl(lahman_sqlite(), "Batting")
+#' batting <- tbl(lahman_s, "Batting")
 #' dim(batting)
 #' colnames(batting)
 #' head(batting)
@@ -66,8 +67,8 @@
 #' summarise(stints, max(stints))
 #'
 #' # Joins ---------------------------------------------------------------------
-#' player_info <- select(tbl(lahman_sqlite(), "Master"), playerID, birthYear)
-#' hof <- select(filter(tbl(lahman_sqlite(), "HallOfFame"), inducted == "Y"),
+#' player_info <- select(tbl(lahman_s, "Master"), playerID, birthYear)
+#' hof <- select(filter(tbl(lahman_s, "HallOfFame"), inducted == "Y"),
 #'  playerID, votedBy, category)
 #'
 #' # Match players and their hall of fame data
@@ -81,7 +82,7 @@
 #'
 #' # Arbitrary SQL -------------------------------------------------------------
 #' # You can also provide sql as is, using the sql function:
-#' batting2008 <- tbl(lahman_sqlite(),
+#' batting2008 <- tbl(lahman_s,
 #'   sql("SELECT * FROM Batting WHERE YearID = 2008"))
 #' batting2008
 #' }
@@ -95,27 +96,10 @@ src_sqlite <- function(path, create = FALSE) {
     stop("Path does not exist and create = FALSE", call. = FALSE)
   }
 
-  con <- dbConnect(RSQLite::SQLite(), path)
-  load_extension(con)
+  con <- DBI::dbConnect(RSQLite::SQLite(), path)
+  RSQLite::initExtension(con)
 
-  info <- dbGetInfo(con)
-
-  src_sql("sqlite", con, path = path, info = info)
-}
-
-load_extension <- function(con) {
-  if (packageVersion("RSQLite") >= 1) {
-    RSQLite::initExtension(con)
-    return()
-  }
-
-  require("RSQLite")
-  if (!require("RSQLite.extfuns")) {
-    stop("RSQLite.extfuns package required to effectively use sqlite db",
-      call. = FALSE)
-  }
-
-  RSQLite.extfuns::init_extensions(con)
+  src_sql("sqlite", con, path = path, info = DBI::dbGetInfo(con))
 }
 
 #' @export
@@ -141,28 +125,10 @@ src_translate_env.src_sqlite <- function(x) {
 
 # DBI methods ------------------------------------------------------------------
 
-# Doesn't include temporary tables
-#' @export
-db_list_tables.SQLiteConnection <- function(con) {
-  sql <- "SELECT name FROM
-    (SELECT * FROM sqlite_master UNION ALL
-     SELECT * FROM sqlite_temp_master)
-    WHERE type = 'table' OR type = 'view'
-    ORDER BY name"
-
-  dbGetQuery(con, sql)[[1]]
-}
-
-# Doesn't return TRUE for temporary tables
-#' @export
-db_has_table.SQLiteConnection <- function(con, table, ...) {
-  table %in% db_list_tables(con)
-}
-
 #' @export
 db_query_fields.SQLiteConnection <- function(con, sql, ...) {
-  rs <- dbSendQuery(con, paste0("SELECT * FROM ", sql))
-  on.exit(dbClearResult(rs))
+  rs <- DBI::dbSendQuery(con, paste0("SELECT * FROM ", sql))
+  on.exit(DBI::dbClearResult(rs))
 
   names(fetch(rs, 0L))
 }
@@ -171,7 +137,7 @@ db_query_fields.SQLiteConnection <- function(con, sql, ...) {
 #' @export
 db_explain.SQLiteConnection <- function(con, sql, ...) {
   exsql <- build_sql("EXPLAIN QUERY PLAN ", sql)
-  expl <- dbGetQuery(con, exsql)
+  expl <- DBI::dbGetQuery(con, exsql)
   rownames(expl) <- NULL
   out <- capture.output(print(expl))
 
@@ -179,22 +145,6 @@ db_explain.SQLiteConnection <- function(con, sql, ...) {
 }
 
 #' @export
-db_begin.SQLiteConnection <- function(con, ...) {
-  if (packageVersion("RSQLite") < 1) {
-    RSQLite::dbBeginTransaction(con)
-  } else {
-    DBI::dbBegin(con)
-  }
-}
-
-#' @export
 db_insert_into.SQLiteConnection <- function(con, table, values, ...) {
-  params <- paste(rep("?", ncol(values)), collapse = ", ")
-
-  sql <- build_sql("INSERT INTO ", table, " VALUES (", sql(params), ")")
-
-  res <- RSQLite::dbSendPreparedQuery(con, sql, bind.data = values)
-  DBI::dbClearResult(res)
-
-  TRUE
+  DBI::dbWriteTable(con, table, values, append = TRUE, row.names = FALSE)
 }

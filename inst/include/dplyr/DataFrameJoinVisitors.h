@@ -10,27 +10,24 @@ namespace dplyr{
     public:
         typedef JoinVisitor visitor_type ;
         
-        DataFrameJoinVisitors(const Rcpp::DataFrame& left_, const Rcpp::DataFrame& right_, Rcpp::CharacterVector names_left, Rcpp::CharacterVector names_right ) : 
+        DataFrameJoinVisitors(const Rcpp::DataFrame& left_, const Rcpp::DataFrame& right_, Rcpp::CharacterVector names_left, Rcpp::CharacterVector names_right, bool warn_ ) : 
             left(left_), right(right_), 
             visitor_names_left(names_left), 
             visitor_names_right(names_right), 
             nvisitors(names_left.size()), 
-            visitors(nvisitors)
+            visitors(nvisitors), 
+            warn(warn_)
         {    
             std::string name_left, name_right ;
             for( int i=0; i<nvisitors; i++){
                 name_left  = names_left[i] ;
                 name_right = names_right[i] ;
                 try{
-                    visitors[i] = join_visitor( left[name_left], right[name_right], name_left, name_right ) ;
+                    visitors[i] = join_visitor( left[name_left], right[name_right], name_left, name_right, warn ) ;
                 } catch( const std::exception& ex ){
-                    std::stringstream s ;
-                    s << "cannot join on columns '" << name_left << "' x '" << name_right << "' : " << ex.what() ;
-                    stop(s.str());    
+                    stop( "cannot join on columns '%s' x '%s': %s ", name_left, name_right, ex.what() ) ;
                 } catch( ... ){
-                    std::stringstream s ;
-                    s << "cannot join on columns '" << name_left << "' x '" << name_right << "'" ;
-                    stop(s.str());
+                    stop( "cannot join on columns '%s' x '%s'", name_left, name_right ) ;
                 }
             }
         }
@@ -41,6 +38,13 @@ namespace dplyr{
         
         inline JoinVisitor* get(int k) const { 
             return visitors[k] ; 
+        }
+        inline JoinVisitor* get( String name ) const {
+            for( int i=0; i<nvisitors; i++){
+                if( name == visitor_names_left[i] ) return get(i) ;    
+            }
+            stop("visitor not found for name '%s' ", name.get_cstring() ) ;
+            return 0 ;
         }
         inline int size() const{ 
             return nvisitors ; 
@@ -75,6 +79,7 @@ namespace dplyr{
         
         int nvisitors ;
         std::vector<JoinVisitor*> visitors ;
+        bool warn ;
         
     } ;
     

@@ -1,7 +1,7 @@
 ## ----, echo = FALSE, message = FALSE-------------------------------------
-library(ggplot2)
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
-knitr::opts_chunk$set(tidy = FALSE)
 
 ## ----, eval = FALSE------------------------------------------------------
 #  summarise(per_day, flights = sum(flights))

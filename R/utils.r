@@ -132,3 +132,9 @@ succeeds <- function(x, quiet = FALSE) {
     FALSE
   })
 }
+
+is_1d <- function(x) {
+  # is.atomic() is TRUE for atomic vectors AND NULL!
+  # dimension check is for matrices and data.frames
+  ((is.atomic(x) && !is.null(x)) || is.list(x)) && length(dim(x)) <= 1
+}

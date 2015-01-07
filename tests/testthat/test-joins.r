@@ -46,6 +46,22 @@ test_that("univariate anti join has x columns, missing rows", {
   expect_equal(j2$z, 4)
 })
 
+test_that("univariate right join has all columns, all rows", {
+  j1 <- right_join(a, b, "x")
+  j2 <- right_join(b, a, "x")
+
+  expect_equal(names(j1), c("x", "y", "z"))
+  expect_equal(names(j2), c("x", "z", "y"))
+
+  expect_equal(j1$x, c(1, 1, 2, 2, 4))
+  expect_equal(j1$y, c(1, 2, 3, 3, NA))
+  expect_equal(j1$z, c(1, 1, 2, 3, 4))
+
+  expect_equal(j2$x, c(1, 1, 2, 2, 3))
+  expect_equal(j2$y, c(1, 2, 3, 3, 4))
+  expect_equal(j2$z, c(1, 1, 2, 3, NA))
+})
+
 # Bivariate keys ---------------------------------------------------------------
 
 c <- data.frame(
@@ -233,3 +249,167 @@ test_that("left_join by different variable names (#617)",{
   expect_equal(res$y2, c("foo", "bar", "foo"))
 })
 
+test_that("joins support comple vectors" ,{
+  a <- data.frame(x = c(1, 1, 2, 3)*1i, y = 1:4)
+  b <- data.frame(x = c(1, 2, 2, 4)*1i, z = 1:4)
+  j <- inner_join(a, b, "x")
+
+  expect_equal(names(j), c("x", "y", "z"))
+  expect_equal(j$y, c(1, 2, 3, 3))
+  expect_equal(j$z, c(1, 1, 2, 3))
+})
+
+test_that("joins suffix variable names (#655)" ,{
+  a <- data.frame(x=1:10,y=2:11)
+  b <- data.frame(z=5:14,x=3:12) # x from this gets suffixed by .y
+  res <- left_join(a,b,by=c('x'='z'))
+  expect_equal(names(res), c("x", "y", "x.y" ) )
+
+  a <- data.frame(x=1:10,z=2:11)
+  b <- data.frame(z=5:14,x=3:12) # x from this gets suffixed by .y
+  res <- left_join(a,b,by=c('x'='z'))
+
+})
+
+test_that("right_join gets the column in the right order #96", {
+  a <- data.frame(x=1:10,y=2:11)
+  b <- data.frame(x=5:14,z=3:12)
+  res <- right_join(a,b)
+  expect_equal(names(res), c("x", "y", "z"))
+
+  a <- data.frame(x=1:10,y=2:11)
+  b <- data.frame(z=5:14,a=3:12)
+  res <- right_join(a,b, by= c("x"="z"))
+  expect_equal(names(res), c("x", "y", "a"))
+
+})
+
+test_that("full_join #96",{
+  a <- data.frame(x=1:3,y=2:4)
+  b <- data.frame(x=3:5,z=3:5)
+  res <- full_join(a,b, "x")
+  expect_equal(res$x, 1:5)
+  expect_equal(res$y[1:3], 2:4)
+  expect_true( all(is.na(res$y[4:5]) ))
+
+  expect_true( all(is.na(res$z[1:2]) ))
+  expect_equal( res$z[3:5], 3:5 )
+
+})
+
+test_that("JoinStringFactorVisitor and JoinFactorStringVisitor handle NA #688", {
+  x <- data.frame(Greek = c("Alpha", "Beta", NA), numbers= 1:3)
+  y <- data.frame(Greek = c("Alpha", "Beta", "Gamma"),
+                        Letters = c("C", "B", "C"), stringsAsFactors = F)
+
+  res <- left_join(x, y, by = "Greek")
+  expect_true( is.na(res$Greek[3]) )
+  expect_true( is.na(res$Letters[3]) )
+  expect_equal( res$numbers, 1:3 )
+  
+  res <- left_join(y, x, by="Greek" )
+  expect_equal( res$Greek, y$Greek)
+  expect_equal( res$Letters, y$Letters )
+  expect_equal( res$numbers[1:2], 1:2 )
+  expect_true( is.na(res$numbers[3]) )
+})
+
+
+test_that("JoinFactorFactorVisitor_SameLevels preserve levels order (#675)",{
+  input <- data.frame(g1 = factor(c('A','B','C'), levels = c('B','A','C')))
+  output <- data.frame(
+    g1 = factor(c('A','B','C'), levels = c('B','A','C')),
+    g2 = factor(c('A','B','C'), levels = c('B','A','C'))
+  )
+
+  res <- inner_join(group_by(input, g1), group_by(output, g1))
+  expect_equal( levels(res$g1), levels(input$g1))
+  expect_equal( levels(res$g2), levels(output$g2))
+})
+
+test_that("inner_join does not reorder (#684)", {
+  test <- data_frame(Greek = c("Alpha", "Beta", "Gamma"), Letters = LETTERS[1:3])
+  lookup <- data_frame(Letters = c("C", "B", "C"))
+  res <- inner_join(lookup, test)
+  expect_equal( res$Letters, c("C", "B", "C" ) )
+})
+
+test_that("joins coerce factors with different levels to character (#684)", {
+  d1 <- data_frame( a = factor( c("a", "b", "c" ) ) )
+  d2 <- data_frame( a = factor( c("a", "e" ) ) )
+  expect_warning( { res <- inner_join( d1, d2 ) })
+  expect_is( res$a, "character" )
+
+  # different orders
+  d2 <- d1
+  attr( d2$a, "levels" ) <- c("c", "b", "a" )
+  expect_warning( { res <- inner_join( d1, d2 ) })
+  expect_is( res$a, "character" )
+
+})
+
+test_that("joins between factor and character coerces to character with a warning (#684)", {
+  d1 <- data_frame( a = factor( c("a", "b", "c" ) ) )
+  d2 <- data_frame( a = c("a", "e" ) )
+  expect_warning( { res <- inner_join( d1, d2 ) })
+  expect_is( res$a, "character" )
+
+  expect_warning( { res <- inner_join( d2, d1 ) })
+  expect_is( res$a, "character" )
+
+})
+
+# Guessing variables in x and y ------------------------------------------------
+
+test_that("unnamed vars are the same in both tables", {
+  by1 <- common_by(c("x", "y", "z"))
+  expect_equal(by1$x, c("x", "y", "z"))
+  expect_equal(by1$y, c("x", "y", "z"))
+
+  by2 <- common_by(c("x" = "a", "y", "z"))
+  expect_equal(by2$x, c("x", "y", "z"))
+  expect_equal(by2$y, c("a", "y", "z"))
+})
+
+test_that("join columns are not moved to the left (#802)", {
+  df1 <- data.frame(x = 1, y = 1:5)
+  df2 <- data.frame(y = 1:5, z = 2)
+  
+  out <- left_join(df1, df2)
+  expect_equal(names(out), c("x", "y", "z"))  
+})
+
+test_that("join can handle multiple encodings (#769)", {
+  x <- data_frame(name=c("\xC9lise","Pierre","Fran\xE7ois"),score=c(5,7,6))
+  y <- data_frame(name=c("\xC9lise","Pierre","Fran\xE7ois"),attendance=c(8,10,9))
+  res <- left_join(x, y, by = "name")
+  expect_equal( nrow(res), 3L)
+  expect_equal( res$x, x$x)
+  
+  x <- data_frame(name=factor(c("\xC9lise","Pierre","Fran\xE7ois")),score=c(5,7,6))
+  y <- data_frame(name=c("\xC9lise","Pierre","Fran\xE7ois"),attendance=c(8,10,9))
+  res <- suppressWarnings( left_join(x, y, by = "name") )
+  expect_equal( nrow(res), 3L)
+  expect_equal( res$x, y$x)
+  
+  x <- data_frame(name=c("\xC9lise","Pierre","Fran\xE7ois"),score=c(5,7,6))
+  y <- data_frame(name=factor(c("\xC9lise","Pierre","Fran\xE7ois")),attendance=c(8,10,9))
+  res <- suppressWarnings( left_join(x, y, by = "name") )
+  expect_equal( nrow(res), 3L)
+  expect_equal( res$x, x$x)
+  
+  x <- data_frame(name=factor(c("\xC9lise","Fran\xE7ois","Pierre")),score=c(5,7,6))
+  y <- data_frame(name=factor(c("\xC9lise","Pierre","Fran\xE7ois")),attendance=c(8,10,9))
+  res <- suppressWarnings( left_join(x, y, by = "name") )
+  expect_equal( nrow(res), 3L)
+  expect_equal( res$x, x$x)
+})
+
+test_that("join creates correctly named results (#855)", {
+  x <- data.frame(q=c("a","b","c"),r=c("d","e","f"),s=c("1","2","3"))
+  y <- data.frame(q=c("a","b","c"),r=c("d","e","f"),t=c("xxx","xxx","xxx"))
+  res <- left_join(x,y,by=c("r","q"))
+  expect_equal(names(res), c("q", "r", "s", "t") )
+  expect_equal(res$q, x$q)
+  expect_equal(res$r, x$r)
+})

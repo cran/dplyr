@@ -1,19 +1,19 @@
-<!--
-%\VignetteEngine{knitr}
-%\VignetteIndexEntry{Introduction to dplyr}
--->
+---
+title: "Introduction to dplyr"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to dplyr}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
 
 ```{r, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 library(ggplot2)
-knitr::opts_chunk$set(
-  comment = "#>",
-  error = FALSE,
-  tidy = FALSE)
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 ```
-
-# Introduction to dplyr
 
 When working with data you must:
 
@@ -149,7 +149,7 @@ You can rename variables with `select()` by using named arguments:
 select(flights, tail_num = tailnum)
 ```
 
-But because `select()` drops all the variables not explicitly mentioned, it's not that use. Instead, use `rename()`:
+But because `select()` drops all the variables not explicitly mentioned, it's not that useful. Instead, use `rename()`:
 
 ```{r}
 rename(flights, tail_num = tailnum)
@@ -157,7 +157,7 @@ rename(flights, tail_num = tailnum)
 
 ## Extract distinct (unique) rows
 
-A common use of `select()` is to find out what values are set of variables takes. This is particularly useful in conjunction with the `distinct()` verb which only returns the unique values in a table.
+A common use of `select()` is to find out which values a set of variables takes. This is particularly useful in conjunction with the `distinct()` verb which only returns the unique values in a table.
 
 ```{r}
 distinct(select(flights, tailnum))
@@ -245,7 +245,7 @@ These verbs are useful, but they become really powerful when you combine them wi
 
 The verbs are affected by grouping as follows:
 
-* grouped `select()` is the same ungrouped `select()`, excepted that retains 
+* grouped `select()` is the same as ungrouped `select()`, excepted that retains 
   grouping variables are always retained. 
    
 * grouped `arrange()` orders first by grouping variables
@@ -264,9 +264,9 @@ The verbs are affected by grouping as follows:
 
 In the following example, we split the complete dataset into individual planes and then summarise each plane by counting the number of flights (`count = n()`) and computing the average distance (`dist = mean(Distance, na.rm = TRUE)`) and delay (`delay = mean(ArrDelay, na.rm = TRUE)`). We then use ggplot2 to display the output.
 
-```{r, warning = FALSE, message = FALSE}
-planes <- group_by(flights, tailnum)
-delay <- summarise(planes,
+```{r, warning = FALSE, message = FALSE, fig.width = 6}
+by_tailnum <- group_by(flights, tailnum)
+delay <- summarise(by_tailnum,
   count = n(),
   dist = mean(distance, na.rm = TRUE),
   delay = mean(arr_delay, na.rm = TRUE))
@@ -382,7 +382,7 @@ Compared to DBI and the database connection algorithms:
 
 * it hides, as much as possible, the fact that you're working with a remote database
 * you don't need to know any sql (although it helps!)
-* it shims over the many differences between the different DBI implementations
+* it abstracts over the many differences between the different DBI implementations
 
 ## Multidimensional arrays / cubes
 
@@ -398,7 +398,7 @@ Compared to all existing options, dplyr:
 
 Compared to base functions:
 
-* dplyr is much more consistent; functions have the same interface so that once you've mastered one, you can easily pick the others
+* dplyr is much more consistent; functions have the same interface so that once you've mastered one, you can easily pick up the others
 
 * base functions tend to be based around vectors; dplyr is centered around data frames
 

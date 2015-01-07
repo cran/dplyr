@@ -77,21 +77,26 @@ List arrange_impl( DataFrame data, LazyDots dots ){
         CallProxy call_proxy(is_desc ? CADR(call) : call, data, lazy.env()) ;
 
         SEXP v = __(call_proxy.eval()) ;
-        if( !white_list(v) || TYPEOF(v) == VECSXP ){
-            std::stringstream ss ;
-            ss << "cannot arrange column of class '"
-               << get_single_class(v)
-               << "'" ;
-            stop(ss.str()) ;
+        if( !white_list(v) ){
+            stop( "cannot arrange column of class '%s'", get_single_class(v) ) ;
         }
 
-        if( Rf_length(v) != data.nrows() ){
-            std::stringstream s ;
-            s << "incorrect size ("
-              << Rf_length(v)
-              << "), expecting :"
-              << data.nrows() ;
-            stop(s.str()) ;
+        if( Rf_inherits(v, "data.frame" ) ){
+            DataFrame df(v) ;
+            int nr = df.nrows() ;
+            if( nr != data.nrows() ){
+                stop( "data frame column with incompatible number of rows (%d), expecting : %d", nr, data.nrows() );
+            }
+        } else if( Rf_isMatrix(v) ) {
+            SEXP dim = Rf_getAttrib(v, Rf_install( "dim" ) ) ;
+            int nr = INTEGER(dim)[0] ;
+            if( nr != data.nrows() ){
+                stop( "matrix column with incompatible number of rows (%d), expecting : ", nr, data.nrows() ) ;
+            }
+        } else {
+            if( Rf_length(v) != data.nrows() ){
+                stop( "incorrect size (%d), expecting : %d", Rf_length(v), data.nrows() ) ;
+            }
         }
         variables[k] = v ;
         ascending[k] = !is_desc ;

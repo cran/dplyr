@@ -7,6 +7,12 @@
 
 using namespace Rcpp ;
 
+#ifndef TINYFORMAT_H_INCLUDED
+  #include <tools/tinyformat.h>
+  #include <tools/stop.h>
+#endif
+
+#include <tools/all_na.h>
 // borrowed from Rcpp11
 #ifndef RCPP_DEBUG_OBJECT
     #define RCPP_DEBUG_OBJECT(OBJ) Rf_PrintValue( Rf_eval( Rf_lang2( Rf_install( "str"), OBJ ), R_GlobalEnv ) ) ;    
@@ -48,7 +54,11 @@ namespace dplyr {
     class DataFrameJoinVisitors ;
     class LazySubsets ;
     template <typename OUT, int INPUT_RTYPE> class Reducer ; 
-    const char* get_single_class(SEXP x) ;
+    std::string get_single_class(SEXP x) ;
+    
+    template <typename Index>
+    DataFrame subset( DataFrame df, const Index& indices, CharacterVector classes) ;
+    
 }
 dplyr::Result* get_handler( SEXP, const dplyr::LazySubsets&, const Environment& ) ;
 bool can_simplify(SEXP) ;
@@ -129,9 +139,13 @@ void registerHybridHandler( const char* , HybridHandler ) ;
 #include <dplyr/OrderVisitor.h>
 #include <dplyr/VectorVisitorImpl.h>
 #include <dplyr/DataFrameVisitors.h>
+#include <dplyr/MatrixColumnVisitor.h>
+#include <dplyr/DataFrameColumnVisitor.h>
+#include <dplyr/visitor.h>
 #include <dplyr/OrderVisitorImpl.h>
 #include <dplyr/JoinVisitor.h>
 #include <dplyr/JoinVisitorImpl.h>
+#include <dplyr/JoinFactorFactorVisitor_SameLevels.h>
 #include <dplyr/DataFrameJoinVisitors.h>
 #include <dplyr/Order.h>
 #include <dplyr/SummarisedVariable.h>

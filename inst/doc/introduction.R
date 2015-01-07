@@ -1,11 +1,8 @@
 ## ----, echo = FALSE, message = FALSE-------------------------------------
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 library(ggplot2)
-knitr::opts_chunk$set(
-  comment = "#>",
-  error = FALSE,
-  tidy = FALSE)
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 
 ## ------------------------------------------------------------------------
 library(nycflights13)
@@ -84,9 +81,9 @@ summarise(flights,
 sample_n(flights, 10)
 sample_frac(flights, 0.01)
 
-## ----, warning = FALSE, message = FALSE----------------------------------
-planes <- group_by(flights, tailnum)
-delay <- summarise(planes,
+## ----, warning = FALSE, message = FALSE, fig.width = 6-------------------
+by_tailnum <- group_by(flights, tailnum)
+delay <- summarise(by_tailnum,
   count = n(),
   dist = mean(distance, na.rm = TRUE),
   delay = mean(arr_delay, na.rm = TRUE))
