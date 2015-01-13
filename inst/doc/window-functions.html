@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-01-07" />
+<meta name="date" content="2015-01-13" />
 
 <title>Window functions and grouped mutate/filter</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Window functions and grouped mutate/filter</h1>
-<h4 class="date"><em>2015-01-07</em></h4>
+<h4 class="date"><em>2015-01-13</em></h4>
 </div>
 
 
@@ -175,12 +175,12 @@ scrambled &lt;-<span class="st"> </span>df[<span class="kw">sample</span>(<span 
 wrong &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">cumsum</span>(value))
 <span class="kw">arrange</span>(wrong, year)
 <span class="co">#&gt;   year value running</span>
-<span class="co">#&gt; 1 2000     0      25</span>
-<span class="co">#&gt; 2 2001     1      35</span>
-<span class="co">#&gt; 3 2002     4      39</span>
-<span class="co">#&gt; 4 2003     9      34</span>
-<span class="co">#&gt; 5 2004    16      55</span>
-<span class="co">#&gt; 6 2005    25      25</span>
+<span class="co">#&gt; 1 2000     0       5</span>
+<span class="co">#&gt; 2 2001     1       5</span>
+<span class="co">#&gt; 3 2002     4       4</span>
+<span class="co">#&gt; 4 2003     9      55</span>
+<span class="co">#&gt; 5 2004    16      46</span>
+<span class="co">#&gt; 6 2005    25      30</span>
 
 right &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">order_by</span>(year, <span class="kw">cumsum</span>(value)))
 <span class="kw">arrange</span>(right, year)

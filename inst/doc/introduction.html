@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-01-07" />
+<meta name="date" content="2015-01-13" />
 
 <title>Introduction to dplyr</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Introduction to dplyr</h1>
-<h4 class="date"><em>2015-01-07</em></h4>
+<h4 class="date"><em>2015-01-13</em></h4>
 </div>
 
 
@@ -327,10 +327,10 @@ flights[<span class="kw">order</span>(<span class="kw">desc</span>(flights$arr_d
 <span class="co">#&gt; Source: local data frame [10 x 16]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     9  17     1422        -3     1651         1      MQ  N519MQ</span>
-<span class="co">#&gt; 2  2013     3  30     1824        -6     1945       -30      MQ  N523MQ</span>
-<span class="co">#&gt; 3  2013    10   1      716        -4     1021        -9      AS  N553AS</span>
-<span class="co">#&gt; 4  2013     3   5      556        -4      933         8      UA  N525UA</span>
+<span class="co">#&gt; 1  2013     5  25      756        -4     1025       -25      B6  N346JB</span>
+<span class="co">#&gt; 2  2013     9   8     1652        17     1941       -10      B6  N537JB</span>
+<span class="co">#&gt; 3  2013    10  25     1609         9     1818        23      MQ  N646MQ</span>
+<span class="co">#&gt; 4  2013    12   8     1533        13     1817        27      MQ  N520MQ</span>
 <span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span>
@@ -338,10 +338,10 @@ flights[<span class="kw">order</span>(<span class="kw">desc</span>(flights$arr_d
 <span class="co">#&gt; Source: local data frame [3,368 x 16]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013    11   7     1151        -9     1300        -8      B6  N323JB</span>
-<span class="co">#&gt; 2  2013    11  22      800        -7     1043       -29      DL  N969DL</span>
-<span class="co">#&gt; 3  2013    11  21     1158        23     1400        30      MQ  N509MQ</span>
-<span class="co">#&gt; 4  2013     6  15     2013         1     2239       -33      UA  N38458</span>
+<span class="co">#&gt; 1  2013    11   6      654        -6     1024         5      DL  N374DA</span>
+<span class="co">#&gt; 2  2013     8   2      937        -3     1038       -13      9E  N8908D</span>
+<span class="co">#&gt; 3  2013     4  29     1419         9     1635        -8      DL  N302NB</span>
+<span class="co">#&gt; 4  2013     7   4     1509        14     1628         4      DL   N704X</span>
 <span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span></code></pre>

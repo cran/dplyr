@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-01-07" />
+<meta name="date" content="2015-01-13" />
 
 <title>Data frames</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Data frames</h1>
-<h4 class="date"><em>2015-01-07</em></h4>
+<h4 class="date"><em>2015-01-13</em></h4>
 </div>
 
 
@@ -113,9 +113,9 @@ microbenchmark::<span class="kw">microbenchmark</span>(
   <span class="kw">as.data.frame</span>(l2)
 )
 <span class="co">#&gt; Unit: microseconds</span>
-<span class="co">#&gt;               expr      min        lq   median        uq      max neval</span>
-<span class="co">#&gt;  as_data_frame(l2)   99.288  108.7505  115.799  127.1665  326.978   100</span>
-<span class="co">#&gt;  as.data.frame(l2) 1402.052 1459.5375 1495.812 1546.2840 3197.099   100</span></code></pre>
+<span class="co">#&gt;               expr      min        lq    median      uq      max neval</span>
+<span class="co">#&gt;  as_data_frame(l2)   97.575  107.0915  114.5115  128.54  345.992   100</span>
+<span class="co">#&gt;  as.data.frame(l2) 1374.019 1429.3585 1457.3940 1577.61 3769.304   100</span></code></pre>
 <p>The speed of <code>as.data.frame()</code> is not usually a bottleneck in interatively use, but can be a problem when combining thousands of messy inputs into one tidy data frame.</p>
 </div>
 <div id="memory" class="section level2">
@@ -128,32 +128,32 @@ microbenchmark::<span class="kw">microbenchmark</span>(
 <li>where each attribute is located</li>
 </ul>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">location</span>(iris)
-<span class="co">#&gt; &lt;0x7f8a5e8eea88&gt;</span>
+<span class="co">#&gt; &lt;0x7fc4c58a8410&gt;</span>
 <span class="co">#&gt; Variables:</span>
-<span class="co">#&gt;  * Sepal.Length: &lt;0x7f8a5e998200&gt;</span>
-<span class="co">#&gt;  * Sepal.Width:  &lt;0x7f8a5b450200&gt;</span>
-<span class="co">#&gt;  * Petal.Length: &lt;0x7f8a5b44f400&gt;</span>
-<span class="co">#&gt;  * Petal.Width:  &lt;0x7f8a5b5ab200&gt;</span>
-<span class="co">#&gt;  * Species:      &lt;0x7f8a5a598de0&gt;</span>
+<span class="co">#&gt;  * Sepal.Length: &lt;0x7fc4c5103e00&gt;</span>
+<span class="co">#&gt;  * Sepal.Width:  &lt;0x7fc4c5101800&gt;</span>
+<span class="co">#&gt;  * Petal.Length: &lt;0x7fc4c5100000&gt;</span>
+<span class="co">#&gt;  * Petal.Width:  &lt;0x7fc4c503fc00&gt;</span>
+<span class="co">#&gt;  * Species:      &lt;0x7fc4c275d280&gt;</span>
 <span class="co">#&gt; Attributes:</span>
-<span class="co">#&gt;  * names:        &lt;0x7f8a5e8eeaf0&gt;</span>
-<span class="co">#&gt;  * row.names:    &lt;0x7f8a5a541d50&gt;</span>
-<span class="co">#&gt;  * class:        &lt;0x7f8a5e8166c8&gt;</span></code></pre>
+<span class="co">#&gt;  * names:        &lt;0x7fc4c58a8478&gt;</span>
+<span class="co">#&gt;  * row.names:    &lt;0x7fc4c275e2a0&gt;</span>
+<span class="co">#&gt;  * class:        &lt;0x7fc4c50cae28&gt;</span></code></pre>
 <p>It’s useful to know the memory address, because if the address changes, then you know R has made a copy. Copies are bad because it takes time to copy a vector. This isn’t usually a bottleneck if you have a few thousand values, but if you have millions or tens of millions it starts to take up a significant amount of time. Unnecessary copies are also bad because they take up memory.</p>
 <p>R tries to avoid making copies where possible. For example, if you just assign <code>iris</code> to another variable, it continues to the point same location:</p>
 <pre class="sourceCode r"><code class="sourceCode r">iris2 &lt;-<span class="st"> </span>iris
 <span class="kw">location</span>(iris2)
-<span class="co">#&gt; &lt;0x7f8a5e8eea88&gt;</span>
+<span class="co">#&gt; &lt;0x7fc4c58a8410&gt;</span>
 <span class="co">#&gt; Variables:</span>
-<span class="co">#&gt;  * Sepal.Length: &lt;0x7f8a5e998200&gt;</span>
-<span class="co">#&gt;  * Sepal.Width:  &lt;0x7f8a5b450200&gt;</span>
-<span class="co">#&gt;  * Petal.Length: &lt;0x7f8a5b44f400&gt;</span>
-<span class="co">#&gt;  * Petal.Width:  &lt;0x7f8a5b5ab200&gt;</span>
-<span class="co">#&gt;  * Species:      &lt;0x7f8a5a598de0&gt;</span>
+<span class="co">#&gt;  * Sepal.Length: &lt;0x7fc4c5103e00&gt;</span>
+<span class="co">#&gt;  * Sepal.Width:  &lt;0x7fc4c5101800&gt;</span>
+<span class="co">#&gt;  * Petal.Length: &lt;0x7fc4c5100000&gt;</span>
+<span class="co">#&gt;  * Petal.Width:  &lt;0x7fc4c503fc00&gt;</span>
+<span class="co">#&gt;  * Species:      &lt;0x7fc4c275d280&gt;</span>
 <span class="co">#&gt; Attributes:</span>
-<span class="co">#&gt;  * names:        &lt;0x7f8a5e8eeaf0&gt;</span>
-<span class="co">#&gt;  * row.names:    &lt;0x7f8a5d070ad0&gt;</span>
-<span class="co">#&gt;  * class:        &lt;0x7f8a5e8166c8&gt;</span></code></pre>
+<span class="co">#&gt;  * names:        &lt;0x7fc4c58a8478&gt;</span>
+<span class="co">#&gt;  * row.names:    &lt;0x7fc4c2657720&gt;</span>
+<span class="co">#&gt;  * class:        &lt;0x7fc4c50cae28&gt;</span></code></pre>
 <p>Rather than carefully comparing long memory locations, we can instead use the <code>dplyr::changes()</code> function to highlights changes between two versions of a data frame. This shows us that <code>iris</code> and <code>iris2</code> are identical: both names point to the same location in memory.</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">changes</span>(iris2, iris)
 <span class="co">#&gt; &lt;identical&gt;</span></code></pre>
@@ -162,24 +162,24 @@ microbenchmark::<span class="kw">microbenchmark</span>(
 <span class="kw">changes</span>(iris, iris2)
 <span class="co">#&gt; Changed variables:</span>
 <span class="co">#&gt;              old            new           </span>
-<span class="co">#&gt; Sepal.Length 0x7f8a5e998200 0x7f8a5b29a000</span>
+<span class="co">#&gt; Sepal.Length 0x7fc4c5103e00 0x7fc4c38a1200</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Changed attributes:</span>
 <span class="co">#&gt;              old            new           </span>
-<span class="co">#&gt; row.names    0x7f8a5a595d70 0x7f8a5a58f050</span></code></pre>
+<span class="co">#&gt; row.names    0x7fc4c26693d0 0x7fc4c2669650</span></code></pre>
 <p>(This was not the case prior to R 3.1.0: R created a deep copy of the entire data frame.)</p>
 <p>dplyr is similarly smart:</p>
 <pre class="sourceCode r"><code class="sourceCode r">iris3 &lt;-<span class="st"> </span><span class="kw">mutate</span>(iris, <span class="dt">Sepal.Length =</span> Sepal.Length *<span class="st"> </span><span class="dv">2</span>)
 <span class="kw">changes</span>(iris3, iris)
 <span class="co">#&gt; Changed variables:</span>
 <span class="co">#&gt;              old            new           </span>
-<span class="co">#&gt; Sepal.Length 0x7f8a5b452800 0x7f8a5e998200</span>
+<span class="co">#&gt; Sepal.Length 0x7fc4c385b400 0x7fc4c5103e00</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Changed attributes:</span>
 <span class="co">#&gt;              old            new           </span>
-<span class="co">#&gt; class        0x7f8a5f8567f8 0x7f8a5e8166c8</span>
-<span class="co">#&gt; names        0x7f8a5b34be88 0x7f8a5e8eeaf0</span>
-<span class="co">#&gt; row.names    0x7f8a5d08e940 0x7f8a5d073bc0</span></code></pre>
+<span class="co">#&gt; class        0x7fc4c2c40858 0x7fc4c50cae28</span>
+<span class="co">#&gt; names        0x7fc4c3a53ef0 0x7fc4c58a8478</span>
+<span class="co">#&gt; row.names    0x7fc4c266c940 0x7fc4c266cbc0</span></code></pre>
 <p>It’s smart enough to create only one new column: all the other columns continue to point at their old locations. You might notice that the attributes have still been copied. This has little impact on performance because the attributes are usually short vectors and copying makes the internal dplyr code considerably simpler.</p>
 <p>dplyr never makes copies unless it has to:</p>
 <ul>
