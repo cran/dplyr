@@ -4,6 +4,20 @@ using namespace Rcpp ;
 
 namespace dplyr{
 
+    inline bool is_bare_vector( SEXP x){
+        SEXP att = ATTRIB(x) ;
+        
+        // only allow R_Names. as in R's do_isvector
+        while( att != R_NilValue ){
+            SEXP tag = TAG(att) ;
+            if( !( tag == R_NamesSymbol || tag == Rf_install("comment") ) ) return false ;
+            att = CDR(att) ;    
+        }
+        
+        return true ;
+    }
+
+    
     // -------------- (int,lgl)
     template <int LHS_RTYPE, int RHS_RTYPE>
     inline size_t hash_int_int( JoinVisitorImpl<LHS_RTYPE,RHS_RTYPE>& joiner, int i){
@@ -213,11 +227,6 @@ namespace dplyr{
         ) ;    
     }
     
-    inline void warn( const char* msg ){
-        Rcpp::Function warning("warning") ;
-        warning( msg, _["call."] = false ) ;
-    }
-    
     JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name_left, const std::string& name_right, bool warn_ ){
         switch( TYPEOF(left) ){
             case CPLXSXP:
@@ -240,7 +249,7 @@ namespace dplyr{
                                     if( same_levels(left, right) ){
                                         return new JoinFactorFactorVisitor_SameLevels(left, right) ;
                                     } else {
-                                        if(warn_) warn( "joining factors with different levels, coercing to character vector" );
+                                        if(warn_) Rf_warning( "joining factors with different levels, coercing to character vector" );
                                         return new JoinFactorFactorVisitor(left, right) ;
                                     }
                                 } else if( !lhs_factor && !rhs_factor) {
@@ -272,7 +281,7 @@ namespace dplyr{
                         case STRSXP:
                             {
                                 if( lhs_factor ){
-                                    if(warn_) warn( "joining factor and character vector, coercing into character vector" ) ;
+                                    if(warn_) Rf_warning( "joining factor and character vector, coercing into character vector" ) ;
                                     return new JoinFactorStringVisitor( left, right );     
                                 }
                             }
@@ -344,7 +353,7 @@ namespace dplyr{
                     case INTSXP:
                         {
                             if( Rf_inherits(right, "factor" ) ){
-                                if(warn_) warn( "joining character vector and factor, coercing into character vector" ) ;
+                                if(warn_) Rf_warning( "joining character vector and factor, coercing into character vector" ) ;
                                 return new JoinStringFactorVisitor( left, right ) ;    
                             }
                             break ;

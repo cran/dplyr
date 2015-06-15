@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-01-13" />
+<meta name="date" content="2015-06-15" />
 
 <title>Window functions and grouped mutate/filter</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Window functions and grouped mutate/filter</h1>
-<h4 class="date"><em>2015-01-13</em></h4>
+<h4 class="date"><em>2015-06-15</em></h4>
 </div>
 
 
@@ -89,7 +89,7 @@ players &lt;-<span class="st"> </span><span class="kw">group_by</span>(batting, 
 <p>The other three families are variations on familiar aggregate functions:</p>
 <ul>
 <li><p>Cumulative aggregates: <code>cumsum()</code>, <code>cummin()</code>, <code>cummax()</code> (from base R), and <code>cumall()</code>, <code>cumany()</code>, and <code>cummean()</code> (from dplyr).</p></li>
-<li><p>Rolling aggregates operate in a fixed width window. You won’t find them in base R or in dplyr, but there are many implementations in other packages, such as <a href="http://cran.r-project.org/web/packages/RcppRoll">RcppRoll</a>.</p></li>
+<li><p>Rolling aggregates operate in a fixed width window. You won’t find them in base R or in dplyr, but there are many implementations in other packages, such as <a href="http://cran.r-project.org/package=RcppRoll">RcppRoll</a>.</p></li>
 <li><p>Recycled aggregates, where an aggregate is repeated to match the length of the input. These are not needed in R because vector recycling automatically recycles aggregates where needed. They are important in SQL, because the presence of an aggregation function usually tells the database to return only one row per group.</p></li>
 </ul>
 <p>Each family is described in more detail below, focussing on the general goals and how to use them with dplyr. For more details, refer to the individual function documentation.</p>
@@ -175,12 +175,12 @@ scrambled &lt;-<span class="st"> </span>df[<span class="kw">sample</span>(<span 
 wrong &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">cumsum</span>(value))
 <span class="kw">arrange</span>(wrong, year)
 <span class="co">#&gt;   year value running</span>
-<span class="co">#&gt; 1 2000     0       5</span>
-<span class="co">#&gt; 2 2001     1       5</span>
-<span class="co">#&gt; 3 2002     4       4</span>
-<span class="co">#&gt; 4 2003     9      55</span>
-<span class="co">#&gt; 5 2004    16      46</span>
-<span class="co">#&gt; 6 2005    25      30</span>
+<span class="co">#&gt; 1 2000     0      14</span>
+<span class="co">#&gt; 2 2001     1       1</span>
+<span class="co">#&gt; 3 2002     4       5</span>
+<span class="co">#&gt; 4 2003     9      14</span>
+<span class="co">#&gt; 5 2004    16      55</span>
+<span class="co">#&gt; 6 2005    25      39</span>
 
 right &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">order_by</span>(year, <span class="kw">cumsum</span>(value)))
 <span class="kw">arrange</span>(right, year)
@@ -394,22 +394,14 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">rank</span>(G), <span class="dt">tbl =</span> players_db, <span class="dt">window =</span> <span class="ot">TRUE</span>))
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">ntile</span>(G, <span class="dv">2</span>), <span class="dt">tbl =</span> players_db, <span class="dt">window =</span> <span class="ot">TRUE</span>))
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">lag</span>(G), <span class="dt">tbl =</span> players_db, <span class="dt">window =</span> <span class="ot">TRUE</span>))
-}
-<span class="co">#&gt; &lt;SQL&gt; avg(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)</span>
-<span class="co">#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ROWS UNBOUNDED PRECEDING)</span>
-<span class="co">#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)</span>
-<span class="co">#&gt; &lt;SQL&gt; NTILE(2.0) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;G&quot;)</span>
-<span class="co">#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot;)</span></code></pre>
+}</code></pre>
 <p>If the tbl has been arranged previously, then that ordering will be used for the order clause:</p>
 <pre class="sourceCode r"><code class="sourceCode r">if (<span class="kw">has_lahman</span>(<span class="st">&quot;postgres&quot;</span>)) {
   players_by_year &lt;-<span class="st"> </span><span class="kw">arrange</span>(players_db, yearID)
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">cummean</span>(G), <span class="dt">tbl =</span> players_by_year, <span class="dt">window =</span> <span class="ot">TRUE</span>))
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">rank</span>(), <span class="dt">tbl =</span> players_by_year, <span class="dt">window =</span> <span class="ot">TRUE</span>))
   <span class="kw">print</span>(<span class="kw">translate_sql</span>(<span class="kw">lag</span>(G), <span class="dt">tbl =</span> players_by_year, <span class="dt">window =</span> <span class="ot">TRUE</span>))
-}
-<span class="co">#&gt; &lt;SQL&gt; mean(&quot;G&quot;) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot; ROWS UNBOUNDED PRECEDING)</span>
-<span class="co">#&gt; &lt;SQL&gt; rank() OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)</span>
-<span class="co">#&gt; &lt;SQL&gt; LAG(&quot;G&quot;, 1, NULL) OVER (PARTITION BY &quot;playerID&quot; ORDER BY &quot;yearID&quot;)</span></code></pre>
+}</code></pre>
 <p>There are some challenges when translating window functions between R and SQL, because dplyr tries to keep the window functions as similar as possible to both the existing R analogues and to the SQL functions. This means that there are three ways to control the order clause depending on which window function you’re using:</p>
 <ul>
 <li><p>For ranking functions, the ordering variable is the first argument: <code>rank(x)</code>, <code>ntile(y, 2)</code>. If omitted or <code>NULL</code>, will use the default ordering associated with the tbl (as set by <code>arrange()</code>).</p></li>

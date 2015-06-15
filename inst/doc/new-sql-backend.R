@@ -1,9 +1,9 @@
-## ----, echo = FALSE, message = FALSE-------------------------------------
+## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  src_postgres <- function(dbname = NULL, host = NULL, port = NULL, user = NULL,
 #                           password = NULL, ...) {
 #  
@@ -23,12 +23,12 @@ src_desc.src_postgres <- function(x) {
     host, ":", info$port, "/", info$dbname, "]")
 }
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  tbl.src_mssql <- function(src, from, ...) {
 #    tbl_sql("mssql", src = src, from = from, ...)
 #  }
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  copy_nycflights13(src_mssql(...))
 #  copy_lahman(src_mssql(...))
 

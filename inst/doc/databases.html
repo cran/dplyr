@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-01-13" />
+<meta name="date" content="2015-06-15" />
 
 <title>Databases</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Databases</h1>
-<h4 class="date"><em>2015-01-13</em></h4>
+<h4 class="date"><em>2015-06-15</em></h4>
 </div>
 
 
@@ -64,17 +64,17 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <h2>Getting started</h2>
 <p>To experiement with databases, it’s easiest to get started with SQLite because everything you need is included in the R package. You don’t need to install anything else, and you don’t need to deal with the hassle of setting up a database server. Using a SQLite database in dplyr is really easy: just give it a path and the ok to create it.</p>
 <pre class="sourceCode r"><code class="sourceCode r">my_db &lt;-<span class="st"> </span><span class="kw">src_sqlite</span>(<span class="st">&quot;my_db.sqlite3&quot;</span>, <span class="dt">create =</span> T)</code></pre>
-<p>The main new concert here is the <code>src</code>, which is a collection of tables. Use <code>src_sqlite()</code>, <code>src_mysql()</code>, <code>src_postgres()</code> and <code>src_bigquery()</code> to connect to the different databases supported by dplyr.</p>
+<p>The main new concept here is the <code>src</code>, which is a collection of tables. Use <code>src_sqlite()</code>, <code>src_mysql()</code>, <code>src_postgres()</code> and <code>src_bigquery()</code> to connect to the different databases supported by dplyr.</p>
 <p><code>my_db</code> currently has no data in it, so we’ll load it up with the <code>flights</code> data using the convenient <code>copy_to()</code> function. This is a quick and dirty way of getting data into a database, but it’s not suitable for very large datasets because all the data has to flow through R.</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(nycflights13)
 flights_sqlite &lt;-<span class="st"> </span><span class="kw">copy_to</span>(my_db, flights, <span class="dt">temporary =</span> <span class="ot">FALSE</span>, <span class="dt">indexes =</span> <span class="kw">list</span>(
   <span class="kw">c</span>(<span class="st">&quot;year&quot;</span>, <span class="st">&quot;month&quot;</span>, <span class="st">&quot;day&quot;</span>), <span class="st">&quot;carrier&quot;</span>, <span class="st">&quot;tailnum&quot;</span>))</code></pre>
 <p>As you can see, the <code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. <code>copy_to()</code> also executes the SQL <code>ANALYZE</code> command: this ensures that the database has up-to-date table statistics and can pick appropriate query optimisations.</p>
-<p>For this particular dataset, there’s a built <code>src</code> that will cache <code>flights</code> in a standard location:</p>
+<p>For this particular dataset, there’s a built-in <code>src</code> that will cache <code>flights</code> in a standard location:</p>
 <pre class="sourceCode r"><code class="sourceCode r">flights_sqlite &lt;-<span class="st"> </span><span class="kw">tbl</span>(<span class="kw">nycflights13_sqlite</span>(), <span class="st">&quot;flights&quot;</span>)
-<span class="co">#&gt; Caching nycflights db at /private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite</span>
+<span class="co">#&gt; Caching nycflights db at /private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite</span>
 flights_sqlite
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 16]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
@@ -92,7 +92,7 @@ flights_sqlite
 <h2>Basic verbs</h2>
 <p>Remote data sources use exactly the same five verbs as local data sources:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">select</span>(flights_sqlite, year:day, dep_delay, arr_delay)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 5]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_delay arr_delay</span>
@@ -101,21 +101,21 @@ flights_sqlite
 <span class="co">#&gt; 3  2013     1   1         2        33</span>
 <span class="co">#&gt; 4  2013     1   1        -1       -18</span>
 <span class="co">#&gt; ..  ...   ... ...       ...       ...</span>
-<span class="kw">filter</span>(flights_sqlite, dep_deply &gt;<span class="st"> </span><span class="dv">240</span>)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
-<span class="co">#&gt; From: flights [336,776 x 16]</span>
-<span class="co">#&gt; Filter: dep_deply &gt; 240 </span>
+<span class="kw">filter</span>(flights_sqlite, dep_delay &gt;<span class="st"> </span><span class="dv">240</span>)
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; From: flights [1,524 x 16]</span>
+<span class="co">#&gt; Filter: dep_delay &gt; 240 </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     1   1      517         2      830        11      UA  N14228</span>
-<span class="co">#&gt; 2  2013     1   1      533         4      850        20      UA  N24211</span>
-<span class="co">#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA</span>
-<span class="co">#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB</span>
+<span class="co">#&gt; 1  2013     1   1      848       853     1001       851      MQ  N942MQ</span>
+<span class="co">#&gt; 2  2013     1   1     1815       290     2120       338      EV  N17185</span>
+<span class="co">#&gt; 3  2013     1   1     1842       260     1958       263      EV  N18120</span>
+<span class="co">#&gt; 4  2013     1   1     2115       255     2330       250      9E  N924XJ</span>
 <span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span>
 <span class="kw">arrange</span>(flights_sqlite, year, month, day)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 16]</span>
 <span class="co">#&gt; Arrange: year, month, day </span>
 <span class="co">#&gt; </span>
@@ -128,7 +128,7 @@ flights_sqlite
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span>
 <span class="kw">mutate</span>(flights_sqlite, <span class="dt">speed =</span> air_time /<span class="st"> </span>distance)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 17]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
@@ -140,7 +140,7 @@ flights_sqlite
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl), speed (dbl)</span>
 <span class="kw">summarise</span>(flights_sqlite, <span class="dt">delay =</span> <span class="kw">mean</span>(dep_time))
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: &lt;derived table&gt; [?? x 1]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;      delay</span>
@@ -148,8 +148,8 @@ flights_sqlite
 <span class="co">#&gt; ..     ...</span></code></pre>
 <p>The most important difference is that the expressions in <code>select()</code>, <code>filter()</code>, <code>arrange()</code>, <code>mutate()</code>, and <code>summarise()</code> are translated into SQL so they can be run on the database. This translation is almost perfect for the most common operations but there are some limitations, which you’ll learn about later.</p>
 </div>
-<div id="lazyness" class="section level2">
-<h2>Lazyness</h2>
+<div id="laziness" class="section level2">
+<h2>Laziness</h2>
 <p>When working with databases, dplyr tries to be as lazy as possible. It’s lazy in two ways:</p>
 <ul>
 <li><p>It never pulls data back to R unless you explicitly ask for it.</p></li>
@@ -162,7 +162,7 @@ c3 &lt;-<span class="st"> </span><span class="kw">mutate</span>(c2, <span class=
 c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month, day, carrier)</code></pre>
 <p>Suprisingly, this sequence of operations never actually touches the database. It’s not until you ask for the data (e.g. by printing <code>c4</code>) that dplyr generates the SQL and requests the results from the database, and even then it only pulls down 10 rows.</p>
 <pre class="sourceCode r"><code class="sourceCode r">c4
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmp7nw6HF/Rinsta9a275ce12e/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [842 x 8]</span>
 <span class="co">#&gt; Filter: year == 2013, month == 1, day == 1 </span>
 <span class="co">#&gt; Arrange: year, month, day, carrier </span>
@@ -264,7 +264,7 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 <p>It’s not possible to provide a perfect translation because databases don’t have all the functions that R does. The goal of dplyr is to provide a semantic translation: to translate what you mean, not the precise details. Even for functions that exist both in databases and R you shouldn’t expect results to be exactly the same; database programmers have different priorities to R core. For example, in R, <code>mean()</code> loops through the data twice in order to get a higher level of numerical accuracy at the cost of being twice as slow. R’s <code>mean()</code> also provides a <code>trim</code> option for computing trimmed means, which databases do not provide. Databases automatically drop NULLs (their equivalent of missing values) whereas in R you have to ask nicely. This means the essense of simple calls like <code>mean(x)</code> will be translated accurately, but more complicated calls like <code>mean(x, trim = 0.5, na.rm = TRUE)</code> will raise an error:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">translate_sql</span>(<span class="kw">mean</span>(x, <span class="dt">trim =</span> T))
 <span class="co"># Error: Invalid number of args to SQL AVG. Expecting 1</span></code></pre>
-<p>Any function that dplyr does’t know how to convert it leaves as is - that means if you want to use any other function that database provides, you can use it as is. Here a couple of examples that will work with <a href="http://www.sqlite.org/lang_corefunc.html">SQLite</a>:</p>
+<p>Any function that dplyr doesn’t know how to convert it leaves as is - that means if you want to use any other function that database provides, you can use it as is. Here a couple of examples that will work with <a href="http://www.sqlite.org/lang_corefunc.html">SQLite</a>:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">translate_sql</span>(<span class="kw">glob</span>(x, y))
 <span class="co">#&gt; &lt;SQL&gt; GLOB(&quot;x&quot;, &quot;y&quot;)</span>
 <span class="kw">translate_sql</span>(x %like%<span class="st"> &quot;ab*&quot;</span>)
@@ -313,12 +313,7 @@ delay_local &lt;-<span class="st"> </span><span class="kw">collect</span>(delay)
 <span class="st">    </span><span class="kw">select</span>(arr_delay) %&gt;%<span class="st"> </span>
 <span class="st">    </span><span class="kw">mutate</span>(<span class="dt">rank =</span> <span class="kw">rank</span>(<span class="kw">desc</span>(arr_delay)))
   ranked$query
-}
-<span class="co">#&gt; Auto-disconnecting postgres connection (2795, 2)</span>
-<span class="co">#&gt; &lt;Query&gt; SELECT &quot;year&quot;, &quot;month&quot;, &quot;day&quot;, &quot;arr_delay&quot;, &quot;rank&quot;</span>
-<span class="co">#&gt; FROM (SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;arr_delay&quot; AS &quot;arr_delay&quot;, rank() OVER (PARTITION BY (&quot;year&quot;, &quot;month&quot;, &quot;day&quot;) ORDER BY &quot;arr_delay&quot; DESC) AS &quot;rank&quot;</span>
-<span class="co">#&gt; FROM &quot;flights&quot;) AS &quot;_W6&quot;</span>
-<span class="co">#&gt; &lt;PostgreSQLConnection:(2795,1)&gt;</span></code></pre>
+}</code></pre>
 </div>
 <div id="mysql-and-mariadb" class="section level3">
 <h3>MySQL and MariaDB</h3>

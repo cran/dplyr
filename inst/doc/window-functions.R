@@ -1,9 +1,9 @@
-## ----, echo = FALSE, message = FALSE-------------------------------------
+## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 library(Lahman)
 batting <- select(tbl_df(Batting), playerID, yearID, teamID, G, AB:H) 
 batting <- arrange(batting, playerID, yearID, teamID)
@@ -35,7 +35,7 @@ dense_rank(x)
 cume_dist(x)
 percent_rank(x)
 
-## ----, results = 'hide'--------------------------------------------------
+## ---- results = 'hide'---------------------------------------------------
 # Selects best two years
 filter(players, min_rank(desc(G)) < 2)
 
@@ -53,11 +53,11 @@ x <- 1:5
 lead(x)
 lag(x)
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 # Compute the relative change in games played
 mutate(players, G_delta = G - lag(G))
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 # Find when a player changed teams
 filter(players, teamID != lag(teamID))
 
@@ -71,7 +71,7 @@ arrange(wrong, year)
 right <- mutate(scrambled, running = order_by(year, cumsum(value)))
 arrange(right, year)
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 filter(players, cumany(G > 150))
 
 ## ------------------------------------------------------------------------
@@ -79,11 +79,11 @@ x <- 1:10
 y <- 10:1
 order_by(y, cumsum(x))
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 filter(players, G > mean(G))
 filter(players, G < median(G))
 
-## ----, results = "hide"--------------------------------------------------
+## ---- results = "hide"---------------------------------------------------
 filter(players, ntile(G, 2) == 2)
 
 ## ------------------------------------------------------------------------
@@ -92,7 +92,7 @@ mutate(players, career_year = yearID - min(yearID) + 1)
 ## ------------------------------------------------------------------------
 mutate(players, G_z = (G - mean(G)) / sd(G))
 
-## ----, message = FALSE---------------------------------------------------
+## ---- message = FALSE----------------------------------------------------
 if (has_lahman("postgres")) {
   players_db <- group_by(tbl(lahman_postgres(), "Batting"), playerID)
   
@@ -103,7 +103,7 @@ if (has_lahman("postgres")) {
   print(translate_sql(lag(G), tbl = players_db, window = TRUE))
 }
 
-## ----, message = FALSE---------------------------------------------------
+## ---- message = FALSE----------------------------------------------------
 if (has_lahman("postgres")) {
   players_by_year <- arrange(players_db, yearID)
   print(translate_sql(cummean(G), tbl = players_by_year, window = TRUE))
@@ -111,13 +111,13 @@ if (has_lahman("postgres")) {
   print(translate_sql(lag(G), tbl = players_by_year, window = TRUE))
 }
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  mutate(players,
 #    min_rank(yearID),
 #    order_by(yearID, cumsum(G)),
 #    lead(order_by = yearID, G)
 #  )
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  filter(players, rank(G) == 1)
 

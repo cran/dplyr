@@ -1,12 +1,12 @@
-## ----, echo = FALSE, message = FALSE-------------------------------------
+## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  summarise(per_day, flights = sum(flights))
 
-## ----, eval=FALSE--------------------------------------------------------
+## ---- eval=FALSE---------------------------------------------------------
 #  foo <- function(x) x*x
 #  summarise(per_day, flights = foo(sum(flights)) )
 

@@ -1,4 +1,4 @@
-## ----, echo = FALSE, message = FALSE-------------------------------------
+## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
@@ -12,10 +12,10 @@ head(flights)
 ## ------------------------------------------------------------------------
 filter(flights, month == 1, day == 1)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  flights[flights$month == 1 & flights$day == 1, ]
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  filter(flights, month == 1 | month == 2)
 
 ## ------------------------------------------------------------------------
@@ -27,7 +27,7 @@ arrange(flights, year, month, day)
 ## ------------------------------------------------------------------------
 arrange(flights, desc(arr_delay))
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  flights[order(flights$year, flights$month, flights$day), ]
 #  flights[order(desc(flights$arr_delay)), ]
 
@@ -60,7 +60,7 @@ mutate(flights,
   gain_per_hour = gain / (air_time / 60)
 )
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  transform(flights,
 #    gain = arr_delay - delay,
 #    gain_per_hour = gain / (air_time / 60)
@@ -81,7 +81,7 @@ summarise(flights,
 sample_n(flights, 10)
 sample_frac(flights, 0.01)
 
-## ----, warning = FALSE, message = FALSE, fig.width = 6-------------------
+## ---- warning = FALSE, message = FALSE, fig.width = 6--------------------
 by_tailnum <- group_by(flights, tailnum)
 delay <- summarise(by_tailnum,
   count = n(),
@@ -109,7 +109,7 @@ daily <- group_by(flights, year, month, day)
 (per_month <- summarise(per_day, flights = sum(flights)))
 (per_year  <- summarise(per_month, flights = sum(flights)))
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  a1 <- group_by(flights, year, month, day)
 #  a2 <- select(a1, arr_delay, dep_delay)
 #  a3 <- summarise(a2,
@@ -130,7 +130,7 @@ filter(
   arr > 30 | dep > 30
 )
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  flights %>%
 #    group_by(year, month, day) %>%
 #    select(arr_delay, dep_delay) %>%

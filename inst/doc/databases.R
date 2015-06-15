@@ -1,12 +1,12 @@
-## ----, echo = FALSE, message = FALSE-------------------------------------
+## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(dplyr.print_min = 4L, dplyr.print_max = 4L)
 library(dplyr)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  my_db <- src_sqlite("my_db.sqlite3", create = T)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  library(nycflights13)
 #  flights_sqlite <- copy_to(my_db, flights, temporary = FALSE, indexes = list(
 #    c("year", "month", "day"), "carrier", "tailnum"))
@@ -15,12 +15,12 @@ library(dplyr)
 flights_sqlite <- tbl(nycflights13_sqlite(), "flights")
 flights_sqlite
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  tbl(my_db, sql("SELECT * FROM flights"))
 
 ## ------------------------------------------------------------------------
 select(flights_sqlite, year:day, dep_delay, arr_delay)
-filter(flights_sqlite, dep_deply > 240)
+filter(flights_sqlite, dep_delay > 240)
 arrange(flights_sqlite, year, month, day)
 mutate(flights_sqlite, speed = air_time / distance)
 summarise(flights_sqlite, delay = mean(dep_time))
@@ -60,7 +60,7 @@ translate_sql(x %% 2 == 10)
 translate_sql(1)
 translate_sql(1L)
 
-## ----, eval = FALSE------------------------------------------------------
+## ---- eval = FALSE-------------------------------------------------------
 #  translate_sql(mean(x, trim = T))
 #  # Error: Invalid number of args to SQL AVG. Expecting 1
 
