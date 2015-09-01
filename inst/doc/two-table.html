@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-06-15" />
+<meta name="date" content="2015-08-31" />
 
 <title>Two-table verbs</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Two-table verbs</h1>
-<h4 class="date"><em>2015-06-15</em></h4>
+<h4 class="date"><em>2015-08-31</em></h4>
 </div>
 
 
@@ -85,11 +85,20 @@ flights2 %&gt;%<span class="st"> </span>
 <th align="left">dest</th>
 <th align="left">tailnum</th>
 <th align="left">carrier</th>
-<th align="left">name</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -98,9 +107,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">IAH</td>
 <td align="left">N14228</td>
 <td align="left">UA</td>
-<td align="left">United Air Lines Inc.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -109,9 +117,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">IAH</td>
 <td align="left">N24211</td>
 <td align="left">UA</td>
-<td align="left">United Air Lines Inc.</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -120,9 +127,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">MIA</td>
 <td align="left">N619AA</td>
 <td align="left">AA</td>
-<td align="left">American Airlines Inc.</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -131,9 +137,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">BQN</td>
 <td align="left">N804JB</td>
 <td align="left">B6</td>
-<td align="left">JetBlue Airways</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -142,10 +147,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">ATL</td>
 <td align="left">N668DN</td>
 <td align="left">DL</td>
-<td align="left">Delta Air Lines Inc.</td>
 </tr>
-<tr class="even">
-<td align="left">…</td>
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
@@ -157,6 +160,7 @@ flights2 %&gt;%<span class="st"> </span>
 </tr>
 </tbody>
 </table>
+<p>(<em>Variables not shown</em>: name (fctr))</p>
 <div id="controlling-how-the-tables-are-matched" class="section level3">
 <h3>Controlling how the tables are matched</h3>
 <p>As well as <code>x</code> and <code>y</code>, each mutating join takes an argument <code>by</code> that controls which variables are used to match observations in the two tables. There are a few ways to specify it, as I illustrate below with various tables from nycflights13:</p>
@@ -178,11 +182,23 @@ flights2 %&gt;%<span class="st"> </span>
 <th align="left">temp</th>
 <th align="left">dewp</th>
 <th align="left">humid</th>
-<th align="left">wind_dir</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(dbl)</td>
+<td align="left">(dbl)</td>
+<td align="left">(dbl)</td>
+</tr>
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -194,9 +210,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">NA</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -208,9 +223,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">NA</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -222,9 +236,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">NA</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -236,9 +249,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">NA</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -250,10 +262,8 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">NA</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
-<td align="left">NA</td>
 </tr>
-<tr class="even">
-<td align="left">…</td>
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
@@ -268,7 +278,7 @@ flights2 %&gt;%<span class="st"> </span>
 </tr>
 </tbody>
 </table>
-<p>(<em>Variables not shown</em>: wind_speed (dbl), wind_gust (dbl), precip (dbl), pressure (dbl), visib (dbl))</p></li>
+<p>(<em>Variables not shown</em>: wind_dir (dbl), wind_speed (dbl), wind_gust (dbl), precip (dbl), pressure (dbl), visib (dbl))</p></li>
 <li><p>A character vector, <code>by = &quot;x&quot;</code>. Like a natural join, but uses only some of the common variables. For example, <code>flights</code> and <code>planes</code> have <code>year</code> columns, but they mean different things so we only want to join by <code>tailnum</code>.</p>
 <pre class="sourceCode r"><code class="sourceCode r">flights2 %&gt;%<span class="st"> </span><span class="kw">left_join</span>(planes, <span class="dt">by =</span> <span class="st">&quot;tailnum&quot;</span>)</code></pre>
 <table>
@@ -287,6 +297,17 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -297,7 +318,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">UA</td>
 <td align="left">1999</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -308,7 +329,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">UA</td>
 <td align="left">1998</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -319,7 +340,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">AA</td>
 <td align="left">1990</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -330,7 +351,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">B6</td>
 <td align="left">2012</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -341,7 +362,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">DL</td>
 <td align="left">1991</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
@@ -374,6 +395,16 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -383,7 +414,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">N14228</td>
 <td align="left">UA</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -393,7 +424,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">N24211</td>
 <td align="left">UA</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -403,7 +434,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">N619AA</td>
 <td align="left">AA</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -413,7 +444,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">N804JB</td>
 <td align="left">B6</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -423,7 +454,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">N668DN</td>
 <td align="left">DL</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
@@ -453,6 +484,17 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -463,7 +505,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">UA</td>
 <td align="left">Newark Liberty Intl</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -474,7 +516,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">UA</td>
 <td align="left">La Guardia</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -485,7 +527,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">AA</td>
 <td align="left">John F Kennedy Intl</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -496,7 +538,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">B6</td>
 <td align="left">John F Kennedy Intl</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">2013</td>
 <td align="left">1</td>
 <td align="left">1</td>
@@ -507,7 +549,7 @@ flights2 %&gt;%<span class="st"> </span>
 <td align="left">DL</td>
 <td align="left">La Guardia</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
@@ -536,10 +578,14 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">2</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">1</td>
 </tr>
@@ -556,11 +602,16 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">10</td>
 <td align="left">a</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">3</td>
 <td align="left">10</td>
 <td align="left">a</td>
@@ -603,12 +654,18 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">2</td>
 <td align="left">10</td>
 <td align="left">a</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">1</td>
 <td align="left">NA</td>
@@ -616,7 +673,7 @@ flights2 %&gt;%<span class="st"> </span>
 </tr>
 </tbody>
 </table></li>
-<li><p><code>right_join(x, y)</code> includes all obserations in <code>y</code>. It’s equivalent to <code>left_join(y, x)</code>, but the columns will be ordered differently.</p>
+<li><p><code>right_join(x, y)</code> includes all observations in <code>y</code>. It’s equivalent to <code>left_join(y, x)</code>, but the columns will be ordered differently.</p>
 <pre class="sourceCode r"><code class="sourceCode r">df1 %&gt;%<span class="st"> </span><span class="kw">right_join</span>(df2)
 <span class="co">#&gt; Joining by: &quot;x&quot;</span></code></pre>
 <table>
@@ -630,12 +687,18 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">2</td>
 <td align="left">10</td>
 <td align="left">a</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">3</td>
 <td align="left">NA</td>
 <td align="left">10</td>
@@ -656,12 +719,18 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">10</td>
 <td align="left">a</td>
 <td align="left">2</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">3</td>
 <td align="left">10</td>
 <td align="left">a</td>
@@ -683,18 +752,24 @@ flights2 %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+<td align="left">(chr)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">2</td>
 <td align="left">10</td>
 <td align="left">a</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">1</td>
 <td align="left">NA</td>
 <td align="left">NA</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">3</td>
 <td align="left">NA</td>
 <td align="left">10</td>
@@ -723,26 +798,31 @@ df1 %&gt;%<span class="st"> </span><span class="kw">left_join</span>(df2)
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">1</td>
-<td align="left">1</td>
-<td align="left">a</td>
+<td align="left">(dbl)</td>
+<td align="left">(int)</td>
+<td align="left">(chr)</td>
 </tr>
 <tr class="even">
 <td align="left">1</td>
 <td align="left">1</td>
-<td align="left">b</td>
+<td align="left">a</td>
 </tr>
 <tr class="odd">
 <td align="left">1</td>
-<td align="left">2</td>
-<td align="left">a</td>
+<td align="left">1</td>
+<td align="left">b</td>
 </tr>
 <tr class="even">
 <td align="left">1</td>
 <td align="left">2</td>
-<td align="left">b</td>
+<td align="left">a</td>
 </tr>
 <tr class="odd">
+<td align="left">1</td>
+<td align="left">2</td>
+<td align="left">b</td>
+</tr>
+<tr class="even">
 <td align="left">2</td>
 <td align="left">3</td>
 <td align="left">a</td>
@@ -756,7 +836,7 @@ df1 %&gt;%<span class="st"> </span><span class="kw">left_join</span>(df2)
 <p>Filtering joins match obserations in the same way as mutating joins, but affect the observations, not the variables. There are two types:</p>
 <ul>
 <li><code>semi_join(x, y)</code> <strong>keeps</strong> all observations in <code>x</code> that have a match in <code>y</code>.</li>
-<li><code>anti_join(x, y)</code> <strong>drops</strong> all observaitons in <code>x</code> that have a match in <code>y</code>.</li>
+<li><code>anti_join(x, y)</code> <strong>drops</strong> all observations in <code>x</code> that have a match in <code>y</code>.</li>
 </ul>
 <p>These are most useful for diagnosing join mismatches. For example, there are many flights in the nycflights13 dataset that don’t have a matching tail number in the planes table:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;nycflights13&quot;</span>)
@@ -772,26 +852,30 @@ flights %&gt;%<span class="st"> </span>
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(chr)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left"></td>
 <td align="left">2512</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">N725MQ</td>
 <td align="left">575</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">N722MQ</td>
 <td align="left">513</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">N723MQ</td>
 <td align="left">507</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">N713MQ</td>
 <td align="left">483</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">…</td>
 <td align="left">…</td>
 </tr>
@@ -830,10 +914,14 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">1</td>
 </tr>
@@ -849,10 +937,14 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">2</td>
 </tr>
@@ -869,6 +961,10 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">1</td>
 </tr>
@@ -885,14 +981,18 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
-<td align="left">2</td>
-<td align="left">2</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
 </tr>
 <tr class="even">
 <td align="left">2</td>
-<td align="left">1</td>
+<td align="left">2</td>
 </tr>
 <tr class="odd">
+<td align="left">2</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">1</td>
 </tr>
@@ -908,6 +1008,10 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">2</td>
 <td align="left">1</td>
 </tr>
@@ -923,6 +1027,10 @@ df1 %&gt;%<span class="st"> </span><span class="kw">semi_join</span>(df2, <span 
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+</tr>
+<tr class="even">
 <td align="left">2</td>
 <td align="left">2</td>
 </tr>

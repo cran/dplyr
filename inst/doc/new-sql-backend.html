@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-06-15" />
+<meta name="date" content="2015-08-31" />
 
 <title>Adding a new SQL backend</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Adding a new SQL backend</h1>
-<h4 class="date"><em>2015-06-15</em></h4>
+<h4 class="date"><em>2015-08-31</em></h4>
 </div>
 
 
@@ -61,7 +61,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>See <code>?backend_sql</code> and <code>?backend_db</code> for a complete list of generics.</p>
 <div id="create-the-src-object" class="section level2">
 <h2>Create the src object</h2>
-<p>Start by creating a new src function to represent the backend. Assuming we’re going to create a src for mssql, you’d call it <code>src_mssql()</code>, and you’d follow the pattern of an existing src. A simplified version of <code>src_postgres()</code> is show below:</p>
+<p>Start by creating a new src function to represent the backend. Assuming we’re going to create a src for postgres, you’d call it <code>src_postgres()</code>, and you’d follow the pattern of an existing src. A simplified version of <code>src_postgres()</code> is show below:</p>
 <pre class="sourceCode r"><code class="sourceCode r">src_postgres &lt;-<span class="st"> </span>function(<span class="dt">dbname =</span> <span class="ot">NULL</span>, <span class="dt">host =</span> <span class="ot">NULL</span>, <span class="dt">port =</span> <span class="ot">NULL</span>, <span class="dt">user =</span> <span class="ot">NULL</span>,
                          <span class="dt">password =</span> <span class="ot">NULL</span>, ...) {
 
@@ -73,7 +73,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>Use <code>src_sql()</code> to create a new S3 object with the correct structure. It must have a DBI connection, but it can store anything else that might be useful.</p>
 <p>Next, implement a method for <code>src_desc()</code> that briefly describes the source:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="co">#' @export</span>
-src_desc.src_postgres &lt;-<span class="st"> </span>function(x) {
+src_desc.src_postgres &lt;-<span class="st"> </span>function(con) {
   info &lt;-<span class="st"> </span><span class="kw">dbGetInfo</span>(con)
   host &lt;-<span class="st"> </span>if (info$host ==<span class="st"> &quot;&quot;</span>) <span class="st">&quot;localhost&quot;</span> else info$host
 

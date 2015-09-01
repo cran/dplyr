@@ -21,6 +21,13 @@ data_frame(x = 1:5, y = x ^ 2)
 data_frame(x = 1:5) %>% class()
 
 ## ------------------------------------------------------------------------
+df <- data.frame(a = 1:2, b = 1:2)
+str(df[, "a"])
+
+tbldf <- tbl_df(df)
+str(tbldf[, "a"])
+
+## ------------------------------------------------------------------------
 l2 <- replicate(26, sample(100), simplify = FALSE)
 names(l2) <- letters
 microbenchmark::microbenchmark(

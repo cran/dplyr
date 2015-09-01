@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-06-15" />
+<meta name="date" content="2015-08-31" />
 
 <title>Hybrid evaluation</title>
 
@@ -52,13 +52,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Hybrid evaluation</h1>
-<h4 class="date"><em>2015-06-15</em></h4>
+<h4 class="date"><em>2015-08-31</em></h4>
 </div>
 
 
 <p>Consider this call to <code>summarise</code> :</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summarise</span>(per_day, <span class="dt">flights =</span> <span class="kw">sum</span>(flights))</code></pre>
-<p>One of the way <code>dplyr</code> achieves dramatic speedups is that expressions might not be evaluated by R, but by alternative code that is faster and uses less memory.</p>
+<p>One of the ways <code>dplyr</code> achieves dramatic speedups is that expressions might not be evaluated by R, but by alternative code that is faster and uses less memory.</p>
 <p>Conceptually the call to <code>summarise</code> above evaluates the expression <code>sum(flights)</code> on each subset of <code>flights</code> controlled by the grouping of <code>per_day</code>. This involves creating a new R vector to store the chunk and evaluate the R expression.</p>
 <p>Evaluating the R expression might carry costs that can be avoided, i.e. S3 dispatch, …</p>
 <p><code>dplyr</code> recognizes the expression <code>sum(flights)</code> as the <code>sum</code> function applied to a known column of the data, making it possible to handle the dispatch early and once, avoid unneeded memory allocations and compute the result faster.</p>

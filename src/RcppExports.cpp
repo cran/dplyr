@@ -39,6 +39,17 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// rank_strings
+IntegerVector rank_strings(CharacterVector s);
+RcppExport SEXP dplyr_rank_strings(SEXP sSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< CharacterVector >::type s(sSEXP);
+    __result = Rcpp::wrap(rank_strings(s));
+    return __result;
+END_RCPP
+}
 // arrange_impl
 List arrange_impl(DataFrame data, LazyDots dots);
 RcppExport SEXP dplyr_arrange_impl(SEXP dataSEXP, SEXP dotsSEXP) {
@@ -65,34 +76,35 @@ BEGIN_RCPP
 END_RCPP
 }
 // rbind_all
-List rbind_all(StrictListOf<DataFrame, NULL_or_Is<DataFrame> > dots);
-RcppExport SEXP dplyr_rbind_all(SEXP dotsSEXP) {
+List rbind_all(List dots, SEXP id);
+RcppExport SEXP dplyr_rbind_all(SEXP dotsSEXP, SEXP idSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< StrictListOf<DataFrame, NULL_or_Is<DataFrame> > >::type dots(dotsSEXP);
-    __result = Rcpp::wrap(rbind_all(dots));
+    Rcpp::traits::input_parameter< List >::type dots(dotsSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type id(idSEXP);
+    __result = Rcpp::wrap(rbind_all(dots, id));
     return __result;
 END_RCPP
 }
 // rbind_list__impl
-List rbind_list__impl(DotsOf<DataFrame> dots);
+List rbind_list__impl(Dots dots);
 RcppExport SEXP dplyr_rbind_list__impl(SEXP dotsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< DotsOf<DataFrame> >::type dots(dotsSEXP);
+    Rcpp::traits::input_parameter< Dots >::type dots(dotsSEXP);
     __result = Rcpp::wrap(rbind_list__impl(dots));
     return __result;
 END_RCPP
 }
 // cbind_all
-List cbind_all(StrictListOf<DataFrame, NULL_or_Is<DataFrame> > dots);
+List cbind_all(List dots);
 RcppExport SEXP dplyr_cbind_all(SEXP dotsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< StrictListOf<DataFrame, NULL_or_Is<DataFrame> > >::type dots(dotsSEXP);
+    Rcpp::traits::input_parameter< List >::type dots(dotsSEXP);
     __result = Rcpp::wrap(cbind_all(dots));
     return __result;
 END_RCPP
@@ -109,12 +121,12 @@ BEGIN_RCPP
 END_RCPP
 }
 // combine_vars
-SEXP combine_vars(std::vector<std::string> vars, ListOf<IntegerVector> xs);
+SEXP combine_vars(CharacterVector vars, ListOf<IntegerVector> xs);
 RcppExport SEXP dplyr_combine_vars(SEXP varsSEXP, SEXP xsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< std::vector<std::string> >::type vars(varsSEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type vars(varsSEXP);
     Rcpp::traits::input_parameter< ListOf<IntegerVector> >::type xs(xsSEXP);
     __result = Rcpp::wrap(combine_vars(vars, xs));
     return __result;
@@ -401,13 +413,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // n_distinct
-SEXP n_distinct(SEXP x);
-RcppExport SEXP dplyr_n_distinct(SEXP xSEXP) {
+SEXP n_distinct(SEXP x, bool na_rm);
+RcppExport SEXP dplyr_n_distinct(SEXP xSEXP, SEXP na_rmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
     Rcpp::traits::input_parameter< SEXP >::type x(xSEXP);
-    __result = Rcpp::wrap(n_distinct(x));
+    Rcpp::traits::input_parameter< bool >::type na_rm(na_rmSEXP);
+    __result = Rcpp::wrap(n_distinct(x, na_rm));
     return __result;
 END_RCPP
 }

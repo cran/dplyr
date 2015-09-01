@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-06-15" />
+<meta name="date" content="2015-08-31" />
 
 <title>Databases</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Databases</h1>
-<h4 class="date"><em>2015-06-15</em></h4>
+<h4 class="date"><em>2015-08-31</em></h4>
 </div>
 
 
@@ -72,17 +72,18 @@ flights_sqlite &lt;-<span class="st"> </span><span class="kw">copy_to</span>(my_
 <p>As you can see, the <code>copy_to()</code> operation has an additional argument that allows you to supply indexes for the table. Here we set up indexes that will allow us to quickly process the data by day, by carrier and by plane. <code>copy_to()</code> also executes the SQL <code>ANALYZE</code> command: this ensures that the database has up-to-date table statistics and can pick appropriate query optimisations.</p>
 <p>For this particular dataset, there’s a built-in <code>src</code> that will cache <code>flights</code> in a standard location:</p>
 <pre class="sourceCode r"><code class="sourceCode r">flights_sqlite &lt;-<span class="st"> </span><span class="kw">tbl</span>(<span class="kw">nycflights13_sqlite</span>(), <span class="st">&quot;flights&quot;</span>)
-<span class="co">#&gt; Caching nycflights db at /private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite</span>
+<span class="co">#&gt; Caching nycflights db at /private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite</span>
 flights_sqlite
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 16]</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     1   1      517         2      830        11      UA  N14228</span>
-<span class="co">#&gt; 2  2013     1   1      533         4      850        20      UA  N24211</span>
-<span class="co">#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA</span>
-<span class="co">#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB</span>
-<span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
+<span class="co">#&gt;     year month   day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
+<span class="co">#&gt;    (int) (int) (int)    (int)     (dbl)    (int)     (dbl)   (chr)   (chr)</span>
+<span class="co">#&gt; 1   2013     1     1      517         2      830        11      UA  N14228</span>
+<span class="co">#&gt; 2   2013     1     1      533         4      850        20      UA  N24211</span>
+<span class="co">#&gt; 3   2013     1     1      542         2      923        33      AA  N619AA</span>
+<span class="co">#&gt; 4   2013     1     1      544        -1     1004       -18      B6  N804JB</span>
+<span class="co">#&gt; ..   ...   ...   ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span></code></pre>
 <p>You can also create <code>tbl</code> from arbitrary SQL:</p>
@@ -92,58 +93,63 @@ flights_sqlite
 <h2>Basic verbs</h2>
 <p>Remote data sources use exactly the same five verbs as local data sources:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">select</span>(flights_sqlite, year:day, dep_delay, arr_delay)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 5]</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day dep_delay arr_delay</span>
-<span class="co">#&gt; 1  2013     1   1         2        11</span>
-<span class="co">#&gt; 2  2013     1   1         4        20</span>
-<span class="co">#&gt; 3  2013     1   1         2        33</span>
-<span class="co">#&gt; 4  2013     1   1        -1       -18</span>
-<span class="co">#&gt; ..  ...   ... ...       ...       ...</span>
+<span class="co">#&gt;     year month   day dep_delay arr_delay</span>
+<span class="co">#&gt;    (int) (int) (int)     (dbl)     (dbl)</span>
+<span class="co">#&gt; 1   2013     1     1         2        11</span>
+<span class="co">#&gt; 2   2013     1     1         4        20</span>
+<span class="co">#&gt; 3   2013     1     1         2        33</span>
+<span class="co">#&gt; 4   2013     1     1        -1       -18</span>
+<span class="co">#&gt; ..   ...   ...   ...       ...       ...</span>
 <span class="kw">filter</span>(flights_sqlite, dep_delay &gt;<span class="st"> </span><span class="dv">240</span>)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [1,524 x 16]</span>
 <span class="co">#&gt; Filter: dep_delay &gt; 240 </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     1   1      848       853     1001       851      MQ  N942MQ</span>
-<span class="co">#&gt; 2  2013     1   1     1815       290     2120       338      EV  N17185</span>
-<span class="co">#&gt; 3  2013     1   1     1842       260     1958       263      EV  N18120</span>
-<span class="co">#&gt; 4  2013     1   1     2115       255     2330       250      9E  N924XJ</span>
-<span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
+<span class="co">#&gt;     year month   day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
+<span class="co">#&gt;    (int) (int) (int)    (int)     (dbl)    (int)     (dbl)   (chr)   (chr)</span>
+<span class="co">#&gt; 1   2013     1     1      848       853     1001       851      MQ  N942MQ</span>
+<span class="co">#&gt; 2   2013     1     1     1815       290     2120       338      EV  N17185</span>
+<span class="co">#&gt; 3   2013     1     1     1842       260     1958       263      EV  N18120</span>
+<span class="co">#&gt; 4   2013     1     1     2115       255     2330       250      9E  N924XJ</span>
+<span class="co">#&gt; ..   ...   ...   ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span>
 <span class="kw">arrange</span>(flights_sqlite, year, month, day)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 16]</span>
 <span class="co">#&gt; Arrange: year, month, day </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     1   1      517         2      830        11      UA  N14228</span>
-<span class="co">#&gt; 2  2013     1   1      533         4      850        20      UA  N24211</span>
-<span class="co">#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA</span>
-<span class="co">#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB</span>
-<span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
+<span class="co">#&gt;     year month   day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
+<span class="co">#&gt;    (int) (int) (int)    (int)     (dbl)    (int)     (dbl)   (chr)   (chr)</span>
+<span class="co">#&gt; 1   2013     1     1      517         2      830        11      UA  N14228</span>
+<span class="co">#&gt; 2   2013     1     1      533         4      850        20      UA  N24211</span>
+<span class="co">#&gt; 3   2013     1     1      542         2      923        33      AA  N619AA</span>
+<span class="co">#&gt; 4   2013     1     1      544        -1     1004       -18      B6  N804JB</span>
+<span class="co">#&gt; ..   ...   ...   ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl)</span>
 <span class="kw">mutate</span>(flights_sqlite, <span class="dt">speed =</span> air_time /<span class="st"> </span>distance)
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [336,776 x 17]</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
-<span class="co">#&gt; 1  2013     1   1      517         2      830        11      UA  N14228</span>
-<span class="co">#&gt; 2  2013     1   1      533         4      850        20      UA  N24211</span>
-<span class="co">#&gt; 3  2013     1   1      542         2      923        33      AA  N619AA</span>
-<span class="co">#&gt; 4  2013     1   1      544        -1     1004       -18      B6  N804JB</span>
-<span class="co">#&gt; ..  ...   ... ...      ...       ...      ...       ...     ...     ...</span>
+<span class="co">#&gt;     year month   day dep_time dep_delay arr_time arr_delay carrier tailnum</span>
+<span class="co">#&gt;    (int) (int) (int)    (int)     (dbl)    (int)     (dbl)   (chr)   (chr)</span>
+<span class="co">#&gt; 1   2013     1     1      517         2      830        11      UA  N14228</span>
+<span class="co">#&gt; 2   2013     1     1      533         4      850        20      UA  N24211</span>
+<span class="co">#&gt; 3   2013     1     1      542         2      923        33      AA  N619AA</span>
+<span class="co">#&gt; 4   2013     1     1      544        -1     1004       -18      B6  N804JB</span>
+<span class="co">#&gt; ..   ...   ...   ...      ...       ...      ...       ...     ...     ...</span>
 <span class="co">#&gt; Variables not shown: flight (int), origin (chr), dest (chr), air_time</span>
 <span class="co">#&gt;   (dbl), distance (dbl), hour (dbl), minute (dbl), speed (dbl)</span>
 <span class="kw">summarise</span>(flights_sqlite, <span class="dt">delay =</span> <span class="kw">mean</span>(dep_time))
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: &lt;derived table&gt; [?? x 1]</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;      delay</span>
+<span class="co">#&gt;      (dbl)</span>
 <span class="co">#&gt; 1  1349.11</span>
 <span class="co">#&gt; ..     ...</span></code></pre>
 <p>The most important difference is that the expressions in <code>select()</code>, <code>filter()</code>, <code>arrange()</code>, <code>mutate()</code>, and <code>summarise()</code> are translated into SQL so they can be run on the database. This translation is almost perfect for the most common operations but there are some limitations, which you’ll learn about later.</p>
@@ -162,27 +168,29 @@ c3 &lt;-<span class="st"> </span><span class="kw">mutate</span>(c2, <span class=
 c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month, day, carrier)</code></pre>
 <p>Suprisingly, this sequence of operations never actually touches the database. It’s not until you ask for the data (e.g. by printing <code>c4</code>) that dplyr generates the SQL and requests the results from the database, and even then it only pulls down 10 rows.</p>
 <pre class="sourceCode r"><code class="sourceCode r">c4
-<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/Rtmpv9yK7F/Rinste591bbc3024/dplyr/db/nycflights13.sqlite]</span>
+<span class="co">#&gt; Source: sqlite 3.8.6 [/private/tmp/RtmpwFFH0F/Rinstbf516969d0c8/dplyr/db/nycflights13.sqlite]</span>
 <span class="co">#&gt; From: flights [842 x 8]</span>
 <span class="co">#&gt; Filter: year == 2013, month == 1, day == 1 </span>
 <span class="co">#&gt; Arrange: year, month, day, carrier </span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day carrier dep_delay air_time distance    speed</span>
-<span class="co">#&gt; 1  2013     1   1      9E         0      189     1029 326.6667</span>
-<span class="co">#&gt; 2  2013     1   1      9E        -9       57      228 240.0000</span>
-<span class="co">#&gt; 3  2013     1   1      9E        -3       68      301 265.5882</span>
-<span class="co">#&gt; 4  2013     1   1      9E        -6       57      209 220.0000</span>
-<span class="co">#&gt; ..  ...   ... ...     ...       ...      ...      ...      ...</span></code></pre>
+<span class="co">#&gt;     year month   day carrier dep_delay air_time distance    speed</span>
+<span class="co">#&gt;    (int) (int) (int)   (chr)     (dbl)    (dbl)    (dbl)    (dbl)</span>
+<span class="co">#&gt; 1   2013     1     1      9E         0      189     1029 326.6667</span>
+<span class="co">#&gt; 2   2013     1     1      9E        -9       57      228 240.0000</span>
+<span class="co">#&gt; 3   2013     1     1      9E        -3       68      301 265.5882</span>
+<span class="co">#&gt; 4   2013     1     1      9E        -6       57      209 220.0000</span>
+<span class="co">#&gt; ..   ...   ...   ...     ...       ...      ...      ...      ...</span></code></pre>
 <p>To pull down all the results use <code>collect()</code>, which returns a <code>tbl_df()</code>:</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">collect</span>(c4)
 <span class="co">#&gt; Source: local data frame [842 x 8]</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;    year month day carrier dep_delay air_time distance    speed</span>
-<span class="co">#&gt; 1  2013     1   1      9E         0      189     1029 326.6667</span>
-<span class="co">#&gt; 2  2013     1   1      9E        -9       57      228 240.0000</span>
-<span class="co">#&gt; 3  2013     1   1      9E        -3       68      301 265.5882</span>
-<span class="co">#&gt; 4  2013     1   1      9E        -6       57      209 220.0000</span>
-<span class="co">#&gt; ..  ...   ... ...     ...       ...      ...      ...      ...</span></code></pre>
+<span class="co">#&gt;     year month   day carrier dep_delay air_time distance    speed</span>
+<span class="co">#&gt;    (int) (int) (int)   (chr)     (dbl)    (dbl)    (dbl)    (dbl)</span>
+<span class="co">#&gt; 1   2013     1     1      9E         0      189     1029 326.6667</span>
+<span class="co">#&gt; 2   2013     1     1      9E        -9       57      228 240.0000</span>
+<span class="co">#&gt; 3   2013     1     1      9E        -3       68      301 265.5882</span>
+<span class="co">#&gt; 4   2013     1     1      9E        -6       57      209 220.0000</span>
+<span class="co">#&gt; ..   ...   ...   ...     ...       ...      ...      ...      ...</span></code></pre>
 <p>You can see the query dplyr has generated by looking at the <code>query</code> component of the object:</p>
 <pre class="sourceCode r"><code class="sourceCode r">c4$query
 <span class="co">#&gt; &lt;Query&gt; SELECT &quot;year&quot; AS &quot;year&quot;, &quot;month&quot; AS &quot;month&quot;, &quot;day&quot; AS &quot;day&quot;, &quot;carrier&quot; AS &quot;carrier&quot;, &quot;dep_delay&quot; AS &quot;dep_delay&quot;, &quot;air_time&quot; AS &quot;air_time&quot;, &quot;distance&quot; AS &quot;distance&quot;, &quot;distance&quot; / &quot;air_time&quot; * 60.0 AS &quot;speed&quot;</span>
@@ -212,7 +220,7 @@ c4 &lt;-<span class="st"> </span><span class="kw">arrange</span>(c3, year, month
 <ul>
 <li><p><code>collect()</code> executes the query and returns the results to R.</p></li>
 <li><p><code>compute()</code> executes the query and stores the results in a temporary table in the database.</p></li>
-<li><p><code>collapse()</code> turns the query into a table expresion.</p></li>
+<li><p><code>collapse()</code> turns the query into a table expression.</p></li>
 </ul>
 <p>You are most likely to use <code>collect()</code>: once you have interactively converged on the right set of operations, use <code>collect()</code> to pull down the data into a local <code>tbl_df()</code>. If you have some knowledge of SQL, you can use <code>compute()</code> and <code>collapse()</code> to optimise performance.</p>
 </div>

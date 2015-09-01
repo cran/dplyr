@@ -15,7 +15,7 @@ library(dplyr)
 
 ## ------------------------------------------------------------------------
 #' @export
-src_desc.src_postgres <- function(x) {
+src_desc.src_postgres <- function(con) {
   info <- dbGetInfo(con)
   host <- if (info$host == "") "localhost" else info$host
 

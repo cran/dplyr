@@ -141,5 +141,33 @@ test_that("arrange respects attributes #1105", {
 
   df <- data.frame( p = Period(c(1, 2, 3)), x = 1:3 )
   res <- arrange(df, p)
-  expect_is(res$p, "Period") 
+  expect_is(res$p, "Period")
+})
+
+test_that("arrange works with empty data frame (#1142)", {
+  df <- data.frame()
+  res <- df %>% arrange
+  expect_equal( nrow(res), 0L )
+  expect_equal( length(res), 0L )
+})
+
+test_that("arrange respects locale (#1280)", {
+  df2 <- data_frame( words = c("casa", "\u00e1rbol", "zona", "\u00f3rgano") )
+
+  res <- df2 %>% arrange( words )
+  expect_equal( res$words, sort(df2$words) )
+
+  res <- df2 %>% arrange( desc(words) )
+  expect_equal( res$words, sort(df2$words, decreasing = TRUE) )
+
+})
+
+test_that("duplicated column name is explicit about which column (#996)", {
+    df <- data.frame( x = 1:10, x = 1:10 )
+    names(df) <- c("x", "x")
+    expect_error( df %>% arrange, "found duplicated column name: x" )
+
+    df <- data.frame( x = 1:10, x = 1:10, y = 1:10, y = 1:10 )
+    names(df) <- c("x", "x", "y", "y")
+    expect_error( df %>% arrange, "found duplicated column name: x, y" )
 })

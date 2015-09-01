@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2015-06-15" />
+<meta name="date" content="2015-08-31" />
 
 <title>Window functions and grouped mutate/filter</title>
 
@@ -52,7 +52,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 
 <div id="header">
 <h1 class="title">Window functions and grouped mutate/filter</h1>
-<h4 class="date"><em>2015-06-15</em></h4>
+<h4 class="date"><em>2015-08-31</em></h4>
 </div>
 
 
@@ -130,18 +130,22 @@ by_team_quartile &lt;-<span class="st"> </span><span class="kw">group_by</span>(
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+</tr>
+<tr class="even">
 <td align="left">1</td>
 <td align="left">5.355776</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">2</td>
 <td align="left">24.912267</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">3</td>
 <td align="left">77.288933</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">4</td>
 <td align="left">373.693195</td>
 </tr>
@@ -175,12 +179,12 @@ scrambled &lt;-<span class="st"> </span>df[<span class="kw">sample</span>(<span 
 wrong &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">cumsum</span>(value))
 <span class="kw">arrange</span>(wrong, year)
 <span class="co">#&gt;   year value running</span>
-<span class="co">#&gt; 1 2000     0      14</span>
-<span class="co">#&gt; 2 2001     1       1</span>
-<span class="co">#&gt; 3 2002     4       5</span>
-<span class="co">#&gt; 4 2003     9      14</span>
-<span class="co">#&gt; 5 2004    16      55</span>
-<span class="co">#&gt; 6 2005    25      39</span>
+<span class="co">#&gt; 1 2000     0      55</span>
+<span class="co">#&gt; 2 2001     1      51</span>
+<span class="co">#&gt; 3 2002     4      55</span>
+<span class="co">#&gt; 4 2003     9       9</span>
+<span class="co">#&gt; 5 2004    16      50</span>
+<span class="co">#&gt; 6 2005    25      34</span>
 
 right &lt;-<span class="st"> </span><span class="kw">mutate</span>(scrambled, <span class="dt">running =</span> <span class="kw">order_by</span>(year, <span class="kw">cumsum</span>(value)))
 <span class="kw">arrange</span>(right, year)
@@ -229,6 +233,16 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(chr)</td>
+<td align="left">(int)</td>
+<td align="left">(fctr)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+</tr>
+<tr class="even">
 <td align="left">aardsda01</td>
 <td align="left">2004</td>
 <td align="left">SFN</td>
@@ -238,7 +252,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">aardsda01</td>
 <td align="left">2006</td>
 <td align="left">CHN</td>
@@ -248,7 +262,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">3</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">aardsda01</td>
 <td align="left">2007</td>
 <td align="left">CHA</td>
@@ -258,7 +272,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">4</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">aardsda01</td>
 <td align="left">2008</td>
 <td align="left">BOS</td>
@@ -268,14 +282,14 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">5</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
-<td align="left">..</td>
-<td align="left">..</td>
-<td align="left">.</td>
-<td align="left">.</td>
+<td align="left">…</td>
+<td align="left">…</td>
+<td align="left">…</td>
+<td align="left">…</td>
 <td align="left">…</td>
 </tr>
 </tbody>
@@ -297,6 +311,16 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 </thead>
 <tbody>
 <tr class="odd">
+<td align="left">(chr)</td>
+<td align="left">(int)</td>
+<td align="left">(fctr)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(int)</td>
+<td align="left">(dbl)</td>
+</tr>
+<tr class="even">
 <td align="left">aardsda01</td>
 <td align="left">2004</td>
 <td align="left">SFN</td>
@@ -306,7 +330,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">-1.1167685</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">aardsda01</td>
 <td align="left">2006</td>
 <td align="left">CHN</td>
@@ -316,7 +340,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">0.3297126</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">aardsda01</td>
 <td align="left">2007</td>
 <td align="left">CHA</td>
@@ -326,7 +350,7 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">-0.5211586</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">aardsda01</td>
 <td align="left">2008</td>
 <td align="left">BOS</td>
@@ -336,14 +360,14 @@ y &lt;-<span class="st"> </span><span class="dv">10</span>:<span class="dv">1</s
 <td align="left">0</td>
 <td align="left">0.4147997</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">…</td>
 <td align="left">…</td>
 <td align="left">…</td>
-<td align="left">..</td>
-<td align="left">..</td>
-<td align="left">.</td>
-<td align="left">.</td>
+<td align="left">…</td>
+<td align="left">…</td>
+<td align="left">…</td>
+<td align="left">…</td>
 <td align="left">…</td>
 </tr>
 </tbody>
