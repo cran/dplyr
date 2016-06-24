@@ -10,6 +10,8 @@ namespace dplyr {
     virtual SEXP get( int i ) const = 0 ;
     virtual int size() const = 0 ;
     virtual CharacterVector names() const = 0 ;
+    virtual bool is_dataframe() const = 0 ;
+    virtual SEXP get() const = 0 ;
   } ;
 
   class DataFrameAble_DataFrame : public DataFrameAbleImpl {
@@ -39,17 +41,16 @@ namespace dplyr {
       return data.names() ;
     }
 
+    inline bool is_dataframe() const {
+      return true ;
+    }
+
+    inline SEXP get() const {
+      return data ;
+    }
+
   private:
     DataFrame data ;
-  } ;
-
-  class DataFrameAble_Null : public DataFrameAbleImpl {
-  public:
-    DataFrameAble_Null(){}
-    inline int nrows() const { return 0 ;}
-    inline SEXP get(int i) const { return R_NilValue ;}
-    inline int size() const { return 0 ;}
-    inline CharacterVector names() const { return R_NilValue ; }
   } ;
 
   class DataFrameAble_List : public DataFrameAbleImpl {
@@ -79,6 +80,14 @@ namespace dplyr {
 
     inline CharacterVector names() const {
       return data.names() ;
+    }
+
+    inline bool is_dataframe() const {
+      return false ;
+    }
+
+    inline SEXP get() const {
+      return data ;
     }
 
   private:
@@ -112,13 +121,19 @@ namespace dplyr {
       return impl->names() ;
     }
 
+    inline bool is_dataframe() const {
+      return impl->is_dataframe() ;
+    }
+
+    inline SEXP get() const {
+      return impl->get() ;
+    }
+
   private:
     boost::shared_ptr<DataFrameAbleImpl> impl ;
 
     inline void init( SEXP data){
-      if( Rf_isNull(data) ){
-        impl.reset( new DataFrameAble_Null() ) ;
-      } else if( Rf_inherits( data, "data.frame")){
+      if( Rf_inherits( data, "data.frame")){
         impl.reset( new DataFrameAble_DataFrame(data)) ;
       } else if( is<List>(data) ){
         impl.reset( new DataFrameAble_List(data) ) ;

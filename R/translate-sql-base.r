@@ -2,6 +2,16 @@
 #' @include sql-escape.r
 NULL
 
+
+sql_if <- function(cond, if_true, if_false = NULL) {
+  build_sql(
+    "CASE WHEN (", cond, ")",
+    " THEN (", if_true, ")",
+    if (!is.null(if_false)) build_sql(" ELSE (", if_false, ")"),
+    " END"
+  )
+}
+
 #' @export
 #' @rdname sql_variant
 #' @format NULL
@@ -13,7 +23,11 @@ base_scalar <- sql_translator(
   `^`    = sql_prefix("power", 2),
   `-`    = function(x, y = NULL) {
     if (is.null(y)) {
-      build_sql(sql(" - "), x)
+      if (is.numeric(x)) {
+        -x
+      } else {
+        build_sql(sql("-"), x)
+      }
     } else {
       build_sql(x, sql(" - "), y)
     }
@@ -66,11 +80,9 @@ base_scalar <- sql_translator(
   toupper = sql_prefix("upper", 1),
   nchar   = sql_prefix("length", 1),
 
-  `if` = function(cond, if_true, if_false = NULL) {
-    build_sql("CASE WHEN ", cond, " THEN ", if_true,
-      if (!is.null(if_false)) build_sql(" ELSE "), if_false, " ",
-      "END")
-  },
+  `if` = sql_if,
+  if_else = sql_if,
+  ifelse = sql_if,
 
   sql = function(...) sql(...),
   `(` = function(x) {
@@ -84,11 +96,12 @@ base_scalar <- sql_translator(
   },
 
   is.null = function(x) {
-    build_sql(x, " IS NULL")
+    build_sql("(", x, ") IS NULL")
   },
   is.na = function(x) {
-    build_sql(x, "IS NULL")
+    build_sql("(", x, ") IS NULL")
   },
+  na_if = sql_prefix("NULL_IF", 2),
 
   as.numeric = function(x) build_sql("CAST(", x, " AS NUMERIC)"),
   as.integer = function(x) build_sql("CAST(", x, " AS INTEGER)"),
@@ -99,6 +112,14 @@ base_scalar <- sql_translator(
 
   between = function(x, left, right) {
     build_sql(x, " BETWEEN ", left, " AND ", right)
+  },
+
+  pmin = sql_prefix("min"),
+  pmax = sql_prefix("max"),
+
+  `__dplyr_colwise_fun` = function(...) {
+    stop("colwise verbs only accept bare functions with local sources",
+      call. = FALSE)
   }
 )
 
@@ -138,7 +159,7 @@ base_win <- sql_translator(
   cume_dist    = win_rank("cume_dist"),
   ntile        = function(order_by, n) {
     over(
-      build_sql("NTILE", list(n)),
+      build_sql("NTILE", list(as.integer(n))),
       partition_group(),
       order_by %||% partition_order()
     )
@@ -151,7 +172,7 @@ base_win <- sql_translator(
   min   = win_recycled("min"),
   max   = win_recycled("max"),
   n     = function() {
-    over(sql("COUNT(*)"), partition_group(), frame = c(-Inf, Inf))
+    over(sql("COUNT(*)"), partition_group())
   },
 
   # Cumulative function are like recycled aggregates except that R names
@@ -194,4 +215,32 @@ base_win <- sql_translator(
 
     expr
   }
+)
+
+#' @export
+#' @rdname sql_variant
+#' @format NULL
+base_no_win <- sql_translator(
+  row_number   = win_absent("row_number"),
+  min_rank     = win_absent("rank"),
+  rank         = win_absent("rank"),
+  dense_rank   = win_absent("dense_rank"),
+  percent_rank = win_absent("percent_rank"),
+  cume_dist    = win_absent("cume_dist"),
+  ntile        = win_absent("ntile"),
+  mean         = win_absent("avg"),
+  sum          = win_absent("sum"),
+  min          = win_absent("min"),
+  max          = win_absent("max"),
+  n            = win_absent("n"),
+  cummean      = win_absent("mean"),
+  cumsum       = win_absent("sum"),
+  cummin       = win_absent("min"),
+  cummax       = win_absent("max"),
+  nth          = win_absent("nth_value"),
+  first        = win_absent("first_value"),
+  last         = win_absent("last_value"),
+  lead         = win_absent("lead"),
+  lag          = win_absent("lag"),
+  order_by     = win_absent("order_by")
 )

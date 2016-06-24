@@ -1,6 +1,6 @@
 ## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(dplyr)
 
 ## ---- eval = FALSE-------------------------------------------------------

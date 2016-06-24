@@ -20,6 +20,11 @@ namespace dplyr {
             object(x), output(1), start( Rcpp::internal::r_vector_start<RTYPE>(object) )
         {
             copy_most_attributes( output, x) ;
+            SET_DPLYR_SHRINKABLE_VECTOR( (SEXP)output) ;
+        }
+
+        ~RowwiseSubsetTemplate(){
+            UNSET_DPLYR_SHRINKABLE_VECTOR( (SEXP)output) ;
         }
 
         virtual SEXP get( const SlicingIndex& indices ) {
@@ -63,13 +68,16 @@ namespace dplyr {
 
 
     inline RowwiseSubset* rowwise_subset(SEXP x){
-        switch( TYPEOF(x) ){
-            case INTSXP: return new RowwiseSubsetTemplate<INTSXP>(x) ;
-            case REALSXP: return new RowwiseSubsetTemplate<REALSXP>(x) ;
-            case LGLSXP: return new RowwiseSubsetTemplate<LGLSXP>(x) ;
-            case STRSXP: return new RowwiseSubsetTemplate<STRSXP>(x) ;
-            case VECSXP: return new RowwiseSubsetTemplate<VECSXP>(x) ;
+        switch( check_supported_type(x) ){
+            case DPLYR_INTSXP: return new RowwiseSubsetTemplate<INTSXP>(x) ;
+            case DPLYR_REALSXP: return new RowwiseSubsetTemplate<REALSXP>(x) ;
+            case DPLYR_LGLSXP: return new RowwiseSubsetTemplate<LGLSXP>(x) ;
+            case DPLYR_STRSXP: return new RowwiseSubsetTemplate<STRSXP>(x) ;
+            case DPLYR_CPLXSXP: return new RowwiseSubsetTemplate<CPLXSXP>(x) ;
+            case DPLYR_VECSXP: return new RowwiseSubsetTemplate<VECSXP>(x) ;
         }
+
+        stop("Unreachable") ;
         return 0 ;
     }
 

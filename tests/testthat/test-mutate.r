@@ -22,8 +22,7 @@ test_that("repeated outputs applied progressively (grouped_df)", {
 })
 
 df <- data.frame(x = 1:10, y = 6:15)
-srcs <- temp_srcs(c("df", "dt", "sqlite", "postgres"))
-tbls <- temp_load(srcs, df)
+tbls <- test_load(df)
 
 test_that("two mutates equivalent to one", {
   compare_tbls(tbls, function(tbl) tbl %>% mutate(x2 = x * 2, y4 = y * 4))
@@ -188,9 +187,6 @@ test_that("mutate fails on unsupported column type", {
 test_that("mutate modifies same column repeatedly (#243)", {
   df <- data.frame(x = 1)
   expect_equal(mutate(df, x = x + 1, x = x + 1)$x, 3)
-
-  dt <- data.table::data.table(x = 1)
-  expect_equal(mutate(dt, x = x + 1, x = x + 1)$x, 3)
 })
 
 test_that("mutate errors when results are not compatible accross groups (#299)",{
@@ -249,7 +245,7 @@ test_that("hybrid evaluation goes deep enough (#554)", {
 })
 
 test_that("hybrid does not segfault when given non existing variable (#569)", {
-  expect_error( mtcars %>% summarise(first(mp)), "variable 'mp' not found" )
+  expect_error( mtcars %>% summarise(first(mp)), "could not find variable" )
 })
 
 test_that("namespace extraction works in hybrid (#412)", {
@@ -425,5 +421,175 @@ test_that("mutate handles the all NA case (#958)", {
     mutate(max.sum = day[which.max(values)[1]]) %>%
     mutate(adjusted_values = ifelse(day < max.sum, 30, values))
   expect_true( all(is.na( res$adjusted_values[1:12] )))
+})
 
+test_that("rowwie mutate gives expected results (#1381)", {
+  f  <- function( x ) ifelse( x < 2, NA_real_, x )
+  res <- data_frame( x = 1:3 ) %>% rowwise() %>% mutate( y = f(x) )
+  expect_equal( res$y, c(NA,2,3) )
+})
+
+test_that("mutate handles factors (#1414)", {
+  d <- data_frame( g = c(1,1,1,2,2,3,3), f = c("a", "b", "a", "a", "a", "b", "b" ) )
+  res <- d %>% group_by(g) %>% mutate( f2 = factor(f) )
+  expect_equal( as.character(res$f2), res$f)
+})
+
+test_that("mutate recognizes global #1469", {
+  vs <- 4
+  res <- mtcars %>% mutate(a = global(vs))
+  expect_true( all(res$a == 4) )
+  expect_error( mtcars %>% mutate(global("vs")), "global only handles symbols" )
+  res <- mtcars %>% mutate(a = global(vs) + 1)
+  expect_true( all(res$a == 5) )
+  expect_error( mtcars %>% mutate(global("vs") + 1), "global only handles symbols" )
+  res <- mtcars %>% mutate(a = 1+global(vs) )
+  expect_true( all(res$a == 5) )
+  expect_error( mtcars %>% mutate(1 + global("vs")), "global only handles symbols" )
+
+  res <- mtcars %>% group_by(cyl) %>% mutate(a = global(vs))
+  expect_true( all(res$a == 4) )
+  expect_error( mtcars %>% group_by(cyl) %>% mutate(a = global("vs")), "global only handles symbols" )
+  res <- mtcars %>% group_by(cyl) %>% mutate(a = global(vs)+1)
+  expect_true( all(res$a == 5) )
+  expect_error( mtcars %>% group_by(cyl) %>% mutate(a = global("vs") + 1), "global only handles symbols" )
+
+  res <- mtcars %>% group_by(cyl) %>% mutate(a = 1+global(vs))
+  expect_true( all(res$a == 5) )
+  expect_error( mtcars %>% group_by(cyl) %>% mutate(a = 1 + global("vs")), "global only handles symbols" )
+})
+
+test_that("mutate handles results from one group with all NA values (#1463) ", {
+  df <- data_frame( x = c(1, 2), y = c(1, NA))
+  res <- df %>% group_by(x) %>% mutate( z = ifelse(y>1, 1, 2) )
+  expect_true( is.na(res$z[2]) )
+  expect_is( res$z, "numeric")
+})
+
+test_that("rowwise mutate handles the NA special case (#1448)", {
+  res <- data.frame(k = c(-1, 1, 1)) %>%
+    rowwise() %>%
+    mutate(l = ifelse(k > 0, 1, NA))
+  expect_is(res$l, "numeric")
+  expect_true( is.na(res$l[1]) )
+  expect_true( !anyNA(res$l[-1]) )
+
+  res <- data.frame(k = rnorm(10)) %>%
+    rowwise() %>%
+    mutate(l = ifelse(k > 0, 1L, NA_integer_))
+  expect_true( all(is.na(res$l[res$k <= 0]) ) )
+  expect_true( !any(is.na(res$l[res$k > 0]) ) )
+})
+
+test_that("mutate disambiguates NA and NaN (#1448)", {
+  Pass <- data.frame(P2 = c(0,3,2), F2 = c(0,2,0), id = 1:3)
+  res <- Pass %>% group_by(id) %>% mutate(pass2 = P2/(P2 + F2))
+  expect_true( is.nan(res$pass2[1]) )
+
+  res <- Pass %>% rowwise %>% mutate(pass2 = P2/(P2 + F2))
+  expect_true( is.nan(res$pass2[1]) )
+
+  Pass <- data_frame(
+    P1 = c(2L, 0L, 10L,8L, 9L),
+    F1 = c(0L, 2L, 0L, 4L,3L),
+    P2 = c(0L, 3L, 2L, 2L, 2L),
+    F2 = c(0L, 2L, 0L, 1L,1L),
+    id = c(1,2,4,4,5)
+  )
+
+  res <- Pass %>%
+     group_by(id) %>%
+       dplyr::mutate(pass_rate = (P1 + P2) / (P1 + P2 + F1 + F2) * 100,
+              pass_rate1 = P1 / (P1 + F1) * 100,
+              pass_rate2 = P2 / (P2 + F2) * 100)
+  expect_true( is.nan(res$pass_rate2[1]) )
+})
+
+test_that("hybrid evaluator leaves formulas untouched (#1447)", {
+  d <- data_frame(g = 1:2, training = list(mtcars, mtcars * 2))
+  mpg <- data.frame(x=1:10, y=1:10)
+  res <- d %>%
+    group_by(g) %>%
+    mutate(lm_result = list(lm(mpg ~ wt, data = training[[1]])))
+  expect_is( res$lm_result, "list" )
+  expect_is( res$lm_result[[1]], "lm" )
+  expect_is( res$lm_result[[2]], "lm" )
+})
+
+test_that( "lead/lag inside mutate handles expressions as value for default (#1411) ", {
+  df <- data_frame(x = 1:3)
+  res <- mutate(df, leadn = lead(x, default = x[1]), lagn = lag(x, default = x[1]) )
+  expect_equal( res$leadn, lead(df$x, default = df$x[1]) )
+  expect_equal( res$lagn, lag(df$x, default = df$x[1]) )
+
+  res <- mutate(df, leadn = lead(x, default = c(1)), lagn = lag(x, default = c(1)))
+  expect_equal( res$leadn, lead(df$x, default = 1) )
+  expect_equal( res$lagn, lag(df$x, default = 1) )
+})
+
+test_that("mutate understands column. #1012", {
+  ir1 <- mutate( iris, Sepal = Sepal.Length * Sepal.Width )
+  ir2 <- mutate( iris, Sepal = column("Sepal.Length") * column("Sepal.Width") )
+  expect_equal(ir1, ir2)
+
+  ir1 <- mutate( group_by(iris, Species), Sepal = Sepal.Length * Sepal.Width )
+  ir2 <- mutate( group_by(iris, Species), Sepal = column("Sepal.Length") * column("Sepal.Width") )
+  expect_equal(ir1, ir2)
+
+  ir <- iris %>% mutate( a = column("Species") )
+  expect_equal( ir$a, ir$Species)
+
+  ir <- iris %>% group_by(Species) %>% mutate( a = column("Species") )
+  expect_equal( ir$a, ir$Species)
+})
+
+test_that("grouped mutate does not drop grouping attributes (#1020)", {
+  d <- data.frame(subject=c('Jack','Jill'),id=c(2,1)) %>% group_by(subject)
+  a1 <- names(attributes(d))
+  a2 <- names(attributes(d %>% mutate(foo=1)))
+  expect_equal( setdiff(a1, a2), character(0) )
+})
+
+test_that("grouped mutate errors on incompatible column type (#1641)", {
+  df <- data.frame(ID = rep(1:5, each = 3), x = 1:15) %>% group_by(ID)
+  expect_error( mutate(df, foo = mean), 'Unsupported type CLOSXP for column "foo"')
+})
+
+test_that("lead/lag works on more complex expressions (#1588)", {
+  df <- data_frame(x = rep(1:5,2), g = rep(1:2, each = 5) ) %>% group_by(g)
+  res <- df %>% mutate( y = lead(x > 3) )
+  expect_equal(res$y, rep(lead(1:5 > 3), 2) )
+})
+
+test_that("Adding a Column of NA to a Grouped Table gives expected results (#1645)", {
+  dataset <- data_frame(A = 1:10, B = 10:1, group = factor(sample(LETTERS[25:26], 10, TRUE)))
+  res <- dataset %>% group_by(group) %>% mutate(prediction = factor(NA))
+  expect_true( all(is.na(res$prediction) ) )
+  expect_is( res$prediction, "factor")
+  expect_equal( levels(res$prediction), character() )
+})
+
+test_that("Deep copies are performed when needed (#1463)", {
+  res <- data.frame(prob = c(F,T)) %>%
+    rowwise %>%
+    mutate(model = list(x=prob) )
+  expect_equal(unlist(res$model), c(FALSE,TRUE))
+
+  res <- data.frame(x=1:4, g=c(1,1,1,2)) %>%
+    group_by(g) %>%
+    mutate(model = list(y=x) )
+  expect_equal(res$model[[1]], 1:3)
+  expect_equal(res$model[[4]], 4)
+})
+
+test_that( "ntile falls back to R (#1750)", {
+  res <- mutate( iris, a = ntile("Sepal.Length", 3))
+  expect_equal( res$a, rep(1, 150))
+})
+
+test_that("mutate fails gracefully on raw columns (#1803)", {
+  df <- data_frame(a = 1:3, b = as.raw(1:3))
+  expect_error( mutate(df, a = 1), 'Unsupported type RAWSXP for column "b"' )
+  expect_error( mutate(df, b = 1), 'Unsupported type RAWSXP for column "b"' )
+  expect_error( mutate(df, c = 1), 'Unsupported type RAWSXP for column "b"' )
 })

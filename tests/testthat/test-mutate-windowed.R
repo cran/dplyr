@@ -1,28 +1,51 @@
 context("Mutate - windowed")
 
-df <- data.frame(x = 1:10, y = seq(1,10,by=1), g = rep(c(1, 2), each = 5))
-srcs <- temp_srcs("df", "dt", "postgres")
-tbls <- temp_load(srcs, df)
-
 test_that("mutate calls windowed versions of sql functions", {
-  compare_tbls(tbls, function(x) {
-    x %>% group_by(g) %>% mutate(r = as.numeric(row_number(x)))
-  })
+  test_f <- function(tbl) {
+    res <- tbl %>%
+      group_by(g) %>%
+      mutate(r = as.numeric(row_number(x))) %>%
+      collect()
+    expect_equal(res$r, c(1, 2, 1, 2))
+  }
+
+  df <- data_frame(x = 1:4, g = rep(c(1, 2), each = 2))
+  tbls <- test_load(df, ignore = "sqlite") # SQLite doesn't support window functions
+  tbls %>% lapply(test_f)
 })
 
 test_that("recycled aggregates generate window function", {
-  compare_tbls(tbls, function(x) {
-    x %>% group_by(g) %>% mutate(r = x > mean(x))
-  })
+  test_f <- function(tbl) {
+    res <- tbl %>%
+      group_by(g) %>%
+      mutate(r = x > mean(x)) %>%
+      collect()
+    expect_equal(res$r, c(FALSE, TRUE, FALSE, TRUE))
+  }
+
+  df <- data_frame(x = 1:4, g = rep(c(1, 2), each = 2))
+  tbls <- test_load(df, ignore = "sqlite") # SQLite doesn't support window functions
+  tbls %>% lapply(test_f)
 })
 
 test_that("cumulative aggregates generate window function", {
-  compare_tbls(tbls, function(x) {
-    x %>% group_by(g) %>% mutate(cx = as.integer(cumsum(x)))
-  })
+  test_f <- function(tbl) {
+    res <- tbl %>%
+      group_by(g) %>%
+      arrange(x) %>%
+      mutate(r = cumsum(x)) %>%
+      collect()
+    expect_equal(res$r, c(1, 3, 3, 7))
+  }
+
+  df <- data_frame(x = 1:4, g = rep(c(1, 2), each = 2))
+  tbls <- test_load(df, ignore = "sqlite") # SQLite doesn't support window functions
+  tbls %>% lapply(test_f)
 })
 
 test_that("desc is correctly handled by window functions", {
+  df <- data.frame(x = 1:10, y = seq(1,10,by=1), g = rep(c(1, 2), each = 5))
+
   expect_equal(mutate(df, rank=min_rank(desc(x)) )$rank, 10:1 )
   expect_equal(mutate(group_by(df,g), rank=min_rank(desc(x)))$rank, rep(5:1,2) )
 
@@ -43,6 +66,8 @@ test_that("row_number works with 0 arguments", {
 })
 
 test_that("cum(sum,min,max) works", {
+  df <- data.frame(x = 1:10, y = seq(1,10,by=1), g = rep(c(1, 2), each = 5))
+
   res <- mutate( df,
     csumx = cumsum(x), csumy = cumsum(y),
     cminx = cummin(x), cminy = cummin(y),

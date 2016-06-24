@@ -17,6 +17,8 @@ namespace dplyr {
 
         virtual SEXP subset( const std::vector<int>& ) const = 0 ;
 
+        virtual SEXP subset( const SlicingIndex& ) const = 0 ;
+
         /** creates a new vector, of the same type as the visited vector, by
          *  copying elements at the given indices
          */
@@ -30,9 +32,7 @@ namespace dplyr {
 
         virtual std::string get_r_type() const = 0 ;
 
-        virtual bool is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const {
-            return true ;
-        }
+        virtual bool is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  = 0 ;
 
     } ;
 

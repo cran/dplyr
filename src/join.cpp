@@ -4,6 +4,21 @@ using namespace Rcpp ;
 
 namespace dplyr{
 
+    bool same_levels( SEXP left, SEXP right ){
+        SEXP s_levels = Rf_install("levels") ;
+        CharacterVector levels_left  = Rf_getAttrib(left,s_levels) ;
+        CharacterVector levels_right = Rf_getAttrib(right,s_levels) ;
+        if( (SEXP)levels_left == (SEXP)levels_right ) return true ;
+        int n = levels_left.size() ;
+        if( n != levels_right.size() ) return false ;
+
+        for( int i=0; i<n; i++) {
+            if( levels_right[i] != levels_left[i] ) return false ;
+        }
+
+        return true ;
+    }
+
     inline bool is_bare_vector( SEXP x){
         SEXP att = ATTRIB(x) ;
 
@@ -227,16 +242,73 @@ namespace dplyr{
         ) ;
     }
 
-    JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name_left, const std::string& name_right, bool warn_ ){
+    int count_attributes( SEXP x) {
+      int n = 0 ;
 
+      while( ! Rf_isNull(x) ){
+          SEXP name = TAG(x) ;
+          if( name != R_NamesSymbol && name != R_DimSymbol ) n++ ;
+          x = CDR(x) ;
+      }
+
+      return n ;
+    }
+
+    SEXP grab_attribute( SEXP name, SEXP x){
+      while( !Rf_isNull(x) ){
+        if( TAG(x) == name ) return CAR(x) ;
+        x = CDR(x) ;
+      }
+      stop( "cannot find attribute '%s' ", CHAR(PRINTNAME(name)) ) ;
+      return x;
+    }
+
+    void check_attribute_compatibility( SEXP left, SEXP right){
+      SEXP att_left  = ATTRIB(left)  ;
+      SEXP att_right = ATTRIB(right) ;
+      int n_left = count_attributes(att_left) ;
+      int n_right = count_attributes(att_right) ;
+
+      if( n_left != n_right)
+        stop("atributes of different sizes") ;
+
+      List list_left(n_left), list_right(n_left) ;
+
+      SEXP p_left = att_left ;
+      int i = 0 ;
+      while( !Rf_isNull(p_left) ){
+        SEXP name = TAG(p_left) ;
+        if( name != R_NamesSymbol && name != R_DimSymbol){
+          list_left[i]  = CAR(p_left) ;
+          list_right[i] = grab_attribute( name, att_right ) ;
+        }
+        p_left = CDR(p_left) ;
+      }
+      RObject test = Language( "all.equal", list_left, list_right ).fast_eval() ;
+      if( !is<bool>(test) || !as<bool>(test) ){
+        stop("attributes are different") ;
+      }
+
+    }
+
+    JoinVisitor* join_visitor( SEXP left, SEXP right, const std::string& name_left, const std::string& name_right, bool warn_ ){
         // handle Date separately
         bool lhs_date = Rf_inherits( left, "Date") ;
         bool rhs_date = Rf_inherits( right, "Date") ;
 
         switch( lhs_date + rhs_date ){
           case 2: return new DateJoinVisitor( left, right ) ;
-          case 1: stop( "cannot join a Date object with a object that is not a Date object" ) ;
+          case 1: stop( "cannot join a Date object with an object that is not a Date object" ) ;
           case 0: break ;
+          default: break ;
+        }
+
+        bool lhs_time = Rf_inherits( left, "POSIXct" );
+        bool rhs_time = Rf_inherits( right, "POSIXct" );
+        switch( lhs_time + rhs_time ){
+          case 2: return new POSIXctJoinVisitor( left, right) ;
+          case 1: stop( "cannot join a POSIXct object with an object that is not a POSIXct object" ) ;
+          case 0: break;
           default: break ;
         }
 
@@ -259,7 +331,7 @@ namespace dplyr{
                                 bool rhs_factor = Rf_inherits( right, "factor" ) ;
                                 if( lhs_factor && rhs_factor){
                                     if( same_levels(left, right) ){
-                                        return new JoinFactorFactorVisitor_SameLevels(left, right) ;
+                                        return new JoinVisitorImpl<INTSXP, INTSXP>( left, right) ;
                                     } else {
                                         if(warn_) Rf_warning( "joining factors with different levels, coercing to character vector" );
                                         return new JoinFactorFactorVisitor(left, right) ;
@@ -303,28 +375,11 @@ namespace dplyr{
                 }
             case REALSXP:
                 {
-                    bool lhs_time = Rf_inherits( left, "POSIXct" );
-
                     switch( TYPEOF(right) ){
                     case REALSXP:
-                        {
-                            if( Rf_inherits( right, "POSIXct" ) ){
-                                if( lhs_time ) return new POSIXctJoinVisitor(left, right ) ;
-                                incompatible_join_visitor(left, right, name_left, name_right) ;
-                            }
-
-                            if( is_bare_vector( right ) ){
-                                return new JoinVisitorImpl<REALSXP, REALSXP>( left, right) ;
-                            }
-
-                            break ;
-                        }
+                        return new JoinVisitorImpl<REALSXP, REALSXP>( left, right) ;
                     case INTSXP:
-                        {
-                            if( is_bare_vector(right) ){
-                                return new JoinVisitorImpl<REALSXP, INTSXP>( left, right) ;
-                            }
-                        }
+                        return new JoinVisitorImpl<REALSXP, INTSXP>( left, right) ;
                     default: break ;
                     }
 
@@ -333,22 +388,11 @@ namespace dplyr{
                 {
                     switch( TYPEOF(right) ){
                     case LGLSXP:
-                        {
-                            return new JoinVisitorImpl<LGLSXP,LGLSXP> ( left, right ) ;
-                        }
+                        return new JoinVisitorImpl<LGLSXP,LGLSXP> ( left, right ) ;
                     case INTSXP:
-                        {
-                            if( is_bare_vector(right) ){
-                                return new JoinVisitorImpl<LGLSXP, INTSXP>( left, right ) ;
-                            }
-                            break ;
-                        }
+                        return new JoinVisitorImpl<LGLSXP,INTSXP>( left, right ) ;
                     case REALSXP:
-                        {
-                            if( is_bare_vector(right) ){
-                                return new JoinVisitorImpl<LGLSXP, REALSXP>( left, right ) ;
-                            }
-                        }
+                        return new JoinVisitorImpl<LGLSXP,REALSXP>( left, right ) ;
                     default: break ;
                     }
                     break ;
@@ -366,7 +410,7 @@ namespace dplyr{
                         }
                     case STRSXP:
                         {
-                            return new JoinVisitorImpl<STRSXP,STRSXP> ( left, right ) ;
+                            return new JoinStringStringVisitor( left, right ) ;
                         }
                     default: break ;
                     }

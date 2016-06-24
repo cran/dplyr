@@ -19,7 +19,8 @@
 rowwise <- function(data) {
   stopifnot(is.data.frame(data))
 
-  structure(data, class = c("rowwise_df", "tbl_df", "data.frame"))
+  assert_all_white_list(data)
+  structure(data, class = c("rowwise_df", "tbl_df", "tbl", "data.frame"))
 }
 
 #' @export
@@ -32,7 +33,7 @@ print.rowwise_df <- function(x, ..., n = NULL, width = NULL) {
 }
 
 #' @export
-ungroup.rowwise_df <- function(x) {
+ungroup.rowwise_df <- function(x, ...) {
   class(x) <- c( "tbl_df", "data.frame")
   x
 }

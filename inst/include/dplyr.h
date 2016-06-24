@@ -2,6 +2,7 @@
 #define dplyr_dplyr_H
 
 #include <Rcpp.h>
+#include <dplyr/workarounds/static_assert.h>
 #include <solaris/solaris.h>
 #include <dplyr/config.h>
 #include <dplyr/workarounds.h>
@@ -39,23 +40,31 @@ using namespace Rcpp ;
     #endif
 #endif
 
-
 #include <tools/tools.h>
 
 namespace dplyr {
+    class LazySubsets ;
+    Symbol extract_column( SEXP, const Environment& ) ;
+    Symbol get_column(SEXP, const Environment&, const LazySubsets& ) ;
     class Result ;
     class ResultSet ;
     class Reducer_Proxy ;
     class DataFrameVisitors ;
     class DataFrameJoinVisitors ;
-    class LazySubsets ;
     std::string get_single_class(SEXP x) ;
 
+    void strip_index(DataFrame x) ;
     template <typename Index>
     DataFrame subset( DataFrame df, const Index& indices, CharacterVector classes) ;
-
+    void check_attribute_compatibility( SEXP left, SEXP right) ;
+    bool same_levels( SEXP left, SEXP right ) ;
 }
 dplyr::Result* get_handler( SEXP, const dplyr::LazySubsets&, const Environment& ) ;
+dplyr::Result* nth_prototype( SEXP call, const dplyr::LazySubsets& subsets, int nargs) ;
+dplyr::Result* first_prototype( SEXP call, const dplyr::LazySubsets& subsets, int nargs) ;
+dplyr::Result* last_prototype( SEXP call, const dplyr::LazySubsets& subsets, int nargs) ;
+bool argmatch( const std::string& target, const std::string& s) ;
+
 bool can_simplify(SEXP) ;
 
 void assert_all_white_list(const DataFrame&) ;
@@ -63,7 +72,6 @@ inline SEXP shared_SEXP(SEXP x){
     SET_NAMED(x, 2 );
     return x ;
 }
-void check_supported_type(SEXP) ;
 
 inline SEXP pairlist_shallow_copy(SEXP p){
     Shield<SEXP> attr( Rf_cons(CAR(p), R_NilValue) ) ;
@@ -86,6 +94,7 @@ inline void copy_attributes(SEXP out, SEXP data){
         SET_ATTRIB( out, pairlist_shallow_copy(ATTRIB(data)) ) ;
     }
     SET_OBJECT( out, OBJECT(data) );
+    if( IS_S4_OBJECT(data) ) SET_S4_OBJECT(out) ;
 }
 
 // same as copy_attributes but without names
@@ -105,6 +114,8 @@ typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
     SEXP get_time_classes() ;
     SEXP get_date_classes() ;
 #endif
+
+#include <dplyr/registration.h>
 
 #include <dplyr/DataFrameAble.h>
 #include <dplyr/CharacterVectorOrderer.h>
@@ -128,6 +139,7 @@ typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
 #include <dplyr/VectorVisitorImpl.h>
 #include <dplyr/SubsetVectorVisitorImpl.h>
 #include <dplyr/DataFrameVisitors.h>
+#include <dplyr/MultipleVectorVisitors.h>
 #include <dplyr/DataFrameSubsetVisitors.h>
 #include <dplyr/DataFrameColumnSubsetVisitor.h>
 #include <dplyr/MatrixColumnSubsetVectorVisitor.h>
@@ -138,7 +150,6 @@ typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
 #include <dplyr/OrderVisitorImpl.h>
 #include <dplyr/JoinVisitor.h>
 #include <dplyr/JoinVisitorImpl.h>
-#include <dplyr/JoinFactorFactorVisitor_SameLevels.h>
 #include <dplyr/DataFrameJoinVisitors.h>
 #include <dplyr/Order.h>
 #include <dplyr/SummarisedVariable.h>
@@ -149,8 +160,6 @@ typedef dplyr::Result* (*HybridHandler)(SEXP, const dplyr::LazySubsets&, int) ;
 #include <dplyr/Collecter.h>
 #include <dplyr/NamedListAccumulator.h>
 #include <dplyr/train.h>
-
-#include <dplyr/registration.h>
 
 void check_not_groups(const CharacterVector& result_names, const GroupedDataFrame& gdf) ;
 void check_not_groups(const CharacterVector& result_names, const RowwiseDataFrame& gdf) ;

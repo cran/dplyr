@@ -10,7 +10,7 @@ vignette: >
 
 ```{r, echo = FALSE, message = FALSE}
 knitr::opts_chunk$set(collapse = T, comment = "#>")
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(dplyr)
 library(ggplot2)
 ```
@@ -65,7 +65,7 @@ Dplyr aims to provide a function for each basic verb of data manipulation:
 * `distinct()`
 * `mutate()` (and `transmute()`)
 * `summarise()`
-* `sample_n()` and `sample_frac()`
+* `sample_n()` (and `sample_frac()`)
 
 If you've used plyr before, many of these will be familar.
 
@@ -111,11 +111,11 @@ Use `desc()` to order a column in descending order:
 arrange(flights, desc(arr_delay))
 ```
 
-`dplyr::arrange()` works the same way as `plyr::arrange()`. It's a straighforward wrapper around `order()` that requires less typing. The previous code is equivalent to:
+`dplyr::arrange()` works the same way as `plyr::arrange()`. It's a straightforward wrapper around `order()` that requires less typing. The previous code is equivalent to:
 
 ```{r, eval = FALSE}
 flights[order(flights$year, flights$month, flights$day), ]
-flights[order(desc(flights$arr_delay)), ]
+flights[order(flights$arr_delay, decreasing = TRUE), ] or flights[order(-flights$arr_delay), ]
 ```
 
 ## Select columns with `select()`
@@ -149,11 +149,11 @@ rename(flights, tail_num = tailnum)
 
 ## Extract distinct (unique) rows
 
-A common use of `select()` is to find the values of a set of variables. This is particularly useful in conjunction with the `distinct()` verb which only returns the unique values in a table.
+Use `distinct()`to find unique values in a table:
 
 ```{r}
-distinct(select(flights, tailnum))
-distinct(select(flights, origin, dest))
+distinct(flights, tailnum)
+distinct(flights, origin, dest)
 ```
 
 (This is very similar to `base::unique()` but should be much faster.)
@@ -353,7 +353,7 @@ As well as data frames, dplyr works with data that is stored in other ways, like
 
 ## Data table
 
-dplyr also provides [data table](http://datatable.r-forge.r-project.org/) methods for all verbs. If you're using data.tables already this lets you to use dplyr syntax for data manipulation, and data.table for everything else.
+dplyr also provides [data table](http://datatable.r-forge.r-project.org/) methods for all verbs through [dtplyr](http://github.com/hadley/dtplyr). If you're using data.tables already this lets you to use dplyr syntax for data manipulation, and data.table for everything else.
 
 For multiple operations, data.table can be faster because you usually use it with multiple verbs simultaneously. For example, with data table you can do a mutate and a select in a single step. It's smart enough to know that there's no point in computing the new variable for rows you're about to throw away.
 

@@ -1,6 +1,6 @@
 ## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(dplyr)
 library(ggplot2)
 
@@ -29,7 +29,7 @@ arrange(flights, desc(arr_delay))
 
 ## ---- eval = FALSE-------------------------------------------------------
 #  flights[order(flights$year, flights$month, flights$day), ]
-#  flights[order(desc(flights$arr_delay)), ]
+#  flights[order(flights$arr_delay, decreasing = TRUE), ] or flights[order(-flights$arr_delay), ]
 
 ## ------------------------------------------------------------------------
 # Select columns by name
@@ -46,8 +46,8 @@ select(flights, tail_num = tailnum)
 rename(flights, tail_num = tailnum)
 
 ## ------------------------------------------------------------------------
-distinct(select(flights, tailnum))
-distinct(select(flights, origin, dest))
+distinct(flights, tailnum)
+distinct(flights, origin, dest)
 
 ## ------------------------------------------------------------------------
 mutate(flights,

@@ -3,25 +3,54 @@
 using namespace Rcpp ;
 using namespace dplyr ;
 
+class DataFrameAbleVector {
+public:
+
+  DataFrameAbleVector() : data(){}
+
+  inline void push_back( SEXP x) {
+    data.push_back( DataFrameAble(x) ) ;
+  }
+
+  inline const DataFrameAble& operator[]( int i) const {
+    return data[i] ;
+  }
+
+  inline int size() const {
+    return data.size() ;
+  }
+
+  ~DataFrameAbleVector(){
+    while (data.size()) data.pop_back();
+  }
+
+private:
+  std::vector<DataFrameAble> data ;
+} ;
+
 template <typename Dots>
 List rbind__impl( Dots dots, SEXP id = R_NilValue ){
     int ndata = dots.size() ;
     int n = 0 ;
-    std::vector<DataFrameAble> chunks ;
+    DataFrameAbleVector chunks ;
     std::vector<int> df_nrows ;
 
+    int k=0 ;
     for( int i=0; i<ndata; i++) {
-      chunks.push_back( DataFrameAble( dots[i] ) ) ;
-
-      int nrows = chunks[i].nrows() ;
+      SEXP obj = dots[i] ;
+      if( Rf_isNull(obj) ) continue ;
+      chunks.push_back( obj ) ;
+      int nrows = chunks[k].nrows() ;
       df_nrows.push_back(nrows) ;
       n += nrows ;
+      k++ ;
     }
+    ndata = chunks.size() ;
     pointer_vector<Collecter> columns ;
 
     std::vector<String> names ;
-    int k=0 ;
 
+    k=0 ;
     Function enc2native( "enc2native" ) ;
     for( int i=0; i<ndata; i++){
         Rcpp::checkUserInterrupt() ;
@@ -77,9 +106,10 @@ List rbind__impl( Dots dots, SEXP id = R_NilValue ){
                 columns[index] = new_collecter ;
             } else {
                 std::string column_name(name) ;
-                stop( "incompatible type (data index: %d, column: '%s', was collecting: %s (%s), incompatible with data of type: %s",
-                    (i+1), column_name, coll->describe(), DEMANGLE(*coll), get_single_class(source) );
-
+                stop(
+                  "Can not automatically convert from %s to %s in column \"%s\".",
+                  coll->describe(), get_single_class(source), column_name
+                ) ;
             }
 
         }
@@ -107,20 +137,34 @@ List rbind__impl( Dots dots, SEXP id = R_NilValue ){
         std::fill( it, it + df_nrows[i], df_names[i] ) ;
         it += df_nrows[i] ;
       }
-
       out[0] = id_col ;
       out_names[0] = Rcpp::as<std::string>(id) ;
     }
-
     out.attr( "names" ) = out_names ;
     set_rownames( out, n ) ;
-    out.attr( "class" ) = classes_not_grouped() ;
+
+    // infer the classes and extra info (groups, etc ) from the first (#1692)
+    if( ndata ){
+      const DataFrameAble& first = chunks[0] ;
+      if( first.is_dataframe() ){
+        DataFrame df = first.get() ;
+        out.attr("class") = df.attr("class") ;
+        if( df.inherits("grouped_df") ){
+          out.attr("vars") = df.attr("vars") ;
+          out = GroupedDataFrame(out).data() ;
+        }
+      } else {
+        out.attr( "class" ) = classes_not_grouped() ;
+      }
+    } else {
+      out.attr( "class" ) = classes_not_grouped() ;
+    }
+
     return out ;
 }
 
-//' @export
 // [[Rcpp::export]]
-List rbind_all( List dots, SEXP id = R_NilValue ){
+List bind_rows_( List dots, SEXP id = R_NilValue ){
     return rbind__impl(dots, id) ;
 }
 
@@ -133,17 +177,20 @@ template <typename Dots>
 List cbind__impl( Dots dots ){
   int n = dots.size() ;
 
-  std::vector<DataFrameAble> chunks ;
+  DataFrameAbleVector chunks ;
   for( int i=0; i<n; i++) {
-    chunks.push_back( DataFrameAble( dots[i] ) );
+    SEXP obj = dots[i] ;
+    if( !Rf_isNull(obj) )
+      chunks.push_back( dots[i] );
   }
+  n = chunks.size() ;
 
   // first check that the number of rows is the same
   const DataFrameAble& df = chunks[0] ;
   int nrows = df.nrows() ;
   int nv = df.size() ;
   for( int i=1; i<n; i++){
-    const DataFrameAble& current = dots[i] ;
+    const DataFrameAble& current = chunks[i] ;
     if( current.nrows() != nrows ){
       stop( "incompatible number of rows (%d, expecting %d)", current.nrows(), nrows ) ;
     }
@@ -158,7 +205,7 @@ List cbind__impl( Dots dots ){
   for( int i=0, k=0 ; i<n; i++){
       Rcpp::checkUserInterrupt() ;
 
-      const DataFrameAble& current = dots[i] ;
+      const DataFrameAble& current = chunks[i] ;
       CharacterVector current_names = current.names() ;
       int nc = current.size() ;
       for( int j=0; j<nc; j++, k++){
@@ -166,9 +213,22 @@ List cbind__impl( Dots dots ){
           out_names[k] = current_names[j] ;
       }
   }
+
+  // infer the classes and extra info (groups, etc ) from the first (#1692)
+  if( n ){
+    const DataFrameAble& first = chunks[0] ;
+    if( first.is_dataframe() ){
+      DataFrame df = first.get() ;
+      copy_most_attributes(out, df) ;
+    } else {
+      out.attr( "class" ) = classes_not_grouped() ;
+    }
+  } else {
+    out.attr( "class" ) = classes_not_grouped() ;
+  }
   out.names() = out_names ;
   set_rownames( out, nrows ) ;
-  out.attr( "class" ) = classes_not_grouped() ;
+
   return out ;
 }
 
@@ -188,14 +248,23 @@ SEXP combine_all( List data ){
         n += Rf_length(data[i]) ;
     }
 
-    // collect
-    boost::scoped_ptr<Collecter> coll( collecter( data[0], n ) ) ;
-    coll->collect( SlicingIndex(0, Rf_length(data[0])), data[0] ) ;
-    int k = Rf_length(data[0]) ;
+    // go to the first non NULL
+    int i=0;
+    for( ; i<nv; i++){
+      if( !Rf_isNull(data[i]) ) break ;
+    }
+    if( i == nv) stop( "no data to combine, all elements are NULL" ) ;
 
-    for( int i=1; i<nv; i++){
+    // collect
+    boost::scoped_ptr<Collecter> coll( collecter( data[i], n ) ) ;
+    int k = Rf_length(data[i]) ;
+    coll->collect( SlicingIndex(0, k), data[i] ) ;
+    i++;
+    for(; i<nv; i++){
         SEXP current = data[i] ;
+        if( Rf_isNull(current)) continue ;
         int n_current= Rf_length(current) ;
+
         if( coll->compatible(current) ){
             coll->collect( SlicingIndex(k, n_current), current ) ;
         } else if( coll->can_promote(current) ) {
@@ -204,12 +273,13 @@ SEXP combine_all( List data ){
             new_coll->collect( SlicingIndex(0, k), coll->get() ) ;
             coll.reset( new_coll ) ;
         } else {
-            stop( "incompatible type at index %d : %s, was collecting : %s",
-                (i+1), get_single_class(current), get_single_class(coll->get()) ) ;
+            stop(
+              "Can not automatically convert from %s to %s.",
+              get_single_class(coll->get()), get_single_class(current)
+            ) ;
         }
         k += n_current ;
     }
 
-    RObject out = coll->get() ;
-    return out ;
+    return coll->get() ;
 }

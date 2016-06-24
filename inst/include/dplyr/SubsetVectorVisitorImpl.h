@@ -26,6 +26,10 @@ namespace dplyr {
             return subset_int_index( index) ;
         }
 
+        inline SEXP subset( const SlicingIndex& index) const {
+            return subset_int_index( index) ;
+        }
+
         inline SEXP subset( const ChunkIndexMap& map ) const {
             int n = output_size(map) ;
             VECTOR out = Rcpp::no_init(n) ;
@@ -59,6 +63,10 @@ namespace dplyr {
 
         inline int size() const {
             return vec.size() ;
+        }
+
+        inline bool is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  {
+            return true ;
         }
 
     protected:
@@ -105,6 +113,10 @@ namespace dplyr {
             return promote( Parent::subset( index ) );
         }
 
+        inline SEXP subset( const SlicingIndex& index) const {
+            return promote( Parent::subset( index ) );
+        }
+
         inline SEXP subset( const std::vector<int>& index) const {
             return promote( Parent::subset( index ) ) ;
         }
@@ -127,7 +139,13 @@ namespace dplyr {
         }
 
         inline bool is_compatible( SubsetVectorVisitor* other, std::stringstream& ss, const std::string& name ) const {
-            return compatible( dynamic_cast<SubsetFactorVisitor*>(other), ss, name ) ;
+            if( typeid(*other) == typeid(*this) )
+              return compatible( dynamic_cast<SubsetFactorVisitor*>(other), ss, name ) ;
+
+            if( typeid(*other) == typeid(SubsetVectorVisitorImpl<STRSXP>) )
+              return true ;
+
+            return false ;
         }
 
     private:
@@ -173,6 +191,10 @@ namespace dplyr {
           return impl->subset( index ) ;
         }
 
+        virtual SEXP subset( const SlicingIndex& index ) const {
+          return impl->subset( index ) ;
+        }
+
         virtual SEXP subset( const std::vector<int>& index ) const {
           return impl->subset( index ) ;
         }
@@ -197,13 +219,30 @@ namespace dplyr {
           return impl->get_r_type() ;
         }
 
+        bool is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  {
+          return typeid(*other) == typeid(*this) ;
+        }
+
     private:
         SubsetVectorVisitor* impl ;
         DateSubsetVectorVisitor( const DateSubsetVectorVisitor& ) ;
 
     } ;
 
+    template <>
+    inline bool SubsetVectorVisitorImpl<INTSXP>::is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  {
+        return typeid(*other) == typeid(*this) || typeid(*other) == typeid(SubsetVectorVisitorImpl<REALSXP>) ;
+    }
 
+    template <>
+    inline bool SubsetVectorVisitorImpl<REALSXP>::is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  {
+        return typeid(*other) == typeid(*this) || typeid(*other) == typeid(SubsetVectorVisitorImpl<INTSXP>) ;
+    }
+
+    template <>
+    inline bool SubsetVectorVisitorImpl<STRSXP>::is_compatible( SubsetVectorVisitor* other, std::stringstream&, const std::string& ) const  {
+        return typeid(*other) == typeid(*this) || typeid(*other) == typeid(SubsetFactorVisitor) ;
+    }
 
 }
 

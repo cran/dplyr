@@ -1,6 +1,6 @@
 ## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
-options(dplyr.print_min = 5)
+options(tibble.print_min = 5)
 library(dplyr)
 knit_print.tbl_df <- function(x, options) {
   knitr::knit_print(trunc_mat(x), options)

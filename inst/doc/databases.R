@@ -1,6 +1,6 @@
 ## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = T, comment = "#>")
-options(dplyr.print_min = 4L, dplyr.print_max = 4L)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(dplyr)
 
 ## ---- eval = FALSE-------------------------------------------------------
@@ -54,7 +54,7 @@ translate_sql(x == 1 && (y < 2 || z > 3))
 translate_sql(x ^ 2 < 10)
 translate_sql(x %% 2 == 10)
 
-# R and SQL have different defaults for integers vs reals.
+# R and SQL have different defaults for integers and reals.
 # In R, 1 is a real, and 1L is an integer
 # In SQL, 1 is an integer, and 1.0 is a real
 translate_sql(1)
@@ -78,25 +78,21 @@ delay <- summarise(by_tailnum,
 delay <- filter(delay, count > 20, dist < 2000)
 delay_local <- collect(delay)
 
-## ------------------------------------------------------------------------
-if (has_lahman("postgres")) {
-  flights_postgres <- tbl(src_postgres("nycflights13"), "flights")
-}
+## ---- eval = FALSE-------------------------------------------------------
+#  flights_postgres <- tbl(src_postgres("nycflights13"), "flights")
 
-## ------------------------------------------------------------------------
-if (has_lahman("postgres")) {
-  daily <- group_by(flights_postgres, year, month, day)
-
-  # Find the most and least delayed flight each day
-  bestworst <- daily %>% 
-    select(flight, arr_delay) %>% 
-    filter(arr_delay == min(arr_delay) || arr_delay == max(arr_delay))
-  bestworst$query
-
-  # Rank each flight within a daily
-  ranked <- daily %>% 
-    select(arr_delay) %>% 
-    mutate(rank = rank(desc(arr_delay)))
-  ranked$query
-}
+## ---- eval = FALSE-------------------------------------------------------
+#  daily <- group_by(flights_postgres, year, month, day)
+#  
+#  # Find the most and least delayed flight each day
+#  bestworst <- daily %>%
+#    select(flight, arr_delay) %>%
+#    filter(arr_delay == min(arr_delay) || arr_delay == max(arr_delay))
+#  bestworst$query
+#  
+#  # Rank each flight within a daily
+#  ranked <- daily %>%
+#    select(arr_delay) %>%
+#    mutate(rank = rank(desc(arr_delay)))
+#  ranked$query
 

@@ -2,6 +2,109 @@
 
 namespace dplyr{
 
+    DataFrameVisitors::DataFrameVisitors( const Rcpp::DataFrame& data_) :
+        data(data_),
+        visitors(),
+        visitor_names(data.names()),
+        nvisitors(visitor_names.size())
+    {
+
+        for( int i=0; i<nvisitors; i++){
+            VectorVisitor* v = visitor( data[i] ) ;
+            visitors.push_back(v) ;
+        }
+    }
+
+    DataFrameVisitors::DataFrameVisitors( const Rcpp::DataFrame& data_, const Rcpp::CharacterVector& names ) :
+        data(data_),
+        visitors(),
+        visitor_names(names),
+        nvisitors(visitor_names.size())
+    {
+
+        std::string name ;
+        int n = names.size() ;
+        IntegerVector indices  = r_match( names,  RCPP_GET_NAMES(data)  ) ;
+
+        for( int i=0; i<n; i++){
+            if( indices[i] == NA_INTEGER){
+                name = (String)names[i] ;
+                stop( "unknown column '%s' ", name ) ;
+            }
+            SEXP column = data[indices[i]-1];
+            visitors.push_back(visitor( column )) ;
+        }
+
+    }
+
+    void DataFrameVisitors::structure( List& x, int nrows, CharacterVector classes ) const {
+        x.attr( "class" ) = classes ;
+        set_rownames(x, nrows) ;
+        x.names() = visitor_names ;
+        SEXP vars = data.attr( "vars" ) ;
+        if( !Rf_isNull(vars) )
+            x.attr( "vars" ) = vars ;
+    }
+
+    inline String comma_collapse( SEXP names ){
+      return Language( "paste", names, _["collapse"] = ", " ).fast_eval() ;
+    }
+
+    DataFrameJoinVisitors::DataFrameJoinVisitors(const Rcpp::DataFrame& left_, const Rcpp::DataFrame& right_, Rcpp::CharacterVector names_left, Rcpp::CharacterVector names_right, bool warn_ ) :
+        left(left_), right(right_),
+        visitor_names_left(names_left),
+        visitor_names_right(names_right),
+        nvisitors(names_left.size()),
+        visitors(nvisitors),
+        warn(warn_)
+    {
+        std::string name_left, name_right ;
+
+        IntegerVector indices_left  = r_match( names_left,  RCPP_GET_NAMES(left)  ) ;
+        IntegerVector indices_right = r_match( names_right, RCPP_GET_NAMES(right) ) ;
+
+        for( int i=0; i<nvisitors; i++){
+            name_left  = names_left[i] ;
+            name_right = names_right[i] ;
+
+            if( indices_left[i] == NA_INTEGER ){
+              stop( "'%s' column not found in lhs, cannot join", name_left ) ;
+            }
+            if( indices_right[i] == NA_INTEGER ){
+              stop( "'%s' column not found in rhs, cannot join", name_right ) ;
+            }
+
+            visitors[i] = join_visitor( left[indices_left[i]-1], right[indices_right[i]-1], name_left, name_right, warn ) ;
+        }
+    }
+
+    Symbol extract_column( SEXP arg, const Environment& env ){
+      RObject value ;
+      if( TYPEOF(arg) == LANGSXP && CAR(arg) == Rf_install("~") ){
+        if( Rf_length(arg) != 2 || TYPEOF(CADR(arg)) != SYMSXP )
+          stop( "unhandled formula in column" ) ;
+        value = CharacterVector::create( PRINTNAME(CADR(arg)) ) ;
+      } else {
+        value = Rcpp_eval(arg, env) ;
+      }
+      if( is<Symbol>(value) ){
+        value = CharacterVector::create(PRINTNAME(value)) ;
+      }
+      if( !is<String>(value) ){
+        stop("column must return a single string") ;
+      }
+      Symbol res(STRING_ELT(value,0)) ;
+      return res ;
+    }
+
+    Symbol get_column(SEXP arg, const Environment& env, const LazySubsets& subsets ){
+      Symbol res = extract_column(arg, env) ;
+      if( !subsets.count(res) ){
+        stop("result of column() expands to a symbol that is not a variable from the data: %s", CHAR(PRINTNAME(res)) ) ;
+      }
+      return res ;
+    }
+
     void CallProxy::set_call( SEXP call_ ){
         proxies.clear() ;
         call = call_ ;
@@ -73,10 +176,43 @@ namespace dplyr{
     void CallProxy::traverse_call( SEXP obj ){
 
         if( TYPEOF(obj) == LANGSXP && CAR(obj) == Rf_install("local") ) return ;
+
+        if( TYPEOF(obj) == LANGSXP && CAR(obj) == Rf_install("global") ){
+          SEXP symb = CADR(obj) ;
+          if( TYPEOF(symb) != SYMSXP ) stop( "global only handles symbols" ) ;
+          SEXP res = env.find(CHAR(PRINTNAME(symb))) ;
+          call = res ;
+          return ;
+        }
+
+        if( TYPEOF(obj) == LANGSXP && CAR(obj) == Rf_install("column") ){
+          call = get_column(CADR(obj), env, subsets) ;
+          return ;
+        }
+
         if( ! Rf_isNull(obj) ){
             SEXP head = CAR(obj) ;
             switch( TYPEOF( head ) ){
             case LANGSXP:
+                if( CAR(head) == Rf_install("global") ){
+                    SEXP symb = CADR(head) ;
+                    if( TYPEOF(symb) != SYMSXP ) stop( "global only handles symbols" ) ;
+                    SEXP res  = env.find( CHAR(PRINTNAME(symb)) ) ;
+
+                    SETCAR(obj, res) ;
+                    SET_TYPEOF(obj, LISTSXP) ;
+
+                    break ;
+                }
+                if( CAR(head) == Rf_install("column")){
+                  Symbol column = get_column( CADR(head), env, subsets) ;
+                  SETCAR(obj, column ) ;
+                  head = CAR(obj) ;
+                  proxies.push_back( CallElementProxy( head, obj ) );
+
+                  break ;
+                }
+                if( CAR(head) == Rf_install("~")) break ;
                 if( CAR(head) == Rf_install("order_by") ) break ;
                 if( CAR(head) == Rf_install("function") ) break ;
                 if( CAR(head) == Rf_install("local") ) return ;
@@ -168,7 +304,7 @@ namespace dplyr{
         CharacterVector s_uniques = Language( "sort", uniques ).fast_eval() ;
 
         // order the uniques with a callback to R
-        IntegerVector o = Language( "match", uniques, s_uniques ).fast_eval() ;
+        IntegerVector o = r_match(uniques, s_uniques ) ;
 
         // combine uniques and o into a hash map for fast retrieval
         dplyr_hash_map<SEXP,int> map ;
@@ -194,6 +330,18 @@ namespace dplyr{
         }
 
     }
+
+    CharacterVector get_uniques( const CharacterVector& left, const CharacterVector& right){
+        int nleft = left.size(), nright = right.size() ;
+        int n = nleft + nright ;
+
+        CharacterVector big = no_init(n) ;
+        CharacterVector::iterator it = big.begin() ;
+        std::copy( left.begin(), left.end(), it ) ;
+        std::copy( right.begin(), right.end(), it + nleft ) ;
+        return Language( "unique", big ).fast_eval() ;
+    }
+
 }
 
 // [[Rcpp::export]]

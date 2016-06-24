@@ -23,8 +23,7 @@ test_that("repeated outputs applied progressively (grouped_df)", {
 
 
 df <- data.frame(x = rep(1:4, each = 4), y = rep(1:2, each = 8), z = runif(16))
-srcs <- temp_srcs(c("df", "dt", "sqlite", "postgres"))
-tbls <- temp_load(srcs, df)
+tbls <- test_load(df)
 
 test_that("summarise peels off a single layer of grouping", {
   for (i in seq_along(tbls)) {
@@ -202,9 +201,11 @@ test_that("integer overflow (#304)",{
                 X1 = as.integer(values),
                 X2 = values)
   # now group and summarise
-  res <- group_by(dat, groups) %>%
-               summarise(sum_integer = sum(X1),
-                         sum_numeric = sum(X2))
+  expect_warning(
+    res <- group_by(dat, groups) %>%
+      summarise(sum_integer = sum(X1), sum_numeric = sum(X2)),
+    "integer overflow"
+  )
   expect_true( all(is.na(res$sum_integer)) )
   expect_equal( res$sum_numeric, rep(3e9, 2L) )
 })
@@ -281,11 +282,6 @@ test_that( "summarise hybrid functions can use summarized variables", {
   expect_identical( res$var, rep(NA_real_, 2) )
 })
 
-test_that( "n_distinct refuse to treat anything else than single variable name (#567)", {
-  expect_error(summarise(mtcars, n = n_distinct("mpg")))
-  expect_error(summarise(mtcars, n = n_distinct(mpg*2)))
-})
-
 test_that( "LazySubset is not confused about input data size (#452)", {
   res <- data.frame(a = c(10, 100)) %>% summarise(b = sum(a), c = sum(a) * 2)
   expect_equal(res$b, 110)
@@ -322,26 +318,52 @@ test_that( "nth, first, last preserves factor data (#509)", {
   expect_equal(levels(dat1$der), levels(dat$b))
 })
 
+test_that("nth handle negative value (#1584) ", {
+  df <- data.frame( a = 1:10, b = 10:1, g = rep(c(1,2), c(4,6)) ) %>% group_by(g)
+
+  res <- summarise( df,
+    x1 = nth(a,-1L),
+    x2 = nth(a,-1L, order_by=b),
+    x3 = nth(a, -5L),
+    x4 = nth(a, -5L, order_by=b),
+    x5 = nth(a, -5L, default = 99),
+    x6 = nth(a, -5L, order_by=b, default = 99)
+  )
+  expect_equal( res$x1, c(4,10) )
+  expect_equal( res$x2, c(1,5) )
+  expect_true( is.na(res$x3[1]) )
+  expect_equal( res$x3[2], 6 )
+  expect_true( is.na(res$x4[1]) )
+  expect_equal( res$x4[2], 9 )
+  expect_equal( res$x5, c(99,6) )
+  expect_equal( res$x6, c(99,9) )
+
+})
+
 test_that( "LazyGroupSubsets is robust about columns not from the data (#600)", {
   foo <- data_frame(x = 1:10, y = 1:10)
-  expect_error( foo %>% group_by(x) %>% summarise(first_y = first(z)), "not found" )
+  expect_error( foo %>% group_by(x) %>% summarise(first_y = first(z)), "could not find variable" )
 })
 
 test_that( "hybrid eval handles $ and @ (#645)", {
   tmp <- expand.grid(a = 1:3, b = 0:1, i = 1:10)
   g   <- tmp %>% group_by(a)
 
+  f <- function(a, b) {
+    list(x = 1:10)
+  }
+
   res <- g %>% summarise(
     r = sum(b),
     n = length(b),
-    p = prop.test(r, n, p = 0.05)$conf.int[1]
+    p = f(r, n)$x[1]
   )
   expect_equal(names(res), c("a", "r", "n", "p" ))
 
   res <- tmp %>% summarise(
     r = sum(b),
     n = length(b),
-    p = prop.test(r, n, p = 0.05)$conf.int[1]
+    p = f(r, n)$x[1]
   )
   expect_equal(names(res), c("r", "n", "p" ))
 
@@ -434,9 +456,13 @@ test_that("n_distint uses na.rm argument", {
 
 })
 
-test_that("n_distinct front end supports na_rm argument (#1052)", {
+test_that("n_distinct front end supports na.rm argument (#1052)", {
   x <- c(1:3, NA)
-  expect_equal( n_distinct(x, TRUE), 3L )
+  expect_equal( n_distinct(x, na.rm = TRUE), 3L )
+})
+
+test_that("n_distinct without arguments stops (#1957)", {
+  expect_error( n_distinct(), "at least one column for n_distinct" )
 })
 
 test_that("hybrid evaluation does not take place for objects with a class (#1237)", {
@@ -505,9 +531,125 @@ test_that("summarise correctly handles NA groups (#1261)", {
   expect_equal( nrow(res), 2L)
 })
 
+test_that("n_distinct handles multiple columns (#1084)", {
+  df <- data.frame( x = rep(1:4, each = 2), y = rep(1:2, each = 4), g = rep(1:2, 4))
+  res <- summarise( df, n = n_distinct(x,y) )
+  expect_equal( res$n, 4L)
+
+  res <- group_by(df, g) %>% summarise( n = n_distinct(x,y) )
+  expect_equal( res$n, c(4L,4L) )
+
+  df$x[3] <- df$y[7] <- NA
+  res <- summarise( df, n = n_distinct(x,y) )
+  expect_equal( res$n, 6L)
+  res <- summarise( df, n = n_distinct(x,y, na.rm=TRUE) )
+  expect_equal( res$n, 4L)
+
+  res <- group_by(df, g) %>% summarise( n = n_distinct(x, y) )
+  expect_equal( res$n, c(4L,4L) )
+
+  res <- group_by(df, g) %>% summarise( n = n_distinct(x, y, na.rm = TRUE) )
+  expect_equal( res$n, c(2L,4L) )
+})
+
+test_that("n_distinct stops if no columns are passed (#1957)", {
+  df <- data.frame( x = rep(1:4, each = 2), y = rep(1:2, each = 4), g = rep(1:2, 4))
+  expect_error(summarise( df, nd = n_distinct(), n = n()), "at least one column for n_distinct" )
+})
+
 test_that("hybrid max works when not used on columns (#1369)", {
   df <- data_frame(x = 1:1000)
   y <- 1:10
   expect_equal( summarise(df, z = max(y))$z, 10 )
   expect_equal( summarise(df, z = max(10))$z, 10 )
+})
+
+test_that( "min and max handle empty sets in summarise (#1481)", {
+  df <- data_frame(A=numeric())
+  res <- df %>% summarise(Min=min(A, na.rm=T), Max = max(A, na.rm=TRUE))
+  expect_equal( res$Min, Inf )
+  expect_equal( res$Max, -Inf )
+})
+
+test_that("lead and lag behave correctly in summarise (#1434)", {
+  res <- mtcars %>%
+    group_by(cyl) %>%
+    summarise(n = n(), leadn = lead(n), lagn=lag(n), leadn10=lead(n, default=10), lagn10 = lag(n, default = 10))
+  expect_true(all(is.na(res$lagn)))
+  expect_true(all(is.na(res$leadn)))
+  expect_true(all(res$lagn10  == 10))
+  expect_true(all(res$leadn10 == 10))
+
+  res <- mtcars %>%
+    rowwise() %>%
+    summarise(n = n(), leadn = lead(n), lagn=lag(n), leadn10=lead(n, default=10), lagn10 = lag(n, default = 10))
+  expect_true(all(is.na(res$lagn)))
+  expect_true(all(is.na(res$leadn)))
+  expect_true(all(res$lagn10  == 10))
+  expect_true(all(res$leadn10 == 10))
+
+})
+
+test_that("summarise understands column. #1012", {
+    ir1 <- summarise( iris, Sepal = sum(Sepal.Length * Sepal.Width) )
+    ir2 <- summarise( iris, Sepal = sum(column("Sepal.Length") * column("Sepal.Width")) )
+    expect_equal(ir1, ir2)
+
+    ir1 <- summarise( group_by(iris, Species), Sepal = sum(Sepal.Length * Sepal.Width) )
+    ir2 <- summarise( group_by(iris, Species), Sepal = sum(column("Sepal.Length") * column("Sepal.Width")) )
+    expect_equal(ir1, ir2)
+})
+
+test_that("data.frame columns are supported in summarise (#1425)" , {
+  df <- data.frame(x1 = rep(1:3, times = 3), x2 = 1:9)
+  df$x3 <- df %>% mutate(x3 = x2)
+  res <- df %>% group_by(x1) %>% summarise(nr = nrow(x3))
+  expect_true(all(res$nr==3))
+})
+
+test_that("summarise handles min/max of already summarised variable (#1622)", {
+  df <- data.frame(
+    FIRST_DAY=rep(seq(as.POSIXct("2015-12-01", tz="UTC"), length.out=2, by="days"),2),
+    event=c("a","a","b","b")
+  )
+
+  df_summary <- df %>% group_by(event) %>% summarise(FIRST_DAY=min(FIRST_DAY), LAST_DAY=max(FIRST_DAY))
+  expect_equal(df_summary$FIRST_DAY, df_summary$LAST_DAY)
+})
+
+test_that("group_by keeps classes (#1631)", {
+  df <- data.frame(a=1, b=as.Date(NA)) %>% group_by(a) %>% summarize(c=min(b))
+  expect_equal( class(df$c), "Date")
+
+  df <- data.frame(a=1, b=as.POSIXct(NA)) %>% group_by(a) %>% summarize(c=min(b))
+  expect_equal( class(df$c), c( "POSIXct", "POSIXt") )
+
+})
+
+test_that("hybrid n_distinct falls back to R evaluation when needed (#1657)", {
+  dat3 <- data.frame(id = c(2,6,7,10,10))
+  res <- dat3 %>% summarise(n_unique = n_distinct(id[id>6]))
+  expect_equal(res$n_unique, 2)
+})
+
+test_that("summarise() correctly coerces factors with different levels (#1678)", {
+  res <- data_frame(x = 1:3) %>%
+    group_by(x) %>%
+    summarise(
+      y = if(x == 1) "a" else "b",
+      z = factor(y)
+    )
+  expect_is( res$z, "factor")
+  expect_equal( levels(res$z), c("a", "b") )
+  expect_equal( as.character(res$z), c("a", "b", "b") )
+})
+
+test_that("summarise works if raw columns exist but are not involved (#1803)", {
+  df <- data_frame(a = 1:3, b = as.raw(1:3))
+  expect_equal(summarise(df, c = sum(a)), data_frame(c = 6L))
+})
+
+test_that("summarise fails gracefully on raw columns (#1803)", {
+  df <- data_frame(a = 1:3, b = as.raw(1:3))
+  expect_error( summarise(df, c = b[[1]]), 'Unsupported type RAWSXP for column "c"' )
 })

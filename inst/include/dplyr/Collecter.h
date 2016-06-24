@@ -77,7 +77,7 @@ namespace dplyr {
 
         inline bool compatible(SEXP x) {
             int RTYPE = TYPEOF(x) ;
-            return RTYPE == REALSXP || RTYPE == INTSXP || RTYPE == LGLSXP ;
+            return RTYPE == REALSXP || ( RTYPE == INTSXP && !Rf_inherits(x, "factor") ) || RTYPE == LGLSXP ;
         }
 
         bool can_promote(SEXP x) const {
@@ -103,6 +103,9 @@ namespace dplyr {
                 collect_strings(index, v) ;
             } else if( Rf_inherits( v, "factor" ) ){
                 collect_factor(index, v) ;
+            } else {
+                CharacterVector vec(v) ;
+                collect_strings(index, vec) ;
             }
         }
 
@@ -234,17 +237,6 @@ namespace dplyr {
 
         inline bool compatible(SEXP x) {
             return Rf_inherits(x, "POSIXct") ;
-            if( !Rf_inherits(x, "POSIXct" ) ) return false ;
-            SEXP xtz = Rf_getAttrib(x, Rf_install("tzone") ) ;
-
-            if( Rf_isNull(tz) ) {
-                tz = xtz ;
-                return true ;
-            }
-
-            if( Rf_isNull( xtz ) ) return false ;
-
-            return STRING_ELT(tz, 0) == STRING_ELT(xtz, 0 ) ;
         }
 
         inline bool can_promote(SEXP x) const {
@@ -359,6 +351,8 @@ namespace dplyr {
     inline Collecter* collecter(SEXP model, int n){
         switch( TYPEOF(model) ){
         case INTSXP:
+            if( Rf_inherits( model, "POSIXct" ) )
+                return new POSIXctCollecter(n, Rf_getAttrib(model, Rf_install("tzone") ) ) ;
             if( Rf_inherits(model, "factor") )
                 return new FactorCollecter(n, model ) ;
             if( Rf_inherits(model, "Date") )
@@ -374,9 +368,15 @@ namespace dplyr {
             return new Collecter_Impl<CPLXSXP>(n) ;
         case LGLSXP: return new Collecter_Impl<LGLSXP>(n) ;
         case STRSXP: return new Collecter_Impl<STRSXP>(n) ;
-        case VECSXP: return new Collecter_Impl<VECSXP>(n) ;
+        case VECSXP:
+            if( Rf_inherits( model, "POSIXlt" )) {
+                stop( "POSIXlt not supported" ) ;
+            }
+            return new Collecter_Impl<VECSXP>(n) ;
         default: break ;
         }
+
+        stop("Unsupported vector type %s", Rf_type2char(TYPEOF(model))) ;
         return 0 ;
     }
 
@@ -395,7 +395,7 @@ namespace dplyr {
             if( Rf_inherits( model, "Date" ) )
                 return new TypedCollecter<INTSXP>(n, get_date_classes() ) ;
             if( Rf_inherits(model, "factor") )
-                return new FactorCollecter(n, model ) ;
+                return new Collecter_Impl<STRSXP>(n) ;
             return new Collecter_Impl<INTSXP>(n) ;
         case REALSXP:
             if( Rf_inherits( model, "POSIXct" ) )
@@ -404,9 +404,13 @@ namespace dplyr {
                 return new TypedCollecter<REALSXP>(n, get_date_classes() ) ;
             return new Collecter_Impl<REALSXP>(n) ;
         case LGLSXP: return new Collecter_Impl<LGLSXP>(n) ;
-        case STRSXP: return new Collecter_Impl<STRSXP>(n) ;
+        case STRSXP:
+          if( previous->is_factor_collecter() )
+            Rf_warning("binding factor and character vector, coercing into character vector") ;
+          return new Collecter_Impl<STRSXP>(n) ;
         default: break ;
         }
+        stop("Unsupported vector type %s", Rf_type2char(TYPEOF(model))) ;
         return 0 ;
     }
 

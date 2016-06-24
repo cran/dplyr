@@ -121,7 +121,7 @@ src_desc.src_mysql <- function(x) {
 }
 
 #' @export
-src_translate_env.src_mysql <- function(x) {
+sql_translate_env.MySQLConnection <- function(con) {
   sql_variant(
     base_scalar,
     sql_translator(.parent = base_agg,
@@ -179,15 +179,6 @@ db_commit.MySQLConnection <- function(con, ...) {
 }
 
 #' @export
-db_explain.MySQLConnection <- function(con, sql, ...) {
-  exsql <- build_sql("EXPLAIN ", sql, con = con)
-  expl <- dbGetQuery(con, exsql)
-  out <- utils::capture.output(print(expl))
-
-  paste(out, collapse = "\n")
-}
-
-#' @export
 db_insert_into.MySQLConnection <- function(con, table, values, ...) {
 
   # Convert factors to strings
@@ -211,10 +202,12 @@ db_insert_into.MySQLConnection <- function(con, table, values, ...) {
 
 #' @export
 db_create_index.MySQLConnection <- function(con, table, columns, name = NULL,
-                                             ...) {
+                                            unique = FALSE, ...) {
   name <- name %||% paste0(c(table, columns), collapse = "_")
   fields <- escape(ident(columns), parens = TRUE, con = con)
-  index <- build_sql("ADD INDEX ", ident(name), " ", fields, con = con)
+  index <- build_sql(
+    "ADD ", if (unique) sql("UNIQUE "), "INDEX ", ident(name), " ", fields,
+    con = con)
 
   sql <- build_sql("ALTER TABLE ", ident(table), "\n", index, con = con)
   dbGetQuery(con, sql)
