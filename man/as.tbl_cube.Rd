@@ -3,9 +3,9 @@
 \name{as.tbl_cube}
 \alias{as.tbl_cube}
 \alias{as.tbl_cube.array}
-\alias{as.tbl_cube.data.frame}
-\alias{as.tbl_cube.matrix}
 \alias{as.tbl_cube.table}
+\alias{as.tbl_cube.matrix}
+\alias{as.tbl_cube.data.frame}
 \title{Coerce an existing data structure into a \code{tbl_cube}}
 \usage{
 as.tbl_cube(x, ...)
@@ -31,9 +31,8 @@ tables and data frames.}
 \item{dim_names}{names of the dimesions. Defaults to the names of}
 
 \item{met_name}{a string to use as the name for the measure
-the \code{\link{dimnames}}.}
+the \code{\link[=dimnames]{dimnames()}}.}
 }
 \description{
 Coerce an existing data structure into a \code{tbl_cube}
 }
-

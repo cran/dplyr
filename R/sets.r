@@ -1,4 +1,4 @@
-#' Set operations.
+#' Set operations
 #'
 #' These functions override the set functions provided in base to make them
 #' generic so that efficient versions for data frames and other tables can be
@@ -47,4 +47,3 @@ union_all.default <- function(x, y, ...) combine(x, y, ...)
 setdiff.default <-   function(x, y, ...) base::setdiff(x, y, ...)
 #' @export
 setequal.default <-  function(x, y, ...) base::setequal(x, y, ...)
-
