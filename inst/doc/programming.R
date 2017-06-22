@@ -62,7 +62,6 @@ mutate_y <- function(df) {
 }
 
 mutate_y(df1)
-# Before dplyr is released, this will give a nice error message
 
 ## ------------------------------------------------------------------------
 df <- tibble(
@@ -212,7 +211,7 @@ quote(toupper(letters[1:5]))
 
 ## ------------------------------------------------------------------------
 f <- function(x) {
-  ~ x
+  quo(x)
 }
 
 x1 <- f(10)
@@ -225,6 +224,10 @@ x2
 ## ---- message = FALSE----------------------------------------------------
 library(rlang)
 
+get_env(x1)
+get_env(x2)
+
+## ------------------------------------------------------------------------
 eval_tidy(x1)
 eval_tidy(x2)
 

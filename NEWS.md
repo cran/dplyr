@@ -1,3 +1,23 @@
+# dplyr 0.7.1
+
+* Use new versions of bindrcpp and glue to avoid protection problems.
+  Avoid wrapping arguments to internal error functions (#2877). Fix
+  two protection mistakes found by rchk (#2868).
+
+* Fix C++ error that caused compilation to fail on mac cran (#2862)
+
+* Fix undefined behaviour in `between()`, where `NA_REAL` were
+  assigned instead of `NA_LOGICAL`. (#2855, @zeehio)
+
+* `top_n()` now executes operations lazily for compatibility with
+  database backends (#2848).
+
+* Reuse of new variables created in ungrouped `mutate()` possible
+  again, regression introduced in dplyr 0.7.0 (#2869).
+
+* Quosured symbols do not prevent hybrid handling anymore. This should
+  fix many performance issues introduced with tidyeval (#2822).
+
 # dplyr 0.7.0
 
 ## New data, functions, and features
