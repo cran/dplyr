@@ -1,7 +1,7 @@
-a660f071b311f64af28f6859bc4b1af9 *DESCRIPTION
+6b215fdc02157d6486eb3be83c7c9f46 *DESCRIPTION
 c7180788a8ec3035d54fc733f8939ade *LICENSE
-30b13972d38f4cee4ebcda99f3fb78c5 *NAMESPACE
-256134dac466c6622d2c74c2a9a8806d *NEWS.md
+fda148fa29caf4ffc61a95a65f59857c *NAMESPACE
+287fcafbcce7d26fab1ccec016138953 *NEWS.md
 b71ec9832202f8d2539887098b6534fc *R/RcppExports.R
 171ed0512c09d7529184516b3077c745 *R/all-equal.r
 9d5b6b054df3934c26af87b53d1d0bc0 *R/bench-compare.r
@@ -30,6 +30,7 @@ c11f9a6ce16ea9d659aa93e36f133a42 *R/data-starwars.R
 af33f946a1538471ed25070aae02fc32 *R/distinct.R
 f4267e6fe5e7daffb691491e73394a02 *R/do.r
 1ae45b745dc27114a9a2ace6625b597b *R/dplyr.r
+ce0d3e95149be325fb2338305b748d92 *R/dr.R
 079e6c98c16297edada3de1889cd88f5 *R/error.R
 6315edb8094497483d0200ce2341d976 *R/explain.r
 55f7f1e4983897a6a1823e06b1931921 *R/failwith.r
@@ -76,9 +77,9 @@ e8bb53d5599f992b7d7eca2a74a3bfe1 *R/tbl-cube.r
 65f972e2a462c2ccc70ab73a0513b6bb *R/utils-format.r
 af6ad465a66bfe8bef50117deca13eb1 *R/utils-replace-with.R
 d0d68fd08d765f5b8dd8c064b6f5f20f *R/utils.r
-03fa4e41271ed43e0d484c757aef751c *R/zzz.r
-a5666a24d648aafa3e795c01eaf3797d *README.md
-3d18169f159c9021a811905beace1b24 *build/vignette.rds
+169de4e80fecfb554db79329bdfe73c9 *R/zzz.r
+90c6d20d75e9a6d3030ed7d6dd0a0d8d *README.md
+63149a6da765b5a490e498ac3431433e *build/vignette.rds
 a79561c8013e7a7f3c23d509f4918bf8 *data/band_instruments.rda
 3aa4b1478fc31219480e88c876c3aeed *data/band_instruments2.rda
 4d44ad5e4198daccbd4227dca895750b *data/band_members.rda
@@ -93,7 +94,7 @@ f805eb5d31ac8be006c30e973cea77cc *inst/doc/dplyr.Rmd
 c094e420afa2298306bae6087941c51f *inst/doc/dplyr.html
 7464452a7bd1974d4809e1b908cf57d0 *inst/doc/programming.R
 36787866685f596ad2274b174056cd03 *inst/doc/programming.Rmd
-807ca28ae2b3a9454731a363aa5f5acf *inst/doc/programming.html
+56e19aa704b4b73067135a8af47640ad *inst/doc/programming.html
 3bc4473fe5f8257cd9342036475ce6c1 *inst/doc/two-table.R
 2e918ccb3f55c5edb23e90a66c22ec0f *inst/doc/two-table.Rmd
 eff7acf458b2fb320cd5bf0740c89034 *inst/doc/two-table.html
@@ -202,7 +203,7 @@ bfa26c7b5053752acd1c656093912684 *inst/include/dplyr/white_list.h
 d97a391a75cd0135078f0f23bc7530a1 *inst/include/dplyr/workarounds.h
 0f10f6bdf53eb88da5c34f5c38092485 *inst/include/dplyr/workarounds/static_assert.h
 acbe82c8b4bffbbdc46a7dcf396f25d5 *inst/include/dplyr/workarounds/xlen.h
-7ac3281953a281127bc86b0f7826d6d9 *inst/include/dplyr_RcppExports.h
+823234e2e57c22bd3b757fe74f9efa5e *inst/include/dplyr_RcppExports.h
 24c588d16003d98d4091a47052041d06 *inst/include/dplyr_types.h
 82b929bfe98b923eaf0afa2dd619cd02 *inst/include/solaris/solaris.h
 c37a2ff952d99b600fceb515f0b870f2 *inst/include/tools/Call.h
@@ -249,6 +250,7 @@ f0c7978518fbd44832836a74288b6bca *man/desc.Rd
 d8fb1155a13fa78cb2ae4c01069e962d *man/distinct.Rd
 649c528950338e9507e9cd3629a90032 *man/do.Rd
 db694cbe38c376bb4655f3abb8c52f78 *man/dplyr-package.Rd
+252cd38bb67d05ca39c7099f34e297bd *man/dr_dplyr.Rd
 5992ab4e3ab4be612faf7639b5dfae72 *man/explain.Rd
 9c4243b2d1393ce697564ff1e2f8575a *man/failwith.Rd
 f624141eaf9866aff28d18cce3eefabf *man/figures/logo.png
