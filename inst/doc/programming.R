@@ -112,24 +112,24 @@ my_summarise(df, quo(g1))
 #  my_summarise(df, g1)
 
 ## ---- error = TRUE-------------------------------------------------------
-my_summarise <- function(df, group_by) {
-  quo_group_by <- quo(group_by)
-  print(quo_group_by)
+my_summarise <- function(df, group_var) {
+  quo_group_var <- quo(group_var)
+  print(quo_group_var)
 
   df %>%
-    group_by(!!quo_group_by) %>%
+    group_by(!!quo_group_var) %>%
     summarise(a = mean(a))
 }
 
 my_summarise(df, g1)
 
 ## ------------------------------------------------------------------------
-my_summarise <- function(df, group_by) {
-  group_by <- enquo(group_by)
-  print(group_by)
+my_summarise <- function(df, group_var) {
+  group_var <- enquo(group_var)
+  print(group_var)
 
   df %>%
-    group_by(!!group_by) %>%
+    group_by(!!group_var) %>%
     summarise(a = mean(a))
 }
 
@@ -183,10 +183,10 @@ my_mutate(df, a)
 
 ## ------------------------------------------------------------------------
 my_summarise <- function(df, ...) {
-  group_by <- quos(...)
+  group_var <- quos(...)
 
   df %>%
-    group_by(!!!group_by) %>%
+    group_by(!!!group_var) %>%
     summarise(a = mean(a))
 }
 

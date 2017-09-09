@@ -174,9 +174,10 @@ SEXP list_as_chr(SEXP x) {
   return chr;
 }
 
-SymbolVector get_vars(SEXP x) {
+SymbolVector get_vars(SEXP x, bool duplicate) {
   static SEXP vars_symbol = Rf_install("vars");
   RObject vars = Rf_getAttrib(x, vars_symbol);
+  if (duplicate && MAYBE_SHARED(vars)) vars = Rf_duplicate(vars);
 
   switch (TYPEOF(vars)) {
   case NILSXP:
@@ -277,9 +278,9 @@ SEXP f_env(SEXP x) {
 }
 bool is_quosure(SEXP x) {
   return TYPEOF(x) == LANGSXP
-    && Rf_length(x) == 2
-    && Rf_inherits(x, "quosure")
-    && TYPEOF(f_env(x)) == ENVSXP;
+         && Rf_length(x) == 2
+         && Rf_inherits(x, "quosure")
+         && TYPEOF(f_env(x)) == ENVSXP;
 }
 SEXP maybe_rhs(SEXP x) {
   if (is_quosure(x))
