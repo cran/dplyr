@@ -440,9 +440,9 @@ x2
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rlang)
 
 <span class="kw">get_env</span>(x1)
-<span class="co">#&gt; &lt;environment: 0x55da4e4cb750&gt;</span>
+<span class="co">#&gt; &lt;environment: 0x557ddf5b1ab0&gt;</span>
 <span class="kw">get_env</span>(x2)
-<span class="co">#&gt; &lt;environment: 0x55da4cf214b8&gt;</span></code></pre></div>
+<span class="co">#&gt; &lt;environment: 0x557ddfa6e6c8&gt;</span></code></pre></div>
 <p>Further, when we evaluate those formulas using <code>rlang::eval_tidy()</code>, we see that they yield different values:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">eval_tidy</span>(x1)
 <span class="co">#&gt; [1] 10</span>

@@ -520,20 +520,20 @@ vars &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&q
 <span class="co">#&gt; # Groups:   month [12]</span>
 <span class="co">#&gt;    year month    day dep_time</span>
 <span class="co">#&gt;   &lt;int&gt; &lt;fctr&gt; &lt;int&gt;    &lt;int&gt;</span>
-<span class="co">#&gt; 1  2013 &quot;1&quot;        1      517</span>
-<span class="co">#&gt; 2  2013 &quot;1&quot;        1      533</span>
-<span class="co">#&gt; 3  2013 &quot;1&quot;        1      542</span>
-<span class="co">#&gt; 4  2013 &quot;1&quot;        1      544</span>
+<span class="co">#&gt; 1  2013 1          1      517</span>
+<span class="co">#&gt; 2  2013 1          1      533</span>
+<span class="co">#&gt; 3  2013 1          1      542</span>
+<span class="co">#&gt; 4  2013 1          1      544</span>
 <span class="co">#&gt; # ... with 336,772 more rows</span>
 <span class="kw">group_by</span>(df, <span class="dt">day_binned =</span> <span class="kw">cut</span>(day, <span class="dv">3</span>))
 <span class="co">#&gt; # A tibble: 336,776 x 5</span>
 <span class="co">#&gt; # Groups:   day_binned [3]</span>
-<span class="co">#&gt;    year month   day dep_time day_binned </span>
-<span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt; &lt;fctr&gt;     </span>
-<span class="co">#&gt; 1  2013     1     1      517 &quot;(0.97,11]&quot;</span>
-<span class="co">#&gt; 2  2013     1     1      533 &quot;(0.97,11]&quot;</span>
-<span class="co">#&gt; 3  2013     1     1      542 &quot;(0.97,11]&quot;</span>
-<span class="co">#&gt; 4  2013     1     1      544 &quot;(0.97,11]&quot;</span>
+<span class="co">#&gt;    year month   day dep_time day_binned</span>
+<span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;    &lt;int&gt; &lt;fctr&gt;    </span>
+<span class="co">#&gt; 1  2013     1     1      517 (0.97,11] </span>
+<span class="co">#&gt; 2  2013     1     1      533 (0.97,11] </span>
+<span class="co">#&gt; 3  2013     1     1      542 (0.97,11] </span>
+<span class="co">#&gt; 4  2013     1     1      544 (0.97,11] </span>
 <span class="co">#&gt; # ... with 336,772 more rows</span></code></pre></div>
 <p>This is why you can’t supply a column name to <code>group_by()</code>. This amounts to creating a new column containing the string recycled to the number of rows:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">group_by</span>(df, <span class="st">&quot;month&quot;</span>)

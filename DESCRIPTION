@@ -1,6 +1,6 @@
 Type: Package
 Package: dplyr
-Version: 0.7.3
+Version: 0.7.4
 Title: A Grammar of Data Manipulation
 Description: A fast, consistent tool for working with data frame like objects,
     both in memory and out of memory.
@@ -27,7 +27,7 @@ LazyData: yes
 License: MIT + file LICENSE
 RoxygenNote: 6.0.1
 NeedsCompilation: yes
-Packaged: 2017-09-05 23:09:09 UTC; muelleki
+Packaged: 2017-09-16 15:25:52 UTC; muelleki
 Author: Hadley Wickham [aut, cre],
   Romain Francois [aut],
   Lionel Henry [aut],
@@ -35,4 +35,4 @@ Author: Hadley Wickham [aut, cre],
   RStudio [cph, fnd]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 Repository: CRAN
-Date/Publication: 2017-09-09 14:04:29 UTC
+Date/Publication: 2017-09-28 20:43:29 UTC
