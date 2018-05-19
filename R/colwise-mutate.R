@@ -34,11 +34,20 @@
 #' # * _at affects variables selected with a character vector or vars()
 #' # * _if affects variables selected with a predicate function:
 #'
-#' starwars %>% summarise_at(vars(height:mass), mean, na.rm = TRUE)
+#' # The _at() variants directly support strings:
 #' starwars %>% summarise_at(c("height", "mass"), mean, na.rm = TRUE)
+#'
+#' # You can also supply selection helpers to _at() functions but you have
+#' # to quote them with vars():
+#' iris %>% mutate_at(vars(matches("Sepal")), log)
+#' starwars %>% summarise_at(vars(height:mass), mean, na.rm = TRUE)
+#'
+#' # The _if() variants apply a predicate function (a function that
+#' # returns TRUE or FALSE) to determine the relevant subset of
+#' # columns. Here we apply mean() to the numeric columns:
 #' starwars %>% summarise_if(is.numeric, mean, na.rm = TRUE)
 #'
-#' # mutate_if is particularly useful for transforming variables from
+#' # mutate_if() is particularly useful for transforming variables from
 #' # one type to another
 #' iris %>% as_tibble() %>% mutate_if(is.factor, as.character)
 #' iris %>% as_tibble() %>% mutate_if(is.double, as.integer)
@@ -55,26 +64,26 @@
 #' by_species %>% mutate_all(funs(. / 2.54))
 #'
 #' # Function names will be included if .funs has names or multiple inputs
-#' by_species %>% mutate_all(funs(cm = . / 2.54))
+#' by_species %>% mutate_all(funs(inches = . / 2.54))
 #' by_species %>% summarise_all(funs(med = median))
 #' by_species %>% summarise_all(funs(Q3 = quantile), probs = 0.75)
 #' by_species %>% summarise_all(c("min", "max"))
 summarise_all <- function(.tbl, .funs, ...) {
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
-  summarise(.tbl, !!! funs)
+  summarise(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 summarise_if <- function(.tbl, .predicate, .funs, ...) {
   funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
-  summarise(.tbl, !!! funs)
+  summarise(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 summarise_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
-  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), ...)
-  summarise(.tbl, !!! funs)
+  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
+  summarise(.tbl, !!!funs)
 }
 
 #' @rdname summarise_all
@@ -91,56 +100,60 @@ summarize_at <- summarise_at
 #' @export
 mutate_all <- function(.tbl, .funs, ...) {
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
-  mutate(.tbl, !!! funs)
+  mutate(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 mutate_if <- function(.tbl, .predicate, .funs, ...) {
   funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
-  mutate(.tbl, !!! funs)
+  mutate(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 mutate_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
-  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), ...)
-  mutate(.tbl, !!! funs)
+  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
+  mutate(.tbl, !!!funs)
 }
 
 #' @rdname summarise_all
 #' @export
 transmute_all <- function(.tbl, .funs, ...) {
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
-  transmute(.tbl, !!! funs)
+  transmute(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 transmute_if <- function(.tbl, .predicate, .funs, ...) {
   funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
-  transmute(.tbl, !!! funs)
+  transmute(.tbl, !!!funs)
 }
 #' @rdname summarise_all
 #' @export
 transmute_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
-  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), ...)
-  transmute(.tbl, !!! funs)
+  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
+  transmute(.tbl, !!!funs)
 }
 
 # Helpers -----------------------------------------------------------------
 
-manip_all <- function(.tbl, .funs, .quo, .env, ...) {
-  syms <- syms(tbl_nongroup_vars(.tbl))
+manip_all <- function(.tbl, .funs, .quo, .env, ..., .include_group_vars = FALSE) {
+  if (.include_group_vars) {
+    syms <- syms(tbl_vars(.tbl))
+  } else {
+    syms <- syms(tbl_nongroup_vars(.tbl))
+  }
   funs <- as_fun_list(.funs, .quo, .env, ...)
   manip_apply_syms(funs, syms, .tbl)
 }
-manip_if <- function(.tbl, .predicate, .funs, .quo, .env, ...) {
-  vars <- tbl_if_syms(.tbl, .predicate, .env)
+manip_if <- function(.tbl, .predicate, .funs, .quo, .env, ..., .include_group_vars = FALSE) {
+  vars <- tbl_if_syms(.tbl, .predicate, .env, .include_group_vars = .include_group_vars)
   funs <- as_fun_list(.funs, .quo, .env, ...)
   manip_apply_syms(funs, vars, .tbl)
 }
-manip_at <- function(.tbl, .vars, .funs, .quo, .env, ...) {
-  syms <- tbl_at_syms(.tbl, .vars)
+manip_at <- function(.tbl, .vars, .funs, .quo, .env, ..., .include_group_vars = FALSE) {
+  syms <- tbl_at_syms(.tbl, .vars, .include_group_vars = .include_group_vars)
   funs <- as_fun_list(.funs, .quo, .env, ...)
   manip_apply_syms(funs, syms, .tbl)
 }
@@ -222,14 +235,17 @@ summarise_each_ <- function(tbl, funs, vars) {
   } else {
     inform(glue(msg, "\nTo map `funs` over a selection of variables, use `summarise_at()`"))
     vars <- compat_lazy_dots(vars, caller_env())
-    vars <- select_vars(tbl_nongroup_vars(tbl), !!! vars)
+    vars <- tidyselect::vars_select(tbl_nongroup_vars(tbl), !!!vars)
+    if (length(vars) == 1 && names(vars) == as_string(vars)) {
+      vars <- unname(vars)
+    }
   }
   if (is_character(funs)) {
     funs <- funs_(funs)
   }
 
   funs <- manip_apply_syms(funs, syms(vars), tbl)
-  summarise(tbl, !!! funs)
+  summarise(tbl, !!!funs)
 }
 
 #' @export
@@ -254,10 +270,13 @@ mutate_each_ <- function(tbl, funs, vars) {
   } else {
     inform(glue(msg, "\nTo map `funs` over a selection of variables, use `mutate_at()`"))
     vars <- compat_lazy_dots(vars, caller_env())
-    vars <- select_vars(tbl_nongroup_vars(tbl), !!! vars)
+    vars <- tidyselect::vars_select(tbl_nongroup_vars(tbl), !!!vars)
+    if (length(vars) == 1 && names(vars) == as_string(vars)) {
+      vars <- unname(vars)
+    }
   }
   funs <- manip_apply_syms(funs, syms(vars), tbl)
-  mutate(tbl, !!! funs)
+  mutate(tbl, !!!funs)
 }
 
 #' @rdname summarise_each

@@ -28,7 +28,6 @@ List arrange_impl(DataFrame data, QuosureList quosures) {
 
   check_valid_colnames(data);
   assert_all_white_list(data);
-
   List variables(nargs);
   LogicalVector ascending(nargs);
 
@@ -47,11 +46,7 @@ List arrange_impl(DataFrame data, QuosureList quosures) {
     }
 
     if (Rf_inherits(v, "data.frame")) {
-      DataFrame df(v);
-      int nr = df.nrows();
-      if (nr != data.nrows()) {
-        stop("data frame column with incompatible number of rows (%d), expecting : %d", nr, data.nrows());
-      }
+      bad_pos_arg(i + 1, "is of unsupported type data.frame");
     } else if (Rf_isMatrix(v)) {
       bad_pos_arg(i + 1, "is of unsupported type matrix");
     } else {
@@ -63,11 +58,9 @@ List arrange_impl(DataFrame data, QuosureList quosures) {
     ascending[i] = !is_desc;
   }
   variables.names() = quosures.names();
-
   OrderVisitors o(variables, ascending, nargs);
   IntegerVector index = o.apply();
-
-  DataFrameSubsetVisitors visitors(data, data.names());
+  DataFrameSubsetVisitors visitors(data, SymbolVector(data.names()));
   List res = visitors.subset(index, get_class(data));
 
   if (is<GroupedDataFrame>(data)) {

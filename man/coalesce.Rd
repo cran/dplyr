@@ -10,7 +10,7 @@ coalesce(...)
 \item{...}{Vectors. All inputs should either be length 1, or the
 same length as the first argument.
 
-These dots are evaluated with \link[rlang:dots_list]{explicit splicing}.}
+These dots support \link[rlang:tidy-dots]{tidy dots} features.}
 }
 \value{
 A vector the same length as the first \code{...} argument with
@@ -36,7 +36,7 @@ vecs <- list(
   c(1, 2, NA, NA, 5),
   c(NA, NA, 3, 4, 5)
 )
-coalesce(!!! vecs)
+coalesce(!!!vecs)
 }
 \seealso{
 \code{\link[=na_if]{na_if()}} to replace specified values with a \code{NA}.

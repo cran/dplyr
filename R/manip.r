@@ -1,7 +1,8 @@
 #' Return rows with matching conditions
 #'
 #' Use `filter()` find rows/cases where conditions are true. Unlike
-#' base subsetting, rows where the condition evaluates to `NA` are dropped.
+#' base subsetting with `[`, rows where the condition evaluates to `NA` are
+#' dropped.
 #'
 #' Note that dplyr is not yet smart enough to optimise filtering optimisation
 #' on grouped datasets that don't need grouped calculations. For this reason,
@@ -67,6 +68,9 @@ filter_ <- function(.data, ..., .dots = list()) {
 #' intrinsic notion of row order. If you want to perform the equivalent
 #' operation, use [filter()] and [row_number()].
 #'
+#' Positive values select rows to keep; negative values drop rows. The
+#' values provided must be either all positive or all negative.
+#'
 #' @family single table verbs
 #' @param .data A tbl.
 #' @param ... Integer row values.
@@ -83,6 +87,10 @@ filter_ <- function(.data, ..., .dots = list()) {
 #' slice(mtcars, 1L)
 #' slice(mtcars, n())
 #' slice(mtcars, 5:n())
+#' # Rows can be dropped with negative indices:
+#' slice(mtcars, -5:-n())
+#' # In this case, the result will be equivalent to:
+#' slice(mtcars, 1:4)
 #'
 #' by_cyl <- group_by(mtcars, cyl)
 #' slice(by_cyl, 1:2)
@@ -167,7 +175,7 @@ slice_ <- function(.data, ..., .dots = list()) {
 #' # summarise() supports quasiquotation. You can unquote raw
 #' # expressions or quosures:
 #' var <- quo(mean(cyl))
-#' summarise(mtcars, !! var)
+#' summarise(mtcars, !!var)
 summarise <- function(.data, ...) {
   UseMethod("summarise")
 }
@@ -269,7 +277,7 @@ summarize_ <- summarise_
 #' # mutate() supports quasiquotation. You can unquote quosures, which
 #' # can refer to both contextual variables and variable names:
 #' var <- 100
-#' as_tibble(mtcars) %>% mutate(cyl = !! quo(cyl * var))
+#' as_tibble(mtcars) %>% mutate(cyl = !!quo(cyl * var))
 mutate <- function(.data, ...) {
   UseMethod("mutate")
 }
@@ -297,7 +305,7 @@ transmute_ <- function(.data, ..., .dots = list()) {
 #' @export
 transmute.default <- function(.data, ...) {
   dots <- named_quos(...)
-  out <- mutate(.data, !!! dots)
+  out <- mutate(.data, !!!dots)
 
   keep <- names(dots)
   select(out, one_of(keep))
@@ -305,8 +313,23 @@ transmute.default <- function(.data, ...) {
 #' @export
 transmute_.default <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  transmute(.data, !!! dots)
+  transmute(.data, !!!dots)
 }
+
+#' @export
+transmute.grouped_df <- function(.data, ...) {
+  dots <- named_quos(...)
+  out <- mutate(.data, !!!dots)
+  keep <- names(dots)
+
+  .select_grouped_df(out, one_of(keep), notify = FALSE)
+}
+#' @export
+transmute_.grouped_df <- function(.data, ..., .dots = list()) {
+  dots <- compat_lazy_dots(.dots, caller_env(), ...)
+  transmute(.data, !!!dots)
+}
+
 
 #' Arrange rows by variables
 #'
@@ -371,6 +394,8 @@ arrange.grouped_df <- function(.data, ..., .by_group = FALSE) {
 #' * [starts_with()], [ends_with()], [contains()]
 #' * [matches()]
 #' * [num_range()]
+#' * [one_of()]
+#' * [everything()]
 #'
 #' To drop variables, use `-`.
 #'
@@ -437,6 +462,23 @@ arrange.grouped_df <- function(.data, ..., .by_group = FALSE) {
 #'
 #' # * rename() keeps all variables
 #' rename(iris, petal_length = Petal.Length)
+#'
+#'
+#' # Unquoting ----------------------------------------
+#'
+#' # Like all dplyr verbs, select() supports unquoting of symbols:
+#' vars <- list(
+#'   var1 = sym("cyl"),
+#'   var2 = sym("am")
+#' )
+#' select(mtcars, !!!vars)
+#'
+#' # For convenience it also supports strings and character
+#' # vectors. This is unlike other verbs where strings would be
+#' # ambiguous.
+#' vars <- c(var1 = "cyl", var2 ="am")
+#' select(mtcars, !!vars)
+#' rename(mtcars, !!vars)
 select <- function(.data, ...) {
   UseMethod("select")
 }

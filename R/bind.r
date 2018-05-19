@@ -2,8 +2,7 @@
 #'
 #' This is an efficient implementation of the common pattern of
 #' `do.call(rbind, dfs)` or `do.call(cbind, dfs)` for binding many
-#' data frames into one. `combine()` acts like [c()] or
-#' [unlist()] but uses consistent dplyr coercion rules.
+#' data frames into one.
 #'
 #' The output of `bind_rows()` will contain a column if that column
 #' appears in any of the inputs.
@@ -18,7 +17,7 @@
 #'   frame, or a list of data frames.
 #'
 #'   When row-binding, columns are matched by name, and any missing
-#'   columns with be filled with NA.
+#'   columns will be filled with NA.
 #'
 #'   When column-binding, rows are matched by position, so all data
 #'   frames must have the same number of rows. To match by value, not
@@ -73,7 +72,7 @@
 #' bind_rows(ll)
 #'
 #' # You can circumvent that behaviour with explicit splicing:
-#' bind_rows(!!! ll)
+#' bind_rows(!!!ll)
 #'
 #'
 #' # When you supply a column name with the `.id` argument, a new
@@ -140,6 +139,15 @@ bind_cols <- function(...) {
   tibble::repair_names(out)
 }
 
+#' @description
+#' `combine()` acts like [c()] or
+#' [unlist()] but uses consistent dplyr coercion rules.
+#'
+#' @details
+#' If `combine()` it is called with exactly one list argument, the list is
+#' simplified (similarly to `unlist(recursive = FALSE)`. `NULL` arguments are
+#' ignored. If the result is empty, `logical()` is returned.
+#'
 #' @export
 #' @rdname bind
 combine <- function(...) {

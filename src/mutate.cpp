@@ -16,6 +16,7 @@
 #include <dplyr/NamedListAccumulator.h>
 
 #include <dplyr/bad.h>
+#include <dplyr/tbl_cpp.h>
 
 using namespace Rcpp;
 using namespace dplyr;
@@ -111,6 +112,10 @@ DataFrame mutate_not_grouped(DataFrame df, const QuosureList& dots) {
       bad_col(quosure.name(), "is of unsupported class POSIXlt");
     }
 
+    if (Rf_inherits(variable, "data.frame")) {
+      bad_col(quosure.name(), "is of unsupported class data.frame");
+    }
+
     const int n_res = Rf_length(variable);
     check_supported_type(variable, name);
     check_length(n_res, nrows, "the number of rows", name);
@@ -188,12 +193,10 @@ DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots) {
     } else {
       variable = validate_unquoted_value(call, gdf.nrows(), name);
     }
-
     Rf_setAttrib(variable, R_NamesSymbol, R_NilValue);
     proxy.input(name, variable);
     accumulator.set(name, variable);
   }
-
   return structure_mutate(accumulator, df, get_class(df));
 }
 

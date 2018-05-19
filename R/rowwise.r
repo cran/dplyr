@@ -14,8 +14,9 @@
 #' @export
 #' @examples
 #' df <- expand.grid(x = 1:3, y = 3:1)
-#' df %>% rowwise() %>% do(i = seq(.$x, .$y))
-#' .Last.value %>% summarise(n = length(i))
+#' df_done <- df %>% rowwise() %>% do(i = seq(.$x, .$y))
+#' df_done
+#' df_done %>% summarise(n = length(i))
 rowwise <- function(data) {
   stopifnot(is.data.frame(data))
 
@@ -66,7 +67,7 @@ group_by.rowwise_df <- function(.data, ..., add = FALSE) {
 #' @export
 group_by_.rowwise_df <- function(.data, ..., .dots = list(), add = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  group_by(.data, !!! dots, add = add)
+  group_by(.data, !!!dots, add = add)
 }
 
 
@@ -76,7 +77,6 @@ group_by_.rowwise_df <- function(.data, ..., .dots = list(), add = FALSE) {
 do.rowwise_df <- function(.data, ...) {
   # Create ungroup version of data frame suitable for subsetting
   group_data <- ungroup(.data)
-  index <- attr(.data, "indices")
 
   args <- quos(...)
   named <- named_args(args)
@@ -114,5 +114,5 @@ do.rowwise_df <- function(.data, ...) {
 #' @export
 do_.rowwise_df <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  do(.data, !!! dots)
+  do(.data, !!!dots)
 }

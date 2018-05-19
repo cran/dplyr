@@ -16,7 +16,7 @@ public:
   Lag(SEXP data_, int n_, const RObject& def_, bool is_summary_) :
     data(data_),
     n(n_),
-    def(Vector<RTYPE>::get_na()),
+    def(default_value<RTYPE>()),
     is_summary(is_summary_)
   {
     if (!Rf_isNull(def_)) {
@@ -43,15 +43,6 @@ public:
 
   virtual SEXP process(const RowwiseDataFrame& gdf) {
     Vector<RTYPE> out(gdf.nrows(), def);
-    copy_most_attributes(out, data);
-    return out;
-  }
-
-  virtual SEXP process(const FullDataFrame& df) {
-    int nrows = df.nrows();
-    Vector<RTYPE> out = no_init(nrows);
-    const SlicingIndex& index = df.get_index();
-    process_slice(out, index, index);
     copy_most_attributes(out, data);
     return out;
   }

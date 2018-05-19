@@ -7,10 +7,7 @@ verify_not_hybrid <- function(x) {
 }
 
 with_hybrid <- function(expr, ...) {
-  with_hybrid_(enquo(expr), ...)
-}
-
-with_hybrid_ <- function(expr, ...) {
+  expr <- enquo(expr)
   stopifnot(any(class(expr) == "formula"))
   expr[[2]] <- prepend_call(expr[[2]], "verify_hybrid")
   data <- data_frame(...)
@@ -20,14 +17,11 @@ with_hybrid_ <- function(expr, ...) {
   eval_env$verify_hybrid <- verify_hybrid
   environment(expr) <- eval_env
 
-  summarise(data, out = !! expr)["out"][[1]]
+  summarise(data, out = !!expr)["out"][[1]]
 }
 
 without_hybrid <- function(expr, ...) {
-  without_hybrid_(enquo(expr), ...)
-}
-
-without_hybrid_ <- function(expr, ...) {
+  expr <- enquo(expr)
   stopifnot(any(class(expr) == "formula"))
   expr[[2]] <- prepend_call(expr[[2]], "verify_not_hybrid")
   data <- data_frame(...)
@@ -37,14 +31,11 @@ without_hybrid_ <- function(expr, ...) {
   eval_env$verify_not_hybrid <- verify_not_hybrid
   environment(expr) <- eval_env
 
-  summarise(data, out = !! expr)["out"][[1]]
+  summarise(data, out = !!expr)["out"][[1]]
 }
 
 eval_dots <- function(expr, ...) {
-  eval_dots_(enquo(expr), ...)
-}
-
-eval_dots_ <- function(expr, ...) {
+  expr <- enquo(expr)
   data <- data_frame(...)
   eval(expr[[2]], data, enclos = environment(expr))
 }

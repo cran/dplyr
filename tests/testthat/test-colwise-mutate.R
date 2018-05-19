@@ -44,6 +44,9 @@ expect_classes <- function(tbl, expected) {
 }
 
 test_that("can select colwise", {
+  columns <- iris %>% mutate_at(NULL, as.character)
+  expect_classes(columns, "nnnnf")
+
   columns <- iris %>% mutate_at(vars(starts_with("Petal")), as.character)
   expect_classes(columns, "nnccf")
 
@@ -83,7 +86,7 @@ test_that("error is thrown with improper additional arguments", {
 test_that("predicate can be quoted", {
   expected <- mutate_if(mtcars, is_integerish, mean)
   expect_identical(mutate_if(mtcars, "is_integerish", mean), expected)
-  expect_identical(mutate_if(mtcars, ~is_integerish(.x), mean), expected)
+  expect_identical(mutate_if(mtcars, ~ is_integerish(.x), mean), expected)
 })
 
 test_that("transmute verbs do not retain original variables", {
@@ -107,9 +110,57 @@ test_that("at selection works even if not all ops are named (#2634)", {
 })
 
 test_that("can use a purrr-style lambda", {
-  expect_identical(summarise_at(mtcars, vars(1:2), ~mean(.x)), summarise(mtcars, mpg = mean(mpg), cyl = mean(cyl)))
+  expect_identical(summarise_at(mtcars, vars(1:2), ~ mean(.x)), summarise(mtcars, mpg = mean(mpg), cyl = mean(cyl)))
 })
 
+test_that("mutate_at and transmute_at refuses to mutate a grouping variable (#3351)", {
+  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+    group_by(gr1)
+
+  expect_error(
+    mutate_at(tbl, vars(gr1), sqrt),
+    "Column `gr1` can't be modified because it's a grouping variable",
+    fixed = TRUE
+  )
+
+  expect_error(
+    transmute_at(tbl, vars(gr1), sqrt),
+    "Column `gr1` can't be modified because it's a grouping variable",
+    fixed = TRUE
+  )
+})
+
+test_that("mutate and transmute variants does not mutate grouping variable (#3351)", {
+  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+    group_by(gr1)
+
+  res <- mutate(tbl, gr2 = sqrt(gr2), x = sqrt(x))
+  expect_identical(mutate_all(tbl, sqrt), res)
+  expect_identical(mutate_if(tbl, is.integer, sqrt), res)
+
+  expect_identical(transmute_all(tbl, sqrt), res)
+  expect_identical(transmute_if(tbl, is.integer, sqrt), res)
+})
+
+test_that("summarise_at refuses to treat grouping variables (#3351)", {
+  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+    group_by(gr1)
+
+  expect_error(
+    summarise_at(tbl, vars(gr1), mean),
+    "Column `gr1` can't be modified because it's a grouping variable",
+    fixed = TRUE
+  )
+})
+
+test_that("summarise variants does not summarise grouping variable (#3351)", {
+  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+    group_by(gr1)
+  res <- summarise(tbl, gr2 = mean(gr2), x = mean(x))
+
+  expect_identical(summarise_all(tbl, mean), res)
+  expect_identical(summarise_if(tbl, is.integer, mean), res)
+})
 
 # Deprecated ---------------------------------------------------------
 
@@ -117,10 +168,16 @@ test_that("_each() and _all() families agree", {
   df <- data.frame(x = 1:3, y = 1:3)
 
   expect_equal(summarise_each(df, funs(mean)), summarise_all(df, mean))
+  expect_equal(summarise_each(df, funs(mean), x), summarise_at(df, vars(x), mean))
+  expect_equal(summarise_each(df, funs(mean = mean), x), summarise_at(df, vars(x), funs(mean = mean)))
+  expect_equal(summarise_each(df, funs(mean = mean), x:y), summarise_at(df, vars(x:y), funs(mean = mean)))
   expect_equal(summarise_each(df, funs(mean), x:y), summarise_at(df, vars(x:y), mean))
   expect_equal(summarise_each(df, funs(mean), z = y), summarise_at(df, vars(z = y), mean))
 
   expect_equal(mutate_each(df, funs(mean)), mutate_all(df, mean))
+  expect_equal(mutate_each(df, funs(mean), x), mutate_at(df, vars(x), mean))
+  expect_equal(mutate_each(df, funs(mean = mean), x), mutate_at(df, vars(x), funs(mean = mean)))
+  expect_equal(mutate_each(df, funs(mean = mean), x:y), mutate_at(df, vars(x:y), funs(mean = mean)))
   expect_equal(mutate_each(df, funs(mean), x:y), mutate_at(df, vars(x:y), mean))
   expect_equal(mutate_each(df, funs(mean), z = y), mutate_at(df, vars(z = y), mean))
 })

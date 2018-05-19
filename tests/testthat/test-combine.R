@@ -1,14 +1,13 @@
 context("combine")
 
-test_that("combine handles NULL (1596)", {
+test_that("combine handles NULL (#1596, #3365)", {
   expect_equal(combine(list(NULL, 1, 2)), c(1, 2))
   expect_equal(combine(list(1, NULL, 2)), c(1, 2))
   expect_equal(combine(list(1, 2, NULL)), c(1, 2))
-  expect_error(
-    combine(list(NULL, NULL)),
-    "no data to combine, all elements are NULL",
-    fixed = TRUE
-  )
+  expect_equal(combine(), logical())
+  expect_equal(combine(list(NULL)), logical())
+  expect_equal(combine(list(NULL, NULL), list(NULL)), list(NULL, NULL, NULL))
+  expect_equal(combine(NULL, list(NULL, NULL)), list(NULL, NULL))
 })
 
 test_that("combine complains about incompatibilites", {
@@ -42,7 +41,6 @@ test_that("combine works with NA and logical (#2203)", {
   expected_result <- c(TRUE, FALSE, NA, NA, TRUE)
   works3 <- combine(list(TRUE, FALSE, c(NA, NA), TRUE))
   expect_equal(works3, expected_result)
-
 })
 
 test_that("combine works with NA and integers (#2203)", {
@@ -104,20 +102,32 @@ test_that("combine works with NA and characters (#2203)", {
 
 test_that("combine works with NA and POSIXct (#2203)", {
   # NA first
-  works <- combine(list(NA, as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
-                        NA, as.POSIXct("2010-01-04")))
-  expect_equal(works, c(as.POSIXct(c(NA, "2010-01-01", "2010-01-02",
-                                     NA, "2010-01-04"))))
+  works <- combine(list(
+    NA, as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
+    NA, as.POSIXct("2010-01-04")
+  ))
+  expect_equal(works, c(as.POSIXct(c(
+    NA, "2010-01-01", "2010-01-02",
+    NA, "2010-01-04"
+  ))))
   # NA length 1
-  works <- combine(list(as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
-                        NA, as.POSIXct("2010-01-04")))
-  expect_equal(works, c(as.POSIXct(c("2010-01-01", "2010-01-02",
-                                     NA, "2010-01-04"))))
+  works <- combine(list(
+    as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
+    NA, as.POSIXct("2010-01-04")
+  ))
+  expect_equal(works, c(as.POSIXct(c(
+    "2010-01-01", "2010-01-02",
+    NA, "2010-01-04"
+  ))))
   # NA length > 1
-  works <- combine(list(as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
-                        c(NA, NA), as.POSIXct("2010-01-04")))
-  expect_equal(works, c(as.POSIXct(c("2010-01-01", "2010-01-02",
-                                     NA, NA, "2010-01-04"))))
+  works <- combine(list(
+    as.POSIXct("2010-01-01"), as.POSIXct("2010-01-02"),
+    c(NA, NA), as.POSIXct("2010-01-04")
+  ))
+  expect_equal(works, c(as.POSIXct(c(
+    "2010-01-01", "2010-01-02",
+    NA, NA, "2010-01-04"
+  ))))
 })
 
 test_that("combine works with NA and Date (#2203)", {
@@ -127,12 +137,16 @@ test_that("combine works with NA and Date (#2203)", {
 
   # NA length == 1
   expected_result <- c(as.Date(c("2010-01-01", "2010-01-02", NA, "2010-01-04")))
-  works1 <- combine(list(as.Date("2010-01-01"), as.Date("2010-01-02"),
-                         as.Date(NA), as.Date("2010-01-04")))
+  works1 <- combine(list(
+    as.Date("2010-01-01"), as.Date("2010-01-02"),
+    as.Date(NA), as.Date("2010-01-04")
+  ))
   expect_equal(works1, expected_result)
 
-  works2 <- combine(list(as.Date("2010-01-01"), as.Date("2010-01-02"),
-                         NA, as.Date("2010-01-04")))
+  works2 <- combine(list(
+    as.Date("2010-01-01"), as.Date("2010-01-02"),
+    NA, as.Date("2010-01-04")
+  ))
   expect_equal(works2, expected_result)
 
   # NA length > 1
@@ -140,9 +154,11 @@ test_that("combine works with NA and Date (#2203)", {
   works1 <- combine(split(expected_result, c(1, 2, 3, 3, 4)))
   expect_equal(works1, expected_result)
 
-  works2 <- combine(list(as.Date("2010-01-01"), as.Date("2010-01-02"),
-                         c(NA, NA),
-                         as.Date("2010-01-04")))
+  works2 <- combine(list(
+    as.Date("2010-01-01"), as.Date("2010-01-02"),
+    c(NA, NA),
+    as.Date("2010-01-04")
+  ))
   expect_equal(works2, expected_result)
 })
 
@@ -163,8 +179,10 @@ test_that("combine works with NA and complex (#2203)", {
 
   # NA length > 1
   expected_result <- c(1, 2, NA, NA, 4) + 1i
-  expect_equal(combine(split(expected_result, c(1, 2, 3, 3, 4))),
-               expected_result)
+  expect_equal(
+    combine(split(expected_result, c(1, 2, 3, 3, 4))),
+    expected_result
+  )
 
   works3 <- combine(list(1 + 1i, 2 + 1i, c(NA, NA), 4 + 1i))
   expect_equal(works3, expected_result)
@@ -188,29 +206,27 @@ test_that("combine works with difftime", {
   )
   expect_equal(
     combine(as.difftime(1, units = "days"), as.difftime(1, units = "secs")),
-    as.difftime(c(24*60*60, 1), units = "secs")
+    as.difftime(c(24 * 60 * 60, 1), units = "secs")
   )
   expect_equal(
     combine(as.difftime(2, units = "weeks"), as.difftime(1, units = "secs")),
-    as.difftime(c(2*7*24*60*60, 1), units = "secs")
+    as.difftime(c(2 * 7 * 24 * 60 * 60, 1), units = "secs")
   )
   expect_equal(
     combine(as.difftime(2, units = "weeks"), as.difftime(3, units = "weeks")),
-    as.difftime(c(2,3), units = "weeks")
+    as.difftime(c(2, 3), units = "weeks")
   )
-
 })
 
 test_that("combine works with hms and difftime", {
   expect_equal(
     combine(as.difftime(2, units = "weeks"), hms::hms(hours = 1)),
-    as.difftime(c(2*7*24*60*60, 3600), units = "secs")
+    as.difftime(c(2 * 7 * 24 * 60 * 60, 3600), units = "secs")
   )
   expect_equal(
     combine(hms::hms(hours = 1), as.difftime(2, units = "weeks")),
-    hms::hms(seconds = c(3600, 2*7*24*60*60))
+    hms::hms(seconds = c(3600, 2 * 7 * 24 * 60 * 60))
   )
-
 })
 
 # Uses helper-combine.R

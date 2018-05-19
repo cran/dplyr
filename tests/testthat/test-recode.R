@@ -2,11 +2,14 @@ context("recode")
 
 test_that("error if no arguments", {
   expect_error(
-    recode(1:5), "No replacements provided")
+    recode(1:5), "No replacements provided"
+  )
   expect_error(
-    recode("a"), "No replacements provided")
+    recode("a"), "No replacements provided"
+  )
   expect_error(
-    recode(factor("a")), "No replacements provided")
+    recode(factor("a")), "No replacements provided"
+  )
 })
 
 test_that("error if unnamed", {
@@ -104,22 +107,27 @@ test_that("conversion of unreplaced values to NA gives warning", {
 test_that(".dot argument works correctly (PR #2110)", {
   x1 <- letters[1:3]
   x2 <- 1:3
+  x3 <- factor(x1)
 
   expect_equal(
     recode(x1, a = "apple", b = "banana", .default = NA_character_),
-    recode(x1, .default = NA_character_, !!! list(a = "apple", b = "banana"))
+    recode(x1, .default = NA_character_, !!!list(a = "apple", b = "banana"))
   )
   expect_equal(
     recode(x1, a = "apple", b = "banana", .default = NA_character_),
-    recode(x1, a = "apple", .default = NA_character_, !!! list(b = "banana"))
+    recode(x1, a = "apple", .default = NA_character_, !!!list(b = "banana"))
   )
   expect_equal(
     recode(x2, "1" = 4, "2" = 5, .default = NA_real_),
-    recode(x2, .default = NA_real_, !!! list("1" = 4, "2" = 5))
+    recode(x2, .default = NA_real_, !!!list("1" = 4, "2" = 5))
   )
   expect_equal(
     recode(x2, "1" = 4, "2" = 5, .default = NA_real_),
-    recode(x2, "1" = 4, .default = NA_real_, !!! list("2" = 5))
+    recode(x2, "1" = 4, .default = NA_real_, !!!list("2" = 5))
+  )
+  expect_equal(
+    recode_factor(x3, a = "apple", b = "banana", .default = NA_character_),
+    recode_factor(x3, .default = NA_character_, !!!list(a = "apple", b = "banana"))
   )
 })
 
@@ -178,4 +186,3 @@ test_that("can recode factor with redundant levels", {
     factor(c("a", "a", "c", "c"), levels = c("c", "a"))
   )
 })
-

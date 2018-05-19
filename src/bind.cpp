@@ -11,6 +11,7 @@
 #include <dplyr/GroupedDataFrame.h>
 #include <dplyr/Collecter.h>
 #include <dplyr/bad.h>
+#include <dplyr/tbl_cpp.h>
 
 using namespace Rcpp;
 using namespace dplyr;
@@ -23,10 +24,10 @@ int df_rows_length(SEXP df) {
   SEXP attrs = ATTRIB(df);
   while (attrs != R_NilValue) {
     if (TAG(attrs) == R_RowNamesSymbol) {
-      n = CAR(attrs) ;
-      break ;
+      n = CAR(attrs);
+      break;
     }
-    attrs = CDR(attrs) ;
+    attrs = CDR(attrs);
   }
 
   if (n == R_NilValue)
@@ -106,9 +107,11 @@ static
 void cbind_vector_check(SEXP x, R_xlen_t nrows, SEXP contr, int arg) {
   if (is_atomic(x) && !has_name_at(contr, arg))
     bad_pos_arg(arg + 1, "must have names");
-  if (rows_length(x, false) != nrows) {
+
+  const R_xlen_t actual_nrows = rows_length(x, false);
+  if (actual_nrows != nrows) {
     bad_pos_arg(arg + 1, "must be length {expected_size}, not {actual_size}",
-                _["expected_size"] = rows_length(x, true), _["actual_size"] = nrows);
+                _["expected_size"] = nrows, _["actual_size"] = actual_nrows);
   }
 }
 
@@ -172,6 +175,9 @@ SEXP flatten_bindable(SEXP x) {
 
 List rbind__impl(List dots, const SymbolString& id) {
   int ndata = dots.size();
+
+  LOG_VERBOSE << "binding at most " << ndata << " chunks";
+
   R_xlen_t n = 0;
   std::vector<SEXP> chunks;
   std::vector<R_xlen_t> df_nrows;
@@ -196,6 +202,9 @@ List rbind__impl(List dots, const SymbolString& id) {
   }
   ndata = chunks.size();
   pointer_vector<Collecter> columns;
+
+
+  LOG_VERBOSE << "binding " << ndata << " chunks";
 
   SymbolVector names;
 
@@ -271,6 +280,9 @@ List rbind__impl(List dots, const SymbolString& id) {
   }
 
   int nc = columns.size();
+
+  LOG_VERBOSE << "result has " << nc << " columns";
+
   int has_id = id.is_empty() ? 0 : 1;
 
   List out(no_init(nc + has_id));
@@ -295,6 +307,8 @@ List rbind__impl(List dots, const SymbolString& id) {
   out.attr("names") = out_names;
   set_rownames(out, n);
 
+  LOG_VERBOSE << "result has " << n << " rows";
+
   // infer the classes and extra info (groups, etc ) from the first (#1692)
   if (ndata) {
     SEXP first = chunks[0];
@@ -316,6 +330,8 @@ List rbind__impl(List dots, const SymbolString& id) {
 
 // [[Rcpp::export]]
 List bind_rows_(List dots, SEXP id) {
+  LOG_VERBOSE;
+
   if (Rf_isNull(id))
     return rbind__impl(dots, SymbolString());
   else
@@ -366,7 +382,8 @@ List cbind_all(List dots) {
       continue;
 
     if (TYPEOF(current) == VECSXP) {
-      CharacterVector current_names = vec_names(current);
+      CharacterVector current_names = vec_names_or_empty(current);
+
       int nc = Rf_length(current);
       for (int j = 0; j < nc; j++, k++) {
         out[k] = shared_SEXP(VECTOR_ELT(current, j));
@@ -397,7 +414,6 @@ List cbind_all(List dots) {
 // [[Rcpp::export]]
 SEXP combine_all(List data) {
   int nv = data.size();
-  if (nv == 0) stop("combine_all needs at least one vector");
 
   // get the size of the output
   int n = 0;
@@ -410,7 +426,7 @@ SEXP combine_all(List data) {
   for (; i < nv; i++) {
     if (!Rf_isNull(data[i])) break;
   }
-  if (i == nv) stop("no data to combine, all elements are NULL");
+  if (i == nv) return LogicalVector();
 
   // collect
   boost::scoped_ptr<Collecter> coll(collecter(data[i], n));

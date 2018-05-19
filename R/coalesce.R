@@ -7,7 +7,7 @@
 #' @param ... Vectors. All inputs should either be length 1, or the
 #'   same length as the first argument.
 #'
-#'   These dots are evaluated with [explicit splicing][rlang::dots_list].
+#'   These dots support [tidy dots][rlang::tidy-dots] features.
 #' @return A vector the same length as the first `...` argument with
 #'   missing values replaced by the first non-missing value.
 #' @seealso [na_if()] to replace specified values with a `NA`.
@@ -27,13 +27,13 @@
 #'   c(1, 2, NA, NA, 5),
 #'   c(NA, NA, 3, 4, 5)
 #' )
-#' coalesce(!!! vecs)
+#' coalesce(!!!vecs)
 coalesce <- function(...) {
   if (missing(..1)) {
     abort("At least one argument must be supplied")
   }
 
-  values <- dots_list(...)
+  values <- list2(...)
   x <- values[[1]]
   values <- values[-1]
 

@@ -151,16 +151,16 @@ a &lt;-<span class="st"> </span><span class="dv">10</span>
 <span class="co">#&gt; # A tibble: 3 x 2</span>
 <span class="co">#&gt;       x     y</span>
 <span class="co">#&gt;   &lt;int&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1     1  11.0</span>
-<span class="co">#&gt; 2     2  12.0</span>
-<span class="co">#&gt; 3     3  13.0</span></code></pre></div>
+<span class="co">#&gt; 1     1    11</span>
+<span class="co">#&gt; 2     2    12</span>
+<span class="co">#&gt; 3     3    13</span></code></pre></div>
 <p>We can fix that ambiguity by being more explicit and using the <code>.data</code> pronoun. This will throw an informative error if the variable doesn’t exist:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">mutate_y &lt;-<span class="st"> </span><span class="cf">function</span>(df) {
   <span class="kw">mutate</span>(df, <span class="dt">y =</span> .data<span class="op">$</span>a <span class="op">+</span><span class="st"> </span>.data<span class="op">$</span>x)
 }
 
 <span class="kw">mutate_y</span>(df1)
-<span class="co">#&gt; Error in mutate_impl(.data, dots): Evaluation error: Column `a`: not found in data.</span></code></pre></div>
+<span class="co">#&gt; Error in mutate_impl(.data, dots): Evaluation error: Column `a` not found in `.data`.</span></code></pre></div>
 <p>If this function is in a package, using <code>.data</code> also prevents <code>R CMD check</code> from giving a NOTE about undefined global variables (provided that you’ve also imported <code>rlang::.data</code> with <code>@importFrom rlang .data</code>).</p>
 </div>
 <div id="different-expressions" class="section level3">
@@ -169,7 +169,7 @@ a &lt;-<span class="st"> </span><span class="dv">10</span>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">df &lt;-<span class="st"> </span><span class="kw">tibble</span>(
   <span class="dt">g1 =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>),
   <span class="dt">g2 =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">1</span>),
-  <span class="dt">a =</span> <span class="kw">sample</span>(<span class="dv">5</span>), 
+  <span class="dt">a =</span> <span class="kw">sample</span>(<span class="dv">5</span>),
   <span class="dt">b =</span> <span class="kw">sample</span>(<span class="dv">5</span>)
 )
 
@@ -179,8 +179,8 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 2 x 2</span>
 <span class="co">#&gt;      g1     a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  1.00  2.50</span>
-<span class="co">#&gt; 2  2.00  3.33</span>
+<span class="co">#&gt; 1     1  2.5 </span>
+<span class="co">#&gt; 2     2  3.33</span>
 
 df <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(g2) <span class="op">%&gt;%</span>
@@ -188,8 +188,8 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 2 x 2</span>
 <span class="co">#&gt;      g2     a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  1.00  2.00</span>
-<span class="co">#&gt; 2  2.00  4.50</span></code></pre></div>
+<span class="co">#&gt; 1     1   2  </span>
+<span class="co">#&gt; 2     2   4.5</span></code></pre></div>
 <p>You might hope that this will work:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_summarise &lt;-<span class="st"> </span><span class="cf">function</span>(df, group_var) {
   df <span class="op">%&gt;%</span>
@@ -209,14 +209,17 @@ df <span class="op">%&gt;%</span>
 <p>How do we quote the input? We can’t use <code>&quot;&quot;</code> to quote the input, because that gives us a string. Instead we need a function that captures the expression and its environment (we’ll come back to why this is important later on). There are two possible options we could use in base R, the function <code>quote()</code> and the operator <code>~</code>. Neither of these work quite the way we want, so we need a new function: <code>quo()</code>.</p>
 <p><code>quo()</code> works like <code>&quot;</code>: it quotes its input rather than evaluating it.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(g1)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~g1</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^g1</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(a <span class="op">+</span><span class="st"> </span>b <span class="op">+</span><span class="st"> </span>c)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~a + b + c</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^a + b + c</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(<span class="st">&quot;a&quot;</span>)
-<span class="co">#&gt; &lt;quosure: empty&gt;</span>
-<span class="co">#&gt; ~&quot;a&quot;</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^&quot;a&quot;</span>
+<span class="co">#&gt;   env:  empty</span></code></pre></div>
 <p><code>quo()</code> returns a <strong>quosure</strong>, which is a special type of formula. You’ll learn more about quosures later on.</p>
 <p>Now that we’ve captured this expression, how do we use it with <code>group_by()</code>? It doesn’t work if we just shove it into our naive approach:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">my_summarise</span>(df, <span class="kw">quo</span>(g1))
@@ -225,7 +228,7 @@ df <span class="op">%&gt;%</span>
 <p>In dplyr (and in tidyeval in general) you use <code>!!</code> to say that you want to unquote an input so that it’s evaluated, not quoted. This gives us a function that actually does what we want.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_summarise &lt;-<span class="st"> </span><span class="cf">function</span>(df, group_var) {
   df <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span>group_var) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>group_var) <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">summarise</span>(<span class="dt">a =</span> <span class="kw">mean</span>(a))
 }
 
@@ -233,8 +236,8 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 2 x 2</span>
 <span class="co">#&gt;      g1     a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  1.00  2.50</span>
-<span class="co">#&gt; 2  2.00  3.33</span></code></pre></div>
+<span class="co">#&gt; 1     1  2.5 </span>
+<span class="co">#&gt; 2     2  3.33</span></code></pre></div>
 <p>Huzzah!</p>
 <p>There’s just one step left: we want to call this function like we call <code>group_by()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">my_summarise</span>(df, g1)</code></pre></div>
@@ -244,13 +247,14 @@ df <span class="op">%&gt;%</span>
   <span class="kw">print</span>(quo_group_var)
 
   df <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span>quo_group_var) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>quo_group_var) <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">summarise</span>(<span class="dt">a =</span> <span class="kw">mean</span>(a))
 }
 
 <span class="kw">my_summarise</span>(df, g1)
-<span class="co">#&gt; &lt;quosure: frame&gt;</span>
-<span class="co">#&gt; ~group_var</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^group_var</span>
+<span class="co">#&gt;   env:  0x55afebc1f258</span>
 <span class="co">#&gt; Error in grouped_df_impl(data, unname(vars), drop): Column `group_var` is unknown</span></code></pre></div>
 <p>I’ve added a <code>print()</code> call to make it obvious what’s going wrong here: <code>quo(group_var)</code> always returns <code>~group_var</code>. It is being too literal! We want it to substitute the value that the user supplied, i.e. to return <code>~g1</code>.</p>
 <p>By analogy to strings, we don’t want <code>&quot;&quot;</code>, instead we want some function that turns an argument into a string. That’s the job of <code>enquo()</code>. <code>enquo()</code> uses some dark magic to look at the argument, see what the user typed, and return that value as a quosure. (Technically, this works because function arguments are evaluated lazily, using a special data structure called a <strong>promise</strong>.)</p>
@@ -259,18 +263,19 @@ df <span class="op">%&gt;%</span>
   <span class="kw">print</span>(group_var)
 
   df <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span>group_var) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!</span><span class="st"> </span>group_var) <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">summarise</span>(<span class="dt">a =</span> <span class="kw">mean</span>(a))
 }
 
 <span class="kw">my_summarise</span>(df, g1)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~g1</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^g1</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="co">#&gt; # A tibble: 2 x 2</span>
 <span class="co">#&gt;      g1     a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  1.00  2.50</span>
-<span class="co">#&gt; 2  2.00  3.33</span></code></pre></div>
+<span class="co">#&gt; 1     1  2.5 </span>
+<span class="co">#&gt; 2     2  3.33</span></code></pre></div>
 <p>(If you’re familiar with <code>quote()</code> and <code>substitute()</code> in base R, <code>quo()</code> is equivalent to <code>quote()</code> and <code>enquo()</code> is equivalent to <code>substitute()</code>.)</p>
 <p>You might wonder how to extend this to handle multiple grouping variables: we’ll come back to that a little later.</p>
 </div>
@@ -281,34 +286,35 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 1 x 3</span>
 <span class="co">#&gt;    mean   sum     n</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  3.00    15     5</span>
+<span class="co">#&gt; 1     3    15     5</span>
 <span class="kw">summarise</span>(df, <span class="dt">mean =</span> <span class="kw">mean</span>(a <span class="op">*</span><span class="st"> </span>b), <span class="dt">sum =</span> <span class="kw">sum</span>(a <span class="op">*</span><span class="st"> </span>b), <span class="dt">n =</span> <span class="kw">n</span>())
 <span class="co">#&gt; # A tibble: 1 x 3</span>
 <span class="co">#&gt;    mean   sum     n</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  9.60    48     5</span></code></pre></div>
+<span class="co">#&gt; 1   9.6    48     5</span></code></pre></div>
 <p>To turn this into a function, we start by testing the basic approach interactively: we quote the variable with <code>quo()</code>, then unquoting it in the dplyr call with <code>!!</code>. Notice that we can unquote anywhere inside a complicated expression.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_var &lt;-<span class="st"> </span><span class="kw">quo</span>(a)
-<span class="kw">summarise</span>(df, <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span>my_var), <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span>my_var), <span class="dt">n =</span> <span class="kw">n</span>())
+<span class="kw">summarise</span>(df, <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>my_var), <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span><span class="st"> </span>my_var), <span class="dt">n =</span> <span class="kw">n</span>())
 <span class="co">#&gt; # A tibble: 1 x 3</span>
 <span class="co">#&gt;    mean   sum     n</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  3.00    15     5</span></code></pre></div>
+<span class="co">#&gt; 1     3    15     5</span></code></pre></div>
 <p>You can also wrap <code>quo()</code> around the dplyr call to see what will happen from dplyr’s perspective. This is a very useful tool for debugging.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(<span class="kw">summarise</span>(df, 
-  <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span>my_var),
-  <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span>my_var),
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(<span class="kw">summarise</span>(df,
+  <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>my_var),
+  <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span><span class="st"> </span>my_var),
   <span class="dt">n =</span> <span class="kw">n</span>()
 ))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~summarise(df, mean = mean(~a), sum = sum(~a), n = n())</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^summarise(df, mean = mean(^a), sum = sum(^a), n = n())</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Now we can turn our code into a function (remembering to replace <code>quo()</code> with <code>enquo()</code>), and check that it works:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_summarise2 &lt;-<span class="st"> </span><span class="cf">function</span>(df, expr) {
   expr &lt;-<span class="st"> </span><span class="kw">enquo</span>(expr)
-  
-  <span class="kw">summarise</span>(df, 
-    <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span>expr),
-    <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span>expr),
+
+  <span class="kw">summarise</span>(df,
+    <span class="dt">mean =</span> <span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>expr),
+    <span class="dt">sum =</span> <span class="kw">sum</span>(<span class="op">!!</span><span class="st"> </span>expr),
     <span class="dt">n =</span> <span class="kw">n</span>()
   )
 }
@@ -316,12 +322,12 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 1 x 3</span>
 <span class="co">#&gt;    mean   sum     n</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  3.00    15     5</span>
+<span class="co">#&gt; 1     3    15     5</span>
 <span class="kw">my_summarise2</span>(df, a <span class="op">*</span><span class="st"> </span>b)
 <span class="co">#&gt; # A tibble: 1 x 3</span>
 <span class="co">#&gt;    mean   sum     n</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  9.60    48     5</span></code></pre></div>
+<span class="co">#&gt; 1   9.6    48     5</span></code></pre></div>
 </div>
 <div id="different-input-and-output-variable" class="section level3">
 <h3>Different input and output variable</h3>
@@ -330,33 +336,33 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 5 x 6</span>
 <span class="co">#&gt;      g1    g2     a     b mean_a sum_a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt;  &lt;dbl&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  1.00  1.00     1     3   3.00    15</span>
-<span class="co">#&gt; 2  1.00  2.00     4     2   3.00    15</span>
-<span class="co">#&gt; 3  2.00  1.00     2     1   3.00    15</span>
-<span class="co">#&gt; 4  2.00  2.00     5     4   3.00    15</span>
+<span class="co">#&gt; 1     1     1     1     3      3    15</span>
+<span class="co">#&gt; 2     1     2     4     2      3    15</span>
+<span class="co">#&gt; 3     2     1     2     1      3    15</span>
+<span class="co">#&gt; 4     2     2     5     4      3    15</span>
 <span class="co">#&gt; # ... with 1 more row</span>
 <span class="kw">mutate</span>(df, <span class="dt">mean_b =</span> <span class="kw">mean</span>(b), <span class="dt">sum_b =</span> <span class="kw">sum</span>(b))
 <span class="co">#&gt; # A tibble: 5 x 6</span>
 <span class="co">#&gt;      g1    g2     a     b mean_b sum_b</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt;  &lt;dbl&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  1.00  1.00     1     3   3.00    15</span>
-<span class="co">#&gt; 2  1.00  2.00     4     2   3.00    15</span>
-<span class="co">#&gt; 3  2.00  1.00     2     1   3.00    15</span>
-<span class="co">#&gt; 4  2.00  2.00     5     4   3.00    15</span>
+<span class="co">#&gt; 1     1     1     1     3      3    15</span>
+<span class="co">#&gt; 2     1     2     4     2      3    15</span>
+<span class="co">#&gt; 3     2     1     2     1      3    15</span>
+<span class="co">#&gt; 4     2     2     5     4      3    15</span>
 <span class="co">#&gt; # ... with 1 more row</span></code></pre></div>
 <p>This code is similar to the previous example, but there are two new wrinkles:</p>
 <ul>
 <li><p>We create the new names by pasting together strings, so we need <code>quo_name()</code> to convert the input expression to a string.</p></li>
-<li><p><code>!!mean_name = mean(!!expr)</code> isn’t valid R code, so we need to use the <code>:=</code> helper provided by rlang.</p></li>
+<li><p><code>!! mean_name = mean(!! expr)</code> isn’t valid R code, so we need to use the <code>:=</code> helper provided by rlang.</p></li>
 </ul>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_mutate &lt;-<span class="st"> </span><span class="cf">function</span>(df, expr) {
   expr &lt;-<span class="st"> </span><span class="kw">enquo</span>(expr)
   mean_name &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;mean_&quot;</span>, <span class="kw">quo_name</span>(expr))
   sum_name &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;sum_&quot;</span>, <span class="kw">quo_name</span>(expr))
-  
-  <span class="kw">mutate</span>(df, 
-    <span class="op">!!</span>mean_name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(<span class="op">!!</span>expr), 
-    <span class="op">!!</span>sum_name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">sum</span>(<span class="op">!!</span>expr)
+
+  <span class="kw">mutate</span>(df,
+    <span class="op">!!</span><span class="st"> </span>mean_name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(<span class="op">!!</span><span class="st"> </span>expr),
+    <span class="op">!!</span><span class="st"> </span>sum_name <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">sum</span>(<span class="op">!!</span><span class="st"> </span>expr)
   )
 }
 
@@ -364,10 +370,10 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # A tibble: 5 x 6</span>
 <span class="co">#&gt;      g1    g2     a     b mean_a sum_a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;int&gt;  &lt;dbl&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  1.00  1.00     1     3   3.00    15</span>
-<span class="co">#&gt; 2  1.00  2.00     4     2   3.00    15</span>
-<span class="co">#&gt; 3  2.00  1.00     2     1   3.00    15</span>
-<span class="co">#&gt; 4  2.00  2.00     5     4   3.00    15</span>
+<span class="co">#&gt; 1     1     1     1     3      3    15</span>
+<span class="co">#&gt; 2     1     2     4     2      3    15</span>
+<span class="co">#&gt; 3     2     1     2     1      3    15</span>
+<span class="co">#&gt; 4     2     2     5     4      3    15</span>
 <span class="co">#&gt; # ... with 1 more row</span></code></pre></div>
 </div>
 <div id="capturing-multiple-variables" class="section level3">
@@ -382,7 +388,7 @@ df <span class="op">%&gt;%</span>
   group_var &lt;-<span class="st"> </span><span class="kw">quos</span>(...)
 
   df <span class="op">%&gt;%</span>
-<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!!</span>group_var) <span class="op">%&gt;%</span>
+<span class="st">    </span><span class="kw">group_by</span>(<span class="op">!!!</span><span class="st"> </span>group_var) <span class="op">%&gt;%</span>
 <span class="st">    </span><span class="kw">summarise</span>(<span class="dt">a =</span> <span class="kw">mean</span>(a))
 }
 
@@ -391,20 +397,22 @@ df <span class="op">%&gt;%</span>
 <span class="co">#&gt; # Groups:   g1 [?]</span>
 <span class="co">#&gt;      g1    g2     a</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  1.00  1.00  1.00</span>
-<span class="co">#&gt; 2  1.00  2.00  4.00</span>
-<span class="co">#&gt; 3  2.00  1.00  2.50</span>
-<span class="co">#&gt; 4  2.00  2.00  5.00</span></code></pre></div>
+<span class="co">#&gt; 1     1     1   1  </span>
+<span class="co">#&gt; 2     1     2   4  </span>
+<span class="co">#&gt; 3     2     1   2.5</span>
+<span class="co">#&gt; 4     2     2   5</span></code></pre></div>
 <p><code>!!!</code> takes a list of elements and splices them into to the current call. Look at the bottom of the <code>!!!</code> and think <code>...</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">na.rm =</span> <span class="ot">TRUE</span>, <span class="dt">trim =</span> <span class="fl">0.25</span>)
 <span class="kw">quo</span>(<span class="kw">mean</span>(x, <span class="op">!!!</span><span class="st"> </span>args))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~mean(x, na.rm = TRUE, trim = 0.25)</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^mean(x, na.rm = TRUE, trim = 0.25)</span>
+<span class="co">#&gt;   env:  global</span>
 
 args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="kw">quo</span>(x), <span class="dt">na.rm =</span> <span class="ot">TRUE</span>, <span class="dt">trim =</span> <span class="fl">0.25</span>)
 <span class="kw">quo</span>(<span class="kw">mean</span>(<span class="op">!!!</span><span class="st"> </span>args))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~mean(~x, na.rm = TRUE, trim = 0.25)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^mean(^x, na.rm = TRUE, trim = 0.25)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Now that you’ve learned the basics of tidyeval through some practical examples, we’ll dive into the theory. This will help you generalise what you’ve learned here to new situations.</p>
 </div>
 </div>
@@ -431,18 +439,20 @@ x1 &lt;-<span class="st"> </span><span class="kw">f</span>(<span class="dv">10</
 x2 &lt;-<span class="st"> </span><span class="kw">f</span>(<span class="dv">100</span>)</code></pre></div>
 <p>It might look like the expressions are the same if you print them out.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x1
-<span class="co">#&gt; &lt;quosure: local&gt;</span>
-<span class="co">#&gt; ~x</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^x</span>
+<span class="co">#&gt;   env:  0x55afed2a7be0</span>
 x2
-<span class="co">#&gt; &lt;quosure: local&gt;</span>
-<span class="co">#&gt; ~x</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^x</span>
+<span class="co">#&gt;   env:  0x55afed311120</span></code></pre></div>
 <p>But if you inspect the environments using <code>rlang::get_env()</code> — they’re different.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rlang)
 
 <span class="kw">get_env</span>(x1)
-<span class="co">#&gt; &lt;environment: 0x557ddf5b1ab0&gt;</span>
+<span class="co">#&gt; &lt;environment: 0x55afed2a7be0&gt;</span>
 <span class="kw">get_env</span>(x2)
-<span class="co">#&gt; &lt;environment: 0x557ddfa6e6c8&gt;</span></code></pre></div>
+<span class="co">#&gt; &lt;environment: 0x55afed311120&gt;</span></code></pre></div>
 <p>Further, when we evaluate those formulas using <code>rlang::eval_tidy()</code>, we see that they yield different values:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">eval_tidy</span>(x1)
 <span class="co">#&gt; [1] 10</span>
@@ -487,21 +497,25 @@ var
 <p>The first important operation is the basic unquote, which comes in a functional form, <code>UQ()</code>, and as syntactic-sugar, <code>!!</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Here we capture `letters[1:5]` as an expression:</span>
 <span class="kw">quo</span>(<span class="kw">toupper</span>(letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~toupper(letters[1:5])</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^toupper(letters[1:5])</span>
+<span class="co">#&gt;   env:  global</span>
 
 <span class="co"># Here we capture the value of `letters[1:5]`</span>
-<span class="kw">quo</span>(<span class="kw">toupper</span>(<span class="op">!!</span>letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~toupper(c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;))</span>
+<span class="kw">quo</span>(<span class="kw">toupper</span>(<span class="op">!!</span><span class="st"> </span>letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]))
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^toupper(&lt;chr: &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;&gt;)</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(<span class="kw">toupper</span>(<span class="kw">UQ</span>(letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>])))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~toupper(c(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;))</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^toupper(&lt;chr: &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;&gt;)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>It is also possible to unquote other quoted expressions. Unquoting such symbolic objects provides a powerful way of manipulating expressions.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">var1 &lt;-<span class="st"> </span><span class="kw">quo</span>(letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>])
-<span class="kw">quo</span>(<span class="kw">toupper</span>(<span class="op">!!</span>var1))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~toupper(~letters[1:5])</span></code></pre></div>
+<span class="kw">quo</span>(<span class="kw">toupper</span>(<span class="op">!!</span><span class="st"> </span>var1))
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^toupper(^letters[1:5])</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>You can safely unquote quosures because they track their environments, and tidyeval functions know how to evaluate them. This allows any depth of quoting and unquoting.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_mutate &lt;-<span class="st"> </span><span class="cf">function</span>(x) {
   mtcars <span class="op">%&gt;%</span>
@@ -515,66 +529,71 @@ expr1 &lt;-<span class="st"> </span><span class="kw">f</span>(<span class="dv">1
 expr2 &lt;-<span class="st"> </span><span class="kw">f</span>(<span class="dv">10</span>)
 
 <span class="kw">my_mutate</span>(expr1)
-<span class="co">#&gt; # A tibble: 4 x 2</span>
-<span class="co">#&gt;     cyl  cyl2</span>
-<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  6.00   106</span>
-<span class="co">#&gt; 2  6.00   106</span>
-<span class="co">#&gt; 3  4.00   104</span>
-<span class="co">#&gt; 4  6.00   106</span>
+<span class="co">#&gt;   cyl cyl2</span>
+<span class="co">#&gt; 1   6  106</span>
+<span class="co">#&gt; 2   6  106</span>
+<span class="co">#&gt; 3   4  104</span>
+<span class="co">#&gt; 4   6  106</span>
 <span class="kw">my_mutate</span>(expr2)
-<span class="co">#&gt; # A tibble: 4 x 2</span>
-<span class="co">#&gt;     cyl  cyl2</span>
-<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
-<span class="co">#&gt; 1  6.00  16.0</span>
-<span class="co">#&gt; 2  6.00  16.0</span>
-<span class="co">#&gt; 3  4.00  14.0</span>
-<span class="co">#&gt; 4  6.00  16.0</span></code></pre></div>
+<span class="co">#&gt;   cyl cyl2</span>
+<span class="co">#&gt; 1   6   16</span>
+<span class="co">#&gt; 2   6   16</span>
+<span class="co">#&gt; 3   4   14</span>
+<span class="co">#&gt; 4   6   16</span></code></pre></div>
 <p>The functional form is useful in cases where the precedence of <code>!</code> causes problems:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">my_fun &lt;-<span class="st"> </span><span class="kw">quo</span>(fun)
-<span class="kw">quo</span>(<span class="op">!!</span><span class="kw">my_fun</span>(x, y, z))
+<span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span><span class="kw">my_fun</span>(x, y, z))
 <span class="co">#&gt; Error in my_fun(x, y, z): could not find function &quot;my_fun&quot;</span>
 <span class="kw">quo</span>(<span class="kw">UQ</span>(my_fun)(x, y, z))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~(~fun)(x, y, z)</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^^fun(x, y, z)</span>
+<span class="co">#&gt;   env:  global</span>
 
 my_var &lt;-<span class="st"> </span><span class="kw">quo</span>(x)
-<span class="kw">quo</span>(<span class="kw">filter</span>(df, <span class="op">!!</span>my_var <span class="op">==</span><span class="st"> </span><span class="dv">1</span>))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~filter(df, FALSE)</span>
+<span class="kw">quo</span>(<span class="kw">filter</span>(df, <span class="op">!!</span><span class="st"> </span>my_var <span class="op">==</span><span class="st"> </span><span class="dv">1</span>))
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^filter(df, (^x) == 1)</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(<span class="kw">filter</span>(df, <span class="kw">UQ</span>(my_var) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~filter(df, (~x) == 1)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^filter(df, (^x) == 1)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>You’ll note above that <code>UQ()</code> yields a quosure containing a formula. That ensures that when the quosure is evaluated, it’ll be looked up in the right environment. In certain code-generation scenarios you just want to use expression and ignore the environment. That’s the job of <code>UQE()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(<span class="kw">UQE</span>(my_fun)(x, y, z))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~fun(x, y, z)</span>
+<span class="co">#&gt; Warning: `UQE()` is deprecated. Please use `!! get_expr(x)`</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^fun(x, y, z)</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(<span class="kw">filter</span>(df, <span class="kw">UQE</span>(my_var) <span class="op">==</span><span class="st"> </span><span class="dv">1</span>))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~filter(df, x == 1)</span></code></pre></div>
+<span class="co">#&gt; Warning: `UQE()` is deprecated. Please use `!! get_expr(x)`</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^filter(df, x == 1)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p><code>UQE()</code> is for expert use only as you’ll have to carefully analyse the environments to ensure that the generated code is correct.</p>
 </div>
 <div id="unquote-splicing" class="section level3">
 <h3>Unquote-splicing</h3>
 <p>The second unquote operation is unquote-splicing. Its functional form is <code>UQS()</code> and the syntactic shortcut is <code>!!!</code>. It takes a vector and inserts each element of the vector in the surrounding function call:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(<span class="kw">list</span>(<span class="op">!!!</span><span class="st"> </span>letters[<span class="dv">1</span><span class="op">:</span><span class="dv">5</span>]))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~list(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^list(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;, &quot;e&quot;)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>A very useful feature of unquote-splicing is that the vector names become argument names:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">foo =</span> 1L, <span class="dt">bar =</span> <span class="kw">quo</span>(baz))
 <span class="kw">quo</span>(<span class="kw">list</span>(<span class="op">!!!</span><span class="st"> </span>x))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~list(foo = 1L, bar = ~baz)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^list(foo = 1L, bar = ^baz)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>This makes it easy to program with dplyr verbs that take named dots:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">quo</span>(<span class="kw">mean</span>(cyl)), <span class="dt">count =</span> <span class="kw">quo</span>(<span class="kw">n</span>())) 
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">args &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">mean =</span> <span class="kw">quo</span>(<span class="kw">mean</span>(cyl)), <span class="dt">count =</span> <span class="kw">quo</span>(<span class="kw">n</span>()))
 mtcars <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(am) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">summarise</span>(<span class="op">!!!</span><span class="st"> </span>args)
 <span class="co">#&gt; # A tibble: 2 x 3</span>
 <span class="co">#&gt;      am  mean count</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  0     6.95    19</span>
-<span class="co">#&gt; 2  1.00  5.08    13</span></code></pre></div>
+<span class="co">#&gt; 1     0  6.95    19</span>
+<span class="co">#&gt; 2     1  5.08    13</span></code></pre></div>
 </div>
 <div id="setting-variable-names" class="section level3">
 <h3>Setting variable names</h3>
@@ -586,14 +605,14 @@ count_nm &lt;-<span class="st"> &quot;count&quot;</span>
 mtcars <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">group_by</span>(am) <span class="op">%&gt;%</span>
 <span class="st">  </span><span class="kw">summarise</span>(
-    <span class="op">!!</span>mean_nm <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(cyl),
-    <span class="op">!!</span>count_nm <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">n</span>()
+    <span class="op">!!</span><span class="st"> </span>mean_nm <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">mean</span>(cyl),
+    <span class="op">!!</span><span class="st"> </span>count_nm <span class="op">:</span><span class="er">=</span><span class="st"> </span><span class="kw">n</span>()
   )
 <span class="co">#&gt; # A tibble: 2 x 3</span>
 <span class="co">#&gt;      am  mean count</span>
 <span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;</span>
-<span class="co">#&gt; 1  0     6.95    19</span>
-<span class="co">#&gt; 2  1.00  5.08    13</span></code></pre></div>
+<span class="co">#&gt; 1     0  6.95    19</span>
+<span class="co">#&gt; 2     1  5.08    13</span></code></pre></div>
 </div>
 </div>
 

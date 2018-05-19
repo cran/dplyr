@@ -82,7 +82,6 @@ test_that("filter handles simple symbols", {
   res <- g(gdf)
   expect_equal(res$x, 2L)
   expect_equal(res$test, TRUE)
-
 })
 
 test_that("filter handlers scalar results", {
@@ -136,7 +135,8 @@ test_that("filter handles $ correctly (#278)", {
   d1 <- tbl_df(data.frame(
     num1 = as.character(sample(1:10, 1000, T)),
     var1 = runif(1000),
-    stringsAsFactors = FALSE))
+    stringsAsFactors = FALSE
+  ))
   d2 <- data.frame(num1 = as.character(1:3), stringsAsFactors = FALSE)
 
   res1 <- d1 %>% filter(num1 %in% c("1", "2", "3"))
@@ -153,25 +153,26 @@ test_that("$ does not end call traversing. #502", {
   analysis_opts <- list(min_outcome = 0.25)
 
   # Generate some dummy data
-  d <- expand.grid(Subject = 1:3, TrialNo = 1:2, Time = 1:3) %>% tbl_df %>%
+  d <- expand.grid(Subject = 1:3, TrialNo = 1:2, Time = 1:3) %>%
+    tbl_df() %>%
     arrange(Subject, TrialNo, Time) %>%
     mutate(Outcome = (1:18 %% c(5, 7, 11)) / 10)
 
   # Do some aggregation
-  trial_outcomes <- d %>% group_by(Subject, TrialNo) %>%
+  trial_outcomes <- d %>%
+    group_by(Subject, TrialNo) %>%
     summarise(MeanOutcome = mean(Outcome))
 
-  left  <- filter(trial_outcomes, MeanOutcome < analysis_opts$min_outcome)
+  left <- filter(trial_outcomes, MeanOutcome < analysis_opts$min_outcome)
   right <- filter(trial_outcomes, analysis_opts$min_outcome > MeanOutcome)
 
   expect_equal(left, right)
-
 })
 
 test_that("GroupedDataFrame checks consistency of data (#606)", {
   df1 <- data_frame(
-   g = rep(1:2, each = 5),
-   x = 1:10
+    g = rep(1:2, each = 5),
+    x = 1:10
   ) %>% group_by(g)
   attr(df1, "group_sizes") <- c(2, 2)
 
@@ -210,7 +211,6 @@ test_that("%in% works as expected (#126)", {
 
   res <- df %>% group_by(g) %>% filter(a %in% letters)
   expect_equal(nrow(res), 2L)
-
 })
 
 test_that("row_number does not segfault with example from #781", {
@@ -218,6 +218,13 @@ test_that("row_number does not segfault with example from #781", {
   b <- "a"
   res <- z %>% filter(row_number(b) == 2)
   expect_equal(nrow(res), 0L)
+})
+
+test_that("row_number works on 0 length columns (#3454)", {
+  expect_identical(
+    mutate(tibble(), a = row_number()),
+    tibble(a = integer())
+  )
 })
 
 test_that("filter does not alter expression (#971)", {
@@ -245,8 +252,8 @@ test_that("filter(.,TRUE,TRUE) works (#1210)", {
 
 test_that("filter, slice and arrange preserves attributes (#1064)", {
   df <- structure(
-      data.frame(x = 1:10, g1 = rep(1:2, each = 5), g2 = rep(1:5, 2)),
-      meta = "this is important"
+    data.frame(x = 1:10, g1 = rep(1:2, each = 5), g2 = rep(1:5, 2)),
+    meta = "this is important"
   )
   res <- filter(df, x < 5) %>% attr("meta")
   expect_equal(res, "this is important")
@@ -268,7 +275,6 @@ test_that("filter, slice and arrange preserves attributes (#1064)", {
 
   res <- df %>% group_by(g1, g2) %>% summarise(n()) %>% attr("meta")
   expect_equal(res, "this is important")
-
 })
 
 test_that("filter works with rowwise data (#1099)", {
@@ -296,7 +302,8 @@ test_that("filter(FALSE) drops indices", {
 test_that("filter handles S4 objects (#1366)", {
   env <- environment()
   Numbers <- suppressWarnings(setClass(
-    "Numbers", slots = c(foo = "numeric"), contains = "integer", where = env
+    "Numbers",
+    slots = c(foo = "numeric"), contains = "integer", where = env
   ))
   on.exit(removeClass("Numbers", where = env))
 
@@ -325,18 +332,10 @@ test_that("hybrid lag and default value for string columns work (#1403)", {
 
 # .data and .env tests now in test-hybrid-traverse.R
 
-test_that("filter fails gracefully on raw columns (#1803)", {
+test_that("filter handles raw vectors (#1803)", {
   df <- data_frame(a = 1:3, b = as.raw(1:3))
-  expect_error(
-    filter(df, a == 1),
-    "Column `b` is of unsupported type raw",
-    fixed = TRUE
-  )
-  expect_error(
-    filter(df, b == 1),
-    "Column `b` is of unsupported type raw",
-    fixed = TRUE
-  )
+  expect_identical(filter(df, a == 1), data_frame(a = 1L, b = as.raw(1)))
+  expect_identical(filter(df, b == 1), data_frame(a = 1L, b = as.raw(1)))
 })
 
 test_that("`vars` attribute is not added if empty (#2772)", {

@@ -9,6 +9,45 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
+void check_valid_names(const CharacterVector& names, bool warn_only = false) {
+  IntegerVector which_na;
+  for (int i = 0; i < names.size(); ++i) {
+    if (String(names[i]) == R_NaString) {
+      which_na.push_back(i + 1);
+    }
+  }
+
+  if (which_na.size() > 0) {
+    String msg = msg_bad_cols(SymbolVector(static_cast<SEXP>(which_na)), "cannot have NA as name");
+    if (warn_only)
+      warning(msg.get_cstring());
+    else
+      stop(msg.get_cstring());
+  }
+
+  LogicalVector dup = duplicated(names);
+  if (any(dup).is_true()) {
+    String msg = msg_bad_cols(SymbolVector(static_cast<SEXP>(names[dup])), "must have a unique name");
+    if (warn_only)
+      warning(msg.get_cstring());
+    else
+      stop(msg.get_cstring());
+  }
+}
+
+// Need forwarder to avoid compilation warning for default argument
+void check_valid_colnames(const DataFrame& df, bool warn_only) {
+  check_valid_names(vec_names_or_empty(df), warn_only);
+}
+
+void check_range_one_based(int x, int max) {
+  // Also covers NA
+  if (x <= 0 || x > max) {
+    stop("Index out of range");
+  }
+}
+
+// [[Rcpp::export]]
 void assert_all_white_list(const DataFrame& data) {
   // checking variables are on the white list
   int nc = data.size();
@@ -31,7 +70,7 @@ void assert_all_white_list(const DataFrame& data) {
 }
 
 SEXP shared_SEXP(SEXP x) {
-  SET_NAMED(x, 2);
+  MARK_NOT_MUTABLE(x);
   return x;
 }
 
@@ -240,6 +279,7 @@ bool is_vector(SEXP x) {
     return false;
   }
 }
+
 bool is_atomic(SEXP x) {
   switch (TYPEOF(x)) {
   case LGLSXP:
@@ -257,14 +297,25 @@ bool is_atomic(SEXP x) {
 SEXP vec_names(SEXP x) {
   return Rf_getAttrib(x, R_NamesSymbol);
 }
+
+SEXP vec_names_or_empty(SEXP x) {
+  SEXP nms = Rf_getAttrib(x, R_NamesSymbol);
+  if (Rf_isNull(nms)) {
+    return Rf_allocVector(STRSXP, LENGTH(x));
+  }
+  return nms;
+}
+
 bool is_str_empty(SEXP str) {
   const char* c_str = CHAR(str);
   return strcmp(c_str, "") == 0;
 }
+
 bool has_name_at(SEXP x, R_len_t i) {
   SEXP nms = vec_names(x);
   return TYPEOF(nms) == STRSXP && !is_str_empty(STRING_ELT(nms, i));
 }
+
 SEXP name_at(SEXP x, size_t i) {
   SEXP names = vec_names(x);
   if (Rf_isNull(names))
@@ -276,12 +327,14 @@ SEXP name_at(SEXP x, size_t i) {
 SEXP f_env(SEXP x) {
   return Rf_getAttrib(x, Rf_install(".Environment"));
 }
+
 bool is_quosure(SEXP x) {
   return TYPEOF(x) == LANGSXP
          && Rf_length(x) == 2
          && Rf_inherits(x, "quosure")
          && TYPEOF(f_env(x)) == ENVSXP;
 }
+
 SEXP maybe_rhs(SEXP x) {
   if (is_quosure(x))
     return CADR(x);

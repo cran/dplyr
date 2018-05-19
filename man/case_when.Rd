@@ -11,16 +11,19 @@ case_when(...)
 determines which values match this case. The right hand side (RHS)
 provides the replacement value.
 
-The LHS must evaluate to a logical vector. Each logical vector can
-either have length 1 or a common length. All RHSs must evaluate to
-the same type of vector.
+The LHS must evaluate to a logical vector. The RHS does need to be
+logical, but all RHSs must evaluate to the same type of vector.
 
-These dots are evaluated with \link[rlang:dots_list]{explicit splicing}.}
+Both LHS and RHS may have the same length of either 1 or \code{n}. The
+value of \code{n} must be consistent across all cases. The case of
+\code{n == 0} is treated as a variant of \code{n != 1}.
+
+These dots support \link[rlang:tidy-dots]{tidy dots} features.}
 }
 \value{
-A vector as long as the longest LHS or RHS, with the type (and
-attributes) of the first RHS.  Inconsistent lengths or types will
-generate an error.
+A vector of length 1 or \code{n}, matching the length of the logical
+input or output vectors, with the type (and attributes) of the first
+RHS. Inconsistent lengths or types will generate an error.
 }
 \description{
 This function allows you to vectorise multiple \code{if} and \code{else if}
@@ -44,6 +47,31 @@ case_when(
   x \%\% 35 == 0 ~ "fizz buzz"
 )
 
+# All RHS values need to be of the same type. Inconsistent types will throw an error.
+# This applies also to NA values used in RHS: NA is logical, use
+# typed values like NA_real_, NA_complex, NA_character_, NA_integer_ as appropriate.
+case_when(
+  x \%\% 35 == 0 ~ NA_character_,
+  x \%\% 5 == 0 ~ "fizz",
+  x \%\% 7 == 0 ~ "buzz",
+  TRUE ~ as.character(x)
+)
+case_when(
+  x \%\% 35 == 0 ~ 35,
+  x \%\% 5 == 0 ~ 5,
+  x \%\% 7 == 0 ~ 7,
+  TRUE ~ NA_real_
+)
+# This throws an error as NA is logical not numeric
+\dontrun{
+case_when(
+  x \%\% 35 == 0 ~ 35,
+  x \%\% 5 == 0 ~ 5,
+  x \%\% 7 == 0 ~ 7,
+  TRUE ~ NA
+)
+}
+
 # case_when is particularly useful inside mutate when you want to
 # create a new variable that relies on a complex combination of existing
 # variables
@@ -64,5 +92,5 @@ patterns <- list(
   x \%\% 7 == 0 ~ "buzz",
   TRUE ~ as.character(x)
 )
-case_when(!!! patterns)
+case_when(!!!patterns)
 }

@@ -61,13 +61,13 @@ filter.tbl_df <- function(.data, ...) {
     return(.data)
   }
 
-  quo <- all_exprs(!!! dots, .vectorised = TRUE)
+  quo <- all_exprs(!!!dots, .vectorised = TRUE)
   filter_impl(.data, quo)
 }
 #' @export
 filter_.tbl_df <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  filter(.data, !!! dots)
+  filter(.data, !!!dots)
 }
 
 #' @export
@@ -116,7 +116,7 @@ summarise_.tbl_df <- function(.data, ..., .dots = list()) {
 #'   Use `"never"` to always treat two `NA` or `NaN` values as
 #'   different, like joins for database sources, similarly to
 #'   `merge(incomparables = FALSE)`.
-#'   The default,`"na"`, always treats two `NA` or `NaN` values as equal, like [merge()].
+#'   The default, `"na"`, always treats two `NA` or `NaN` values as equal, like [merge()].
 #'   Users and package authors can change the default behavior by calling
 #'   `pkgconfig::set_config("dplyr::na_matches" = "never")`.
 #' @examples
@@ -152,12 +152,24 @@ check_na_matches <- function(na_matches) {
 inner_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
                               suffix = c(".x", ".y"), ...,
                               na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x))
+  check_valid_names(tbl_vars(y))
   by <- common_by(by, x, y)
   suffix <- check_suffix(suffix)
+  na_matches <- check_na_matches(na_matches)
 
   y <- auto_copy(x, y, copy = copy)
 
-  inner_join_impl(x, y, by$x, by$y, suffix$x, suffix$y, check_na_matches(na_matches))
+  vars <- join_vars(tbl_vars(x), tbl_vars(y), by, suffix)
+  by_x <- vars$idx$x$by
+  by_y <- vars$idx$y$by
+  aux_x <- vars$idx$x$aux
+  aux_y <- vars$idx$y$aux
+
+  out <- inner_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  names(out) <- vars$alias
+
+  reconstruct_join(out, x, vars)
 }
 
 #' @export
@@ -165,12 +177,24 @@ inner_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
 left_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
                              suffix = c(".x", ".y"), ...,
                              na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x))
+  check_valid_names(tbl_vars(y))
   by <- common_by(by, x, y)
   suffix <- check_suffix(suffix)
+  na_matches <- check_na_matches(na_matches)
 
   y <- auto_copy(x, y, copy = copy)
 
-  left_join_impl(x, y, by$x, by$y, suffix$x, suffix$y, check_na_matches(na_matches))
+  vars <- join_vars(tbl_vars(x), tbl_vars(y), by, suffix)
+  by_x <- vars$idx$x$by
+  by_y <- vars$idx$y$by
+  aux_x <- vars$idx$x$aux
+  aux_y <- vars$idx$y$aux
+
+  out <- left_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  names(out) <- vars$alias
+
+  reconstruct_join(out, x, vars)
 }
 
 #' @export
@@ -178,11 +202,24 @@ left_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
 right_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
                               suffix = c(".x", ".y"), ...,
                               na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x))
+  check_valid_names(tbl_vars(y))
   by <- common_by(by, x, y)
   suffix <- check_suffix(suffix)
+  na_matches <- check_na_matches(na_matches)
 
   y <- auto_copy(x, y, copy = copy)
-  right_join_impl(x, y, by$x, by$y, suffix$x, suffix$y, check_na_matches(na_matches))
+
+  vars <- join_vars(tbl_vars(x), tbl_vars(y), by, suffix)
+  by_x <- vars$idx$x$by
+  by_y <- vars$idx$y$by
+  aux_x <- vars$idx$x$aux
+  aux_y <- vars$idx$y$aux
+
+  out <- right_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  names(out) <- vars$alias
+
+  reconstruct_join(out, x, vars)
 }
 
 #' @export
@@ -190,17 +227,33 @@ right_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
 full_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
                              suffix = c(".x", ".y"), ...,
                              na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x))
+  check_valid_names(tbl_vars(y))
   by <- common_by(by, x, y)
   suffix <- check_suffix(suffix)
+  na_matches <- check_na_matches(na_matches)
 
   y <- auto_copy(x, y, copy = copy)
-  full_join_impl(x, y, by$x, by$y, suffix$x, suffix$y, check_na_matches(na_matches))
+
+  vars <- join_vars(tbl_vars(x), tbl_vars(y), by, suffix)
+  by_x <- vars$idx$x$by
+  by_y <- vars$idx$y$by
+  aux_x <- vars$idx$x$aux
+  aux_y <- vars$idx$y$aux
+
+  out <- full_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  names(out) <- vars$alias
+
+  reconstruct_join(out, x, vars)
 }
 
 #' @export
 #' @rdname join.tbl_df
 semi_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...,
                              na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x), warn_only = TRUE)
+  check_valid_names(tbl_vars(y), warn_only = TRUE)
+
   by <- common_by(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   semi_join_impl(x, y, by$x, by$y, check_na_matches(na_matches))
@@ -210,19 +263,30 @@ semi_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...,
 #' @rdname join.tbl_df
 anti_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...,
                              na_matches = pkgconfig::get_config("dplyr::na_matches")) {
+  check_valid_names(tbl_vars(x), warn_only = TRUE)
+  check_valid_names(tbl_vars(y), warn_only = TRUE)
+
   by <- common_by(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   anti_join_impl(x, y, by$x, by$y, check_na_matches(na_matches))
+}
+
+reconstruct_join <- function(out, x, vars) {
+  if (is_grouped_df(x)) {
+    groups_in_old <- match(group_vars(x), tbl_vars(x))
+    groups_in_alias <- match(groups_in_old, vars$x)
+    out <- grouped_df_impl(out, vars$alias[groups_in_alias], group_drop(x), FALSE)
+  }
+
+  out
 }
 
 
 # Set operations ---------------------------------------------------------------
 
 #' @export
-distinct.tbl_df <- function(.data, ...) {
-  tbl_df(NextMethod())
-}
+# Can't use NextMethod() in R 3.1, r-lib/rlang#486
+distinct.tbl_df <- distinct.data.frame
 #' @export
-distinct_.tbl_df <- function(.data, ..., .dots = list()) {
-  tbl_df(NextMethod())
-}
+# Can't use NextMethod() in R 3.1, r-lib/rlang#486
+distinct_.tbl_df <- distinct_.data.frame

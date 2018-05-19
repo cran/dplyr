@@ -15,7 +15,8 @@
 add_rownames <- function(df, var = "rowname") {
   warning(
     "Deprecated, use tibble::rownames_to_column() instead.",
-    call. = FALSE)
+    call. = FALSE
+  )
 
   stopifnot(is.data.frame(df))
 
@@ -35,7 +36,7 @@ group_by.data.frame <- function(.data, ..., add = FALSE) {
 #' @export
 group_by_.data.frame <- function(.data, ..., .dots = list(), add = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  group_by(.data, !!! dots, add = add)
+  group_by(.data, !!!dots, add = add)
 }
 
 #' @export
@@ -62,7 +63,7 @@ filter.data.frame <- function(.data, ...) {
 #' @export
 filter_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  filter(.data, !!! dots)
+  filter(.data, !!!dots)
 }
 
 #' @export
@@ -83,7 +84,7 @@ summarise.data.frame <- function(.data, ...) {
 #' @export
 summarise_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  summarise(.data, !!! dots)
+  summarise(.data, !!!dots)
 }
 
 #' @export
@@ -93,7 +94,7 @@ mutate.data.frame <- function(.data, ...) {
 #' @export
 mutate_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  mutate(.data, !!! dots)
+  mutate(.data, !!!dots)
 }
 
 #' @export
@@ -103,30 +104,30 @@ arrange.data.frame <- function(.data, ...) {
 #' @export
 arrange_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  arrange(.data, !!! dots)
+  arrange(.data, !!!dots)
 }
 
 #' @export
 select.data.frame <- function(.data, ...) {
-  # Pass via splicing to avoid matching select_vars() arguments
-  vars <- select_vars(names(.data), !!! quos(...))
+  # Pass via splicing to avoid matching vars_select() arguments
+  vars <- tidyselect::vars_select(names(.data), !!!quos(...))
   select_impl(.data, vars)
 }
 #' @export
 select_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  select(.data, !!! dots)
+  select(.data, !!!dots)
 }
 
 #' @export
 rename.data.frame <- function(.data, ...) {
-  vars <- rename_vars(names(.data), !!! quos(...))
+  vars <- tidyselect::vars_rename(names(.data), !!!quos(...))
   select_impl(.data, vars)
 }
 #' @export
 rename_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  rename(.data, !!! dots)
+  rename(.data, !!!dots)
 }
 
 
@@ -168,26 +169,28 @@ anti_join.data.frame <- function(x, y, by = NULL, copy = FALSE, ...) {
 intersect.data.frame <- function(x, y, ...) intersect_data_frame(x, y)
 
 #' @export
-union.data.frame <-     function(x, y, ...) union_data_frame(x, y)
+union.data.frame <- function(x, y, ...) union_data_frame(x, y)
 
 #' @export
 union_all.data.frame <- function(x, y, ...) bind_rows(x, y)
 
 #' @export
-setdiff.data.frame <-   function(x, y, ...) setdiff_data_frame(x, y)
+setdiff.data.frame <- function(x, y, ...) setdiff_data_frame(x, y)
 
 #' @export
-setequal.data.frame <-  function(x, y, ...) equal_data_frame(x, y)
+setequal.data.frame <- function(x, y, ...) equal_data_frame(x, y)
 
 #' @export
 distinct.data.frame <- function(.data, ..., .keep_all = FALSE) {
-  dist <- distinct_vars(.data, named_quos(...), .keep_all = .keep_all)
-  distinct_impl(dist$data, dist$vars, dist$keep)
+  dist <- distinct_vars(.data, quos(...), .keep_all = .keep_all)
+  vars <- match_vars(dist$vars, dist$data)
+  keep <- match_vars(dist$keep, dist$data)
+  distinct_impl(dist$data, vars, keep)
 }
 #' @export
 distinct_.data.frame <- function(.data, ..., .dots = list(), .keep_all = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  distinct(.data, !!! dots, .keep_all = .keep_all)
+  distinct(.data, !!!dots, .keep_all = .keep_all)
 }
 
 
@@ -201,15 +204,15 @@ do.data.frame <- function(.data, ...) {
   # Create custom dynamic scope with `.` pronoun
   # FIXME: Pass without splicing once child_env() calls env_bind()
   # with explicit arguments
-  overscope <- child_env(NULL, !!! list(. = .data, .data = .data))
+  overscope <- child_env(NULL, !!!list(. = .data, .data = .data))
 
   if (!named) {
-    out <- eval_tidy_(args[[1]], overscope)
+    out <- overscope_eval_next(overscope, args[[1]])
     if (!inherits(out, "data.frame")) {
       bad("Result must be a data frame, not {fmt_classes(out)}")
     }
   } else {
-    out <- map(args, function(arg) list(eval_tidy_(arg, overscope)))
+    out <- map(args, function(arg) list(overscope_eval_next(overscope, arg)))
     names(out) <- names(args)
     out <- tibble::as_tibble(out, validate = FALSE)
   }
@@ -219,7 +222,7 @@ do.data.frame <- function(.data, ...) {
 #' @export
 do_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  do(.data, !!! dots)
+  do(.data, !!!dots)
 }
 
 # Random samples ---------------------------------------------------------------

@@ -96,10 +96,11 @@ mtcars \%>\%
 # mutate() supports quasiquotation. You can unquote quosures, which
 # can refer to both contextual variables and variable names:
 var <- 100
-as_tibble(mtcars) \%>\% mutate(cyl = !! quo(cyl * var))
+as_tibble(mtcars) \%>\% mutate(cyl = !!quo(cyl * var))
 }
 \seealso{
 Other single table verbs: \code{\link{arrange}},
   \code{\link{filter}}, \code{\link{select}},
   \code{\link{slice}}, \code{\link{summarise}}
 }
+\concept{single table verbs}

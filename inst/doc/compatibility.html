@@ -129,25 +129,30 @@ call &lt;-<span class="st"> </span><span class="kw">quote</span>(<span class="kw
 <span class="kw">summarise</span>(mtcars, <span class="op">!!</span><span class="st"> </span>call)</code></pre></div>
 <p>Transforming objects into quosures is generally straightforward. To enclose with the current environment, you can unquote directly in <code>quo()</code> or you can use <code>as_quosure()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>sym)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~cyl</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^cyl</span>
+<span class="co">#&gt;   env:  global</span>
 <span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>call)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~mean(cyl)</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^mean(cyl)</span>
+<span class="co">#&gt;   env:  global</span>
 
 rlang<span class="op">::</span><span class="kw">as_quosure</span>(sym)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~cyl</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^cyl</span>
+<span class="co">#&gt;   env:  global</span>
 rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~mean(cyl)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^mean(cyl)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Note that while formulas and quosures are very similar objects (and in the most general sense, formulas are quosures), they can’t be used interchangeably in tidyeval functions. Early implementations did treat bare formulas as quosures, but this created compatibility issues with modelling functions of the stats package. Fortunately, it’s easy to transform formulas to quosures that will self-evaluate in tidyeval functions:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">f &lt;-<span class="st"> </span><span class="er">~</span>cyl
 f
 <span class="co">#&gt; ~cyl</span>
 rlang<span class="op">::</span><span class="kw">as_quosure</span>(f)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~cyl</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^cyl</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Finally, and perhaps most importantly, <strong>strings are not and should not be parsed</strong>. As developers, it is tempting to try and solve problems using strings because we have been trained to work with strings rather than quoted expressions. However it’s almost always the wrong way to approach the problem. The exception is for creating symbols. In that case it is perfectly legitimate to use strings:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;cyl&quot;</span>)
 <span class="co">#&gt; cyl</span>
@@ -163,26 +168,30 @@ rlang<span class="op">::</span><span class="kw">syms</span>(letters[<span class=
 <p>But you should never use strings to create calls. Instead you can use quasiquotation:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">syms &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">syms</span>(<span class="kw">c</span>(<span class="st">&quot;foo&quot;</span>, <span class="st">&quot;bar&quot;</span>, <span class="st">&quot;baz&quot;</span>))
 <span class="kw">quo</span>(<span class="kw">my_call</span>(<span class="op">!!!</span><span class="st"> </span>syms))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~my_call(foo, bar, baz)</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span>
+<span class="co">#&gt;   env:  global</span>
 
 fun &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;my_call&quot;</span>)
-<span class="kw">quo</span>(<span class="kw">UQ</span>(fun)(<span class="op">!!!</span><span class="st"> </span>syms))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~my_call(foo, bar, baz)</span></code></pre></div>
+<span class="kw">quo</span>((<span class="op">!!</span>fun)(<span class="op">!!!</span><span class="st"> </span>syms))
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Or create the call with <code>lang()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">call &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">lang</span>(<span class="st">&quot;my_call&quot;</span>, <span class="op">!!!</span><span class="st"> </span>syms)
 call
 <span class="co">#&gt; my_call(foo, bar, baz)</span>
 
 rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~my_call(foo, bar, baz)</span>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span>
+<span class="co">#&gt;   env:  global</span>
 
 <span class="co"># Or equivalently:</span>
 <span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>rlang<span class="op">::</span><span class="kw">lang</span>(<span class="st">&quot;my_call&quot;</span>, <span class="op">!!!</span><span class="st"> </span>syms))
-<span class="co">#&gt; &lt;quosure: global&gt;</span>
-<span class="co">#&gt; ~my_call(foo, bar, baz)</span></code></pre></div>
+<span class="co">#&gt; &lt;quosure&gt;</span>
+<span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span>
+<span class="co">#&gt;   env:  global</span></code></pre></div>
 <p>Note that idioms based on <code>interp()</code> should now generally be avoided and replaced with quasiquotation. Where you used to interpolate:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">lazyeval<span class="op">::</span><span class="kw">interp</span>(<span class="op">~</span><span class="st"> </span><span class="kw">mean</span>(var), <span class="dt">var =</span> rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;mpg&quot;</span>))</code></pre></div>
 <p>You would now unquote:</p>

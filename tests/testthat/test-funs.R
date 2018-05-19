@@ -16,7 +16,7 @@ test_that("funs() accepts quoted functions", {
 })
 
 test_that("funs() accepts unquoted functions", {
-  funs <- funs(fn = !! mean)
+  funs <- funs(fn = !!mean)
   expect_identical(funs$fn, new_quosure(lang(base::mean, quote(.))))
 })
 
@@ -24,9 +24,25 @@ test_that("funs() accepts quoted calls", {
   expect_identical(funs(mean), funs(mean(.)))
 })
 
+test_that("funs() gives a clear error message (#3368)", {
+  expect_error(
+    funs(function(si) { mp[si] }),
+    glue("`function(si) {{
+             mp[si]
+         }}` must be a function name (quoted or unquoted) or an unquoted call, not `function`"),
+    fixed = TRUE
+  )
+
+  expect_error(
+    funs(~mp[.]),
+    "`~mp[.]` must be a function name (quoted or unquoted) or an unquoted call, not `~`",
+    fixed = TRUE
+  )
+})
+
 test_that("funs() can be merged with new arguments", {
   fns <- funs(foo(.))
-  expect_identical(as_fun_list(fns, ~NULL, get_env(), foo = 1L), funs(foo(., foo = 1L)))
+  expect_identical(as_fun_list(fns, ~ NULL, get_env(), foo = 1L), funs(foo(., foo = 1L)))
 })
 
 
@@ -35,7 +51,7 @@ enfun <- function(.funs, ...) {
 }
 
 test_that("can enfun() literal functions", {
-  expect_identical(enfun(identity(mean)), funs(!! mean))
+  expect_identical(enfun(identity(mean)), funs(!!mean))
 })
 
 test_that("can enfun() named functions by expression", {
@@ -56,6 +72,6 @@ test_that("can enfun() quosures", {
 })
 
 test_that("can enfun() purrr-style lambdas", {
-  my_mean <- as_function(~mean(.x))
-  expect_identical(enfun(~mean(.x)), funs(!! my_mean))
+  my_mean <- as_function(~ mean(.x))
+  expect_identical(enfun(~ mean(.x)), funs(!!my_mean))
 })

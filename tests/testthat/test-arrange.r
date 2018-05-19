@@ -40,10 +40,10 @@ test_that("local arrange sorts missing values to end", {
 
 test_that("two arranges equivalent to one", {
   df <- tribble(
-    ~x,  ~y,
-    2,  1,
-    2,  -1,
-    1,  1
+    ~ x,  ~ y,
+    2,      1,
+    2,     -1,
+    1,      1
   )
 
   df1 <- df %>% arrange(x, y)
@@ -103,7 +103,6 @@ test_that("arrange handles complex vectors", {
 
   res <- arrange(d, desc(y))
   expect_true(all(is.na(res$y[9:10])))
-
 })
 
 test_that("arrange respects attributes #1105", {
@@ -118,7 +117,7 @@ test_that("arrange respects attributes #1105", {
 
 test_that("arrange works with empty data frame (#1142)", {
   df <- data.frame()
-  res <- df %>% arrange
+  res <- df %>% arrange()
   expect_equal(nrow(res), 0L)
   expect_equal(length(res), 0L)
 })
@@ -131,7 +130,6 @@ test_that("arrange respects locale (#1280)", {
 
   res <- df2 %>% arrange(desc(words))
   expect_equal(res$words, sort(df2$words, decreasing = TRUE))
-
 })
 
 test_that("duplicated column name is explicit about which column (#996)", {
@@ -139,13 +137,13 @@ test_that("duplicated column name is explicit about which column (#996)", {
   names(df) <- c("x", "x")
 
   # Error message created by tibble
-  expect_error(df %>% arrange)
+  expect_error(df %>% arrange())
 
   df <- data.frame(x = 1:10, x = 1:10, y = 1:10, y = 1:10)
   names(df) <- c("x", "x", "y", "y")
 
   # Error message created by tibble
-  expect_error(df %>% arrange)
+  expect_error(df %>% arrange())
 })
 
 test_that("arrange fails gracefully on list columns (#1489)", {
@@ -159,18 +157,12 @@ test_that("arrange fails gracefully on list columns (#1489)", {
   )
 })
 
-test_that("arrange fails gracefully on raw columns (#1803)", {
+test_that("arrange supports raw columns (#1803)", {
   df <- data_frame(a = 1:3, b = as.raw(1:3))
-  expect_error(
-    arrange(df, a),
-    "Column `b` is of unsupported type raw",
-    fixed = TRUE
-  )
-  expect_error(
-    arrange(df, b),
-    "Column `b` is of unsupported type raw",
-    fixed = TRUE
-  )
+  expect_identical(arrange(df, a), df)
+  expect_identical(arrange(df, b), df)
+  expect_identical(arrange(df, desc(a)), df[3:1, ])
+  expect_identical(arrange(df, desc(b)), df[3:1, ])
 })
 
 test_that("arrange fails gracefully on matrix input (#1870)", {
@@ -182,10 +174,14 @@ test_that("arrange fails gracefully on matrix input (#1870)", {
   )
 })
 
+test_that("arrange fails gracefully on data.frame input (#3153)", {
+  df <- tibble(x = 1:150, iri = rnorm(150))
+  expect_error(arrange(df, iris), "Argument 1 is of unsupported type data.frame")
+})
 
 # grouped_df --------------------------------------------------------------
 
-test_that("can choose to inclue grouping vars", {
+test_that("can choose to include grouping vars", {
   df <- tibble(g = c(1, 2), x = c(2, 1)) %>% group_by(g)
 
   df1 <- df %>% arrange(x, .by_group = TRUE)
@@ -193,4 +189,3 @@ test_that("can choose to inclue grouping vars", {
 
   expect_equal(df1, df2)
 })
-

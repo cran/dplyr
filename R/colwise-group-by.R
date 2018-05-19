@@ -26,23 +26,23 @@ group_by_all <- function(.tbl, .funs = list(), ...) {
   if (!length(funs)) {
     funs <- syms(tbl_vars(.tbl))
   }
-  group_by(.tbl, !!! funs)
+  group_by(.tbl, !!!funs)
 }
 #' @rdname group_by_all
 #' @export
 group_by_at <- function(.tbl, .vars, .funs = list(), ..., .add = FALSE) {
-  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), ...)
+  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
   if (!length(funs)) {
-    funs <- tbl_at_syms(.tbl, .vars)
+    funs <- tbl_at_syms(.tbl, .vars, .include_group_vars = TRUE)
   }
-  group_by(.tbl, !!! funs, add = .add)
+  group_by(.tbl, !!!funs, add = .add)
 }
 #' @rdname group_by_all
 #' @export
 group_by_if <- function(.tbl, .predicate, .funs = list(), ..., .add = FALSE) {
-  funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
+  funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
   if (!length(funs)) {
-    funs <- tbl_if_syms(.tbl, .predicate)
+    funs <- tbl_if_syms(.tbl, .predicate, .include_group_vars = TRUE)
   }
-  group_by(.tbl, !!! funs, add = .add)
+  group_by(.tbl, !!!funs, add = .add)
 }

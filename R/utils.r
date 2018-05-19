@@ -37,11 +37,13 @@ is.wholenumber <- function(x) {
 }
 
 deparse_all <- function(x) {
+  x <- map_if(x, is_quosure, quo_expr)
   x <- map_if(x, is_formula, f_rhs)
   map_chr(x, expr_text, width = 500L)
 }
 
 deparse_names <- function(x) {
+  x <- map_if(x, is_quosure, quo_expr)
   x <- map_if(x, is_formula, f_rhs)
   map_chr(x, deparse)
 }
@@ -69,14 +71,15 @@ unique_name <- local({
 })
 
 succeeds <- function(x, quiet = FALSE) {
-  tryCatch(
+  tryCatch( #
     {
       x
       TRUE
     },
     error = function(e) {
-      if (!quiet)
+      if (!quiet) {
         inform(paste0("Error: ", e$message))
+      }
       FALSE
     }
   )
@@ -117,3 +120,6 @@ attr_equal <- function(x, y) {
   isTRUE(all.equal(attr_x, attr_y))
 }
 
+env_wipe <- function(env) {
+  rm(list = env_names(env), envir = env)
+}

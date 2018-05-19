@@ -21,7 +21,7 @@
 #'   All replacements must be the same type, and must have either
 #'   length one or the same length as x.
 #'
-#'   These dots are evaluated with [explicit splicing][rlang::dots_list].
+#'   These dots support [tidy dots][rlang::tidy-dots] features.
 #' @param .default If supplied, all values not otherwise matched will
 #'   be given this value. If not supplied and if the replacements are
 #'   the same type as the original values in `.x`, unmatched
@@ -59,6 +59,11 @@
 #' recode(x, "a", "b", "c", .default = "other")
 #' recode(x, "a", "b", "c", .default = "other", .missing = "missing")
 #'
+#' # Use a named list for unquote splicing with !!!
+#' x <- sample(c("a", "b", "c"), 10, replace = TRUE)
+#' level_key <- list(a = "apple", b = "banana", c = "carrot")
+#' recode(x, !!!level_key)
+#'
 #' # Supply default with levels() for factors
 #' x <- factor(c("a", "b", "c"))
 #' recode(x, a = "Apple", .default = levels(x))
@@ -75,13 +80,18 @@
 #' # factor), it is reused as default.
 #' recode_factor(letters[1:3], b = "z", c = "y")
 #' recode_factor(factor(letters[1:3]), b = "z", c = "y")
+#'
+#' # Use a named list to recode factor with unquote splicing.
+#' x <- sample(c("a", "b", "c"), 10, replace = TRUE)
+#' level_key <- list(a = "apple", b = "banana", c = "carrot")
+#' recode_factor(x, !!!level_key)
 recode <- function(.x, ..., .default = NULL, .missing = NULL) {
   UseMethod("recode")
 }
 
 #' @export
 recode.numeric <- function(.x, ..., .default = NULL, .missing = NULL) {
-  values <- dots_list(...)
+  values <- list2(...)
 
   nms <- have_name(values)
   if (all(nms)) {
@@ -110,7 +120,7 @@ recode.numeric <- function(.x, ..., .default = NULL, .missing = NULL) {
 
 #' @export
 recode.character <- function(.x, ..., .default = NULL, .missing = NULL) {
-  values <- dots_list(...)
+  values <- list2(...)
   if (!all(have_name(values))) {
     bad <- which(!have_name(values)) + 1
     bad_pos_args(bad, "must be named, not unnamed")
@@ -134,7 +144,7 @@ recode.character <- function(.x, ..., .default = NULL, .missing = NULL) {
 
 #' @export
 recode.factor <- function(.x, ..., .default = NULL, .missing = NULL) {
-  values <- dots_list(...)
+  values <- list2(...)
   if (length(values) == 0) {
     abort("No replacements provided")
   }
@@ -170,7 +180,6 @@ recode.factor <- function(.x, ..., .default = NULL, .missing = NULL) {
   } else {
     out[as.integer(.x)]
   }
-
 }
 
 find_template <- function(values, .default = NULL, .missing = NULL) {
@@ -226,9 +235,10 @@ recode_default.factor <- function(x, default, out) {
 #' @export
 recode_factor <- function(.x, ..., .default = NULL, .missing = NULL,
                           .ordered = FALSE) {
-  recoded <- recode(.x, ..., .default = .default, .missing = .missing)
+  values <- list2(...)
+  recoded <- recode(.x, !!!values, .default = .default, .missing = .missing)
 
-  all_levels <- unique(c(..., recode_default(.x, .default, recoded), .missing))
+  all_levels <- unique(c(values, recode_default(.x, .default, recoded), .missing))
   recoded_levels <- if (is.factor(recoded)) levels(recoded) else unique(recoded)
   levels <- intersect(all_levels, recoded_levels)
 

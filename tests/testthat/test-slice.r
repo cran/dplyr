@@ -17,7 +17,6 @@ test_that("slice silently ignores out of range values (#226)", {
 
   g <- group_by(mtcars, cyl)
   expect_equal(slice(g, c(2, 100)), slice(g, 2))
-
 })
 
 test_that("slice works with 0 args", {
@@ -39,6 +38,11 @@ test_that("slice forbids positive and negative together", {
     "Found 1 positive indices and 1 negative indices",
     fixed = TRUE
   )
+  expect_error(
+    mtcars %>% slice(c(2:3, -1)),
+    "Found 2 positive indices and 1 negative indices",
+    fixed = TRUE
+  )
 })
 
 test_that("slice works with grouped data", {
@@ -51,7 +55,6 @@ test_that("slice works with grouped data", {
   res <- slice(g, -(1:2))
   exp <- filter(g, row_number() >= 3)
   expect_equal(res, exp)
-
 })
 
 test_that("slice gives correct rows (#649)", {
@@ -79,7 +82,6 @@ test_that("slice handles NA (#1235)", {
   expect_equal(nrow(slice(df, NA)), 0L)
   expect_equal(nrow(slice(df, c(1, NA))), 2)
   expect_equal(nrow(slice(df, c(-1, NA))), 2)
-
 })
 
 test_that("slice handles empty data frames (#1219)", {
@@ -103,7 +105,7 @@ test_that("slice strips grouped indices (#1405)", {
 
 test_that("slice works with zero-column data frames (#2490)", {
   expect_equal(
-    data_frame(a = 1:3) %>% select(-a) %>% slice(1) %>% nrow,
+    data_frame(a = 1:3) %>% select(-a) %>% slice(1) %>% nrow(),
     1L
   )
 })
@@ -117,4 +119,38 @@ test_that("slice works under gctorture2", {
 test_that("slice correctly computes positive indices from negative indices (#3073)", {
   x <- tibble(y = 1:10)
   expect_identical(slice(x, -10:-30), tibble(y = 1:9))
+})
+
+test_that("slice handles raw matrices", {
+  df <- data.frame(a = 1:4)
+  df$b <- matrix(as.raw(1:8), ncol = 2)
+
+  expect_identical(
+    slice(df, 1:2)$b,
+    matrix(as.raw(c(1, 2, 5, 6)), ncol = 2)
+  )
+})
+
+test_that("slice on ungrouped data.frame (not tibble) does not enforce tibble", {
+  expect_equal(class(slice(mtcars, 2)), "data.frame")
+  expect_equal(class(slice(mtcars, -2)), "data.frame")
+  expect_equal(class(slice(mtcars, NA)), "data.frame")
+})
+
+test_that("slice skips 0 (#3313)", {
+  d <- tibble(x = 1:5, y = LETTERS[1:5], g = 1)
+  expect_identical(slice(d, 0), slice(d, integer(0)))
+  expect_identical(slice(d, c(0, 1)), slice(d, 1))
+  expect_identical(slice(d, c(0, 1, 2)), slice(d, c(1, 2)))
+
+  expect_identical(slice(d, c(-1, 0)), slice(d, -1))
+  expect_identical(slice(d, c(0, -1)), slice(d, -1))
+
+  d <- group_by(d, g)
+  expect_identical(slice(d, 0), slice(d, integer(0)))
+  expect_identical(slice(d, c(0, 1)), slice(d, 1))
+  expect_identical(slice(d, c(0, 1, 2)), slice(d, c(1, 2)))
+
+  expect_identical(slice(d, c(-1, 0)), slice(d, -1))
+  expect_identical(slice(d, c(0, -1)), slice(d, -1))
 })

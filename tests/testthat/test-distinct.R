@@ -68,6 +68,40 @@ test_that("empty grouped distinct equivalent to empty ungrouped", {
   expect_equal(df1, df2)
 })
 
+test_that("distinct gives a warning when selecting an unknown column (#3140)", {
+  df <- tibble(g = c(1, 2), x = c(1, 2))
+
+  expect_warning(
+    distinct(df, aa),
+    glue("Trying to compute distinct() for variables not found in the data:
+         - `aa`
+         This is an error, but only a warning is raised for compatibility reasons.
+         The operation will return the input unchanged."),
+    fixed = TRUE
+  )
+
+  expect_warning(
+    distinct(df, aa, x),
+    glue("Trying to compute distinct() for variables not found in the data:
+         - `aa`
+         This is an error, but only a warning is raised for compatibility reasons.
+         The following variables will be used:
+         - x"),
+    fixed = TRUE
+  )
+
+  expect_warning(
+    distinct(df, g, aa, x),
+    glue("Trying to compute distinct() for variables not found in the data:
+         - `aa`
+         This is an error, but only a warning is raised for compatibility reasons.
+         The following variables will be used:
+         - g
+         - x"),
+    fixed = TRUE
+  )
+})
+
 test_that("distinct on a new, mutated variable is equivalent to mutate followed by distinct", {
   df <- tibble(g = c(1, 2), x = c(1, 2))
 
@@ -75,4 +109,51 @@ test_that("distinct on a new, mutated variable is equivalent to mutate followed 
   df2 <- df %>% mutate(aa = g * 2) %>% distinct(aa)
 
   expect_equal(df1, df2)
+})
+
+test_that("distinct on a new, copied variable is equivalent to mutate followed by distinct (#3234)", {
+  df <- tibble(g = c(1, 2), x = c(1, 2))
+
+  df1 <- df %>% distinct(aa = g)
+  df2 <- df %>% mutate(aa = g) %>% distinct(aa)
+
+  expect_equal(df1, df2)
+})
+
+test_that("distinct on a dataframe or tibble with columns of type list throws an error", {
+  df <- tibble(
+    a = c("1", "1", "2", "2", "3", "3"),
+    b = list("A")
+  )
+  df2 <- data.frame(x = 1:5, y = I(list(1:3, 2:4, 3:5, 4:6, 5:7)))
+
+  expect_warning(
+    expect_identical(df %>% distinct(), df %>% slice(c(1, 3, 5))),
+    "distinct() does not fully support columns of type `list`.\nList elements are compared by reference, see ?distinct for details.\nThis affects the following columns:\n- `b`",
+    fixed = TRUE
+  )
+  expect_warning(
+    expect_identical(df2 %>% distinct(), df2),
+    "distinct() does not fully support columns of type `list`.\nList elements are compared by reference, see ?distinct for details.\nThis affects the following columns:\n- `y`",
+    fixed = TRUE
+  )
+})
+
+test_that("distinct refuses to deal with Period and Interval from lubridate (#2568)", {
+  skip_if_not(requireNamespace("lubridate", quietly = TRUE))
+
+  df <- tibble(
+    x = lubridate::hm("10:30", "10:30", "0:0"),
+    y = c("apple", "apple", "tomato")
+  )
+  expect_error(distinct(df),
+    "classes Period and Interval from lubridate are currently not supported"
+  )
+
+  df <- tibble(
+    lubridate::interval(lubridate::ymd(20090201), lubridate::ymd(20090101))
+  )
+  expect_error(distinct(df),
+    "classes Period and Interval from lubridate are currently not supported"
+  )
 })

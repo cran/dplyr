@@ -55,13 +55,13 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Hadley Wickham \email{hadley@rstudio.com}
+\strong{Maintainer}: Hadley Wickham \email{hadley@rstudio.com} (0000-0003-4757-117X)
 
 Authors:
 \itemize{
-  \item Romain Francois \email{romain@r-enthusiasts.com}
+  \item Romain François (0000-0002-2444-4226)
   \item Lionel Henry
-  \item Kirill Müller
+  \item Kirill Müller (0000-0002-1416-3412)
 }
 
 Other contributors:

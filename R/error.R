@@ -1,10 +1,10 @@
 check_pkg <- function(name, reason, install = TRUE) {
-  if (is_installed(name))
+  if (is_installed(name)) {
     return(invisible(TRUE))
+  }
 
-  glubort(NULL,
-    'The {name} package is required to {reason}.',
-    if (install) '\nPlease install it with `install.packages("{name}")`'
+  glubort(NULL, "The {name} package is required to {reason}.",
+    if (install) '\nPlease install it with `install.packages("{name}")`' else ""
   )
 }
 
@@ -108,16 +108,24 @@ fmt_dims <- function(x) {
   paste0("[", paste0(x, collapse = " x "), "]")
 }
 
-fmt_comma <- function(...) {
-  MAX_ITEMS <- 6L
-
+fmt_comma <- function(..., .max = 6) {
   x <- paste0(...)
-  if (length(x) > MAX_ITEMS) {
-    length(x) <- MAX_ITEMS
-    x[[MAX_ITEMS]] <- "..."
+  if (length(x) > .max) {
+    length(x) <- .max
+    x[[.max]] <- "..."
   }
 
   commas(x)
+}
+
+fmt_items <- function(x, .max = 6) {
+  if (length(x) > .max) {
+    more <- glue("({length(x) - (.max - 1)} more)")
+    length(x) <- .max
+    x[.max] <- more
+  }
+
+  glue::collapse(glue("- {x}"), "\n")
 }
 
 parse_args <- function(x) {

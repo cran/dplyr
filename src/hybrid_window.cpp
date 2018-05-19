@@ -35,9 +35,9 @@ Result* row_number(const RObject& data, const bool ascending) {
 }
 
 Result* row_number_prototype(SEXP call, const ILazySubsets& subsets, int nargs) {
-  if (nargs > 1 || subsets.size() == 0) return 0;
-
   if (nargs == 0) return new RowNumber_0();
+
+  if (nargs > 1) return 0;
 
   RObject data(CADR(call));
   bool ascending = true;
@@ -157,10 +157,12 @@ Result* rank_impl_prototype(SEXP call, const ILazySubsets& subsets, int nargs) {
 }
 
 void install_window_handlers(HybridHandlerMap& handlers) {
-  handlers[ Rf_install("row_number") ] = row_number_prototype;
-  handlers[ Rf_install("ntile") ] = ntile_prototype;
-  handlers[ Rf_install("min_rank") ] = rank_impl_prototype<dplyr::internal::min_rank_increment>;
-  handlers[ Rf_install("percent_rank") ] = rank_impl_prototype<dplyr::internal::percent_rank_increment>;
-  handlers[ Rf_install("dense_rank") ] = rank_impl_prototype<dplyr::internal::dense_rank_increment>;
-  handlers[ Rf_install("cume_dist") ] = rank_impl_prototype<dplyr::internal::cume_dist_increment>;
+  Environment ns_dplyr = Environment::namespace_env("dplyr");
+
+  handlers[Rf_install("row_number")] = HybridHandler(row_number_prototype, HybridHandler::DPLYR, ns_dplyr["row_number"]);
+  handlers[Rf_install("ntile")] = HybridHandler(ntile_prototype, HybridHandler::DPLYR, ns_dplyr["ntile"]);
+  handlers[Rf_install("min_rank")] = HybridHandler(rank_impl_prototype<dplyr::internal::min_rank_increment>, HybridHandler::DPLYR, ns_dplyr["min_rank"]);
+  handlers[Rf_install("percent_rank")] = HybridHandler(rank_impl_prototype<dplyr::internal::percent_rank_increment>, HybridHandler::DPLYR, ns_dplyr["percent_rank"]);
+  handlers[Rf_install("dense_rank")] = HybridHandler(rank_impl_prototype<dplyr::internal::dense_rank_increment>, HybridHandler::DPLYR, ns_dplyr["dense_rank"]);
+  handlers[Rf_install("cume_dist")] = HybridHandler(rank_impl_prototype<dplyr::internal::cume_dist_increment>, HybridHandler::DPLYR, ns_dplyr["cume_dist"]);
 }

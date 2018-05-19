@@ -1,12 +1,12 @@
 #' dbplyr compatibility functions
 #'
 #' @description
-#' In dplyr 0.6.0, a number of database and SQL functions moved from dplyr to
+#' In dplyr 0.7.0, a number of database and SQL functions moved from dplyr to
 #' dbplyr. The generic functions stayed in dplyr (since there is no easy way
 #' to conditionally import a generic from different packages), but many other
 #' SQL and database helper functions moved. If you have written a backend,
 #' these functions generate the code you need to work with both dplyr 0.5.0
-#' dplyr 0.6.0.
+#' dplyr 0.7.0.
 #'
 #' @keywords internal
 #' @export
@@ -35,8 +35,8 @@ wrap_dbplyr_obj <- function(obj_name) {
     args <- formals()
     pass_on <- map(set_names(names(args)), sym)
 
-    dbplyr_call <- expr(UQ(dbplyr_sym)(!!!pass_on))
-    dplyr_call <- expr(UQ(dplyr_sym)(!!!pass_on))
+    dbplyr_call <- expr((!!dbplyr_sym)(!!!pass_on))
+    dplyr_call <- expr((!!dplyr_sym)(!!!pass_on))
   } else {
     args <- list()
 
@@ -47,15 +47,16 @@ wrap_dbplyr_obj <- function(obj_name) {
   body <- expr({
     if (utils::packageVersion("dplyr") > "0.5.0") {
       dplyr::check_dbplyr()
-      UQ(dbplyr_call)
+      !!dbplyr_call
     } else {
-      UQ(dplyr_call)
+      !!dplyr_call
     }
   })
   wrapper <- new_function(args, body, caller_env())
 
-  expr(UQ(obj_sym) <- UQE(wrapper))
+  expr(!!obj_sym <- !!get_expr(wrapper))
 }
+utils::globalVariables("!<-")
 
 #' @inherit dbplyr::sql
 #' @export
@@ -66,6 +67,11 @@ sql <- function(...) {
 
 #' @inherit dbplyr::ident
 #' @export
+#' @examples
+#' # Identifiers are escaped with "
+#' if (requireNamespace("dbplyr", quietly = TRUE)) {
+#'   ident("x")
+#' }
 ident <- function(...) {
   check_dbplyr()
   dbplyr::ident(...)

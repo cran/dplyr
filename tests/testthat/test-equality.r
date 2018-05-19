@@ -30,7 +30,7 @@ test_that("data frames equal to random permutations of themselves", {
 
 test_that("data frames not equal if missing row", {
   expect_match(all.equal(tbl_df(mtcars), mtcars[-1, ]), "Different number of rows")
-  expect_match(all.equal(tbl_df(iris), iris[-1, ]),     "Different number of rows")
+  expect_match(all.equal(tbl_df(iris), iris[-1, ]), "Different number of rows")
   expect_match(all.equal(tbl_df(df_all), df_all[-1, ]), "Different number of rows")
 })
 
@@ -96,7 +96,6 @@ test_that("data frame equality test with ignore_row_order=TRUE detects differenc
   DF1 <- data_frame(a = c(1:4, 2L), b = letters[c(1:4, 2L)])
   DF2 <- data_frame(a = c(1:4, 4L), b = letters[c(1:4, 4L)])
   expect_false(isTRUE(all.equal(DF1, DF2, ignore_row_order = TRUE)))
-
 })
 
 test_that("all.equal handles NA_character_ correctly. #1095", {
@@ -134,13 +133,9 @@ test_that("equality handles data frames with 0 columns (#1506)", {
   expect_equal(df0, df0)
 })
 
-test_that("equality cannot be checked in presence of raw columns", {
+test_that("equality handle raw columns", {
   df <- data_frame(a = 1:3, b = as.raw(1:3))
-  expect_error(
-    all.equal(df, df),
-    "Column `b` is of unsupported type raw",
-    fixed = TRUE
-  )
+  expect_true(all.equal(df, df))
 })
 
 test_that("equality returns a message for convert = TRUE", {

@@ -32,23 +32,23 @@
 #' # And filter_if() selects variables with a predicate function:
 #' filter_if(mtcars, ~ all(floor(.) == .), all_vars(. != 0))
 filter_all <- function(.tbl, .vars_predicate) {
-  syms <- syms(tbl_nongroup_vars(.tbl))
+  syms <- syms(tbl_vars(.tbl))
   pred <- apply_filter_syms(.vars_predicate, syms, .tbl)
-  filter(.tbl, !! pred)
+  filter(.tbl, !!pred)
 }
 #' @rdname filter_all
 #' @export
 filter_if <- function(.tbl, .predicate, .vars_predicate) {
-  syms <- tbl_if_syms(.tbl, .predicate)
+  syms <- tbl_if_syms(.tbl, .predicate, .include_group_vars = TRUE)
   pred <- apply_filter_syms(.vars_predicate, syms, .tbl)
-  filter(.tbl, !! pred)
+  filter(.tbl, !!pred)
 }
 #' @rdname filter_all
 #' @export
 filter_at <- function(.tbl, .vars, .vars_predicate) {
-  syms <- tbl_at_syms(.tbl, .vars)
+  syms <- tbl_at_syms(.tbl, .vars, .include_group_vars = TRUE)
   pred <- apply_filter_syms(.vars_predicate, syms, .tbl)
-  filter(.tbl, !! pred)
+  filter(.tbl, !!pred)
 }
 
 apply_filter_syms <- function(pred, syms, tbl) {
@@ -69,7 +69,7 @@ apply_filter_syms <- function(pred, syms, tbl) {
   pred <- map(syms, function(sym) expr_substitute(pred, quote(.), sym))
 
   if (length(pred)) {
-    joiner(!!! pred)
+    joiner(!!!pred)
   } else {
     pred
   }

@@ -24,10 +24,6 @@ public:
     return x;
   }
 
-  SEXP process(const FullDataFrame&) {
-    return x;
-  }
-
   SEXP process(const SlicingIndex&) {
     return x;
   }
@@ -62,10 +58,6 @@ public:
     stop("In hybrid evaluation");
   }
 
-  SEXP process(const FullDataFrame&) {
-    stop("In hybrid evaluation");
-  }
-
   SEXP process(const SlicingIndex&) {
     stop("In hybrid evaluation");
   }
@@ -88,6 +80,7 @@ Result* verify_not_hybrid_prototype(SEXP call, const ILazySubsets&, int nargs) {
 }
 
 void install_debug_handlers(HybridHandlerMap& handlers) {
-  handlers[ Rf_install("verify_hybrid") ] = verify_hybrid_prototype;
-  handlers[ Rf_install("verify_not_hybrid") ] = verify_not_hybrid_prototype;
+  Environment ns_dplyr = Environment::namespace_env("dplyr");
+  handlers[Rf_install("verify_hybrid")] = HybridHandler(verify_hybrid_prototype, HybridHandler::DPLYR, ns_dplyr["verify_hybrid"]);
+  handlers[Rf_install("verify_not_hybrid")] = HybridHandler(verify_not_hybrid_prototype, HybridHandler::DPLYR, ns_dplyr["verify_not_hybrid"]);
 }
