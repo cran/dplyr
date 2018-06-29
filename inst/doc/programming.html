@@ -254,7 +254,7 @@ df <span class="op">%&gt;%</span>
 <span class="kw">my_summarise</span>(df, g1)
 <span class="co">#&gt; &lt;quosure&gt;</span>
 <span class="co">#&gt;   expr: ^group_var</span>
-<span class="co">#&gt;   env:  0x55afebc1f258</span>
+<span class="co">#&gt;   env:  0x5642173038a0</span>
 <span class="co">#&gt; Error in grouped_df_impl(data, unname(vars), drop): Column `group_var` is unknown</span></code></pre></div>
 <p>I’ve added a <code>print()</code> call to make it obvious what’s going wrong here: <code>quo(group_var)</code> always returns <code>~group_var</code>. It is being too literal! We want it to substitute the value that the user supplied, i.e. to return <code>~g1</code>.</p>
 <p>By analogy to strings, we don’t want <code>&quot;&quot;</code>, instead we want some function that turns an argument into a string. That’s the job of <code>enquo()</code>. <code>enquo()</code> uses some dark magic to look at the argument, see what the user typed, and return that value as a quosure. (Technically, this works because function arguments are evaluated lazily, using a special data structure called a <strong>promise</strong>.)</p>
@@ -441,18 +441,18 @@ x2 &lt;-<span class="st"> </span><span class="kw">f</span>(<span class="dv">100<
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">x1
 <span class="co">#&gt; &lt;quosure&gt;</span>
 <span class="co">#&gt;   expr: ^x</span>
-<span class="co">#&gt;   env:  0x55afed2a7be0</span>
+<span class="co">#&gt;   env:  0x564211d71e60</span>
 x2
 <span class="co">#&gt; &lt;quosure&gt;</span>
 <span class="co">#&gt;   expr: ^x</span>
-<span class="co">#&gt;   env:  0x55afed311120</span></code></pre></div>
+<span class="co">#&gt;   env:  0x56421194ac90</span></code></pre></div>
 <p>But if you inspect the environments using <code>rlang::get_env()</code> — they’re different.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(rlang)
 
 <span class="kw">get_env</span>(x1)
-<span class="co">#&gt; &lt;environment: 0x55afed2a7be0&gt;</span>
+<span class="co">#&gt; &lt;environment: 0x564211d71e60&gt;</span>
 <span class="kw">get_env</span>(x2)
-<span class="co">#&gt; &lt;environment: 0x55afed311120&gt;</span></code></pre></div>
+<span class="co">#&gt; &lt;environment: 0x56421194ac90&gt;</span></code></pre></div>
 <p>Further, when we evaluate those formulas using <code>rlang::eval_tidy()</code>, we see that they yield different values:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">eval_tidy</span>(x1)
 <span class="co">#&gt; [1] 10</span>
