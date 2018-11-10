@@ -317,11 +317,11 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb2-3" data-line-number="3"><span class="co">#&gt; # A tibble: 336,776 x 18</span></a>
 <a class="sourceLine" id="cb2-4" data-line-number="4"><span class="co">#&gt;    year month   day  hour origin dest  tailnum carrier  temp  dewp humid</span></a>
 <a class="sourceLine" id="cb2-5" data-line-number="5"><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;  &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="co">#&gt; 1  2013     1     1     5 EWR    IAH   N14228  UA       NA    NA    NA  </span></a>
-<a class="sourceLine" id="cb2-7" data-line-number="7"><span class="co">#&gt; 2  2013     1     1     5 LGA    IAH   N24211  UA       NA    NA    NA  </span></a>
-<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA       NA    NA    NA  </span></a>
-<a class="sourceLine" id="cb2-9" data-line-number="9"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6       NA    NA    NA  </span></a>
-<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL       39.9  26.1  57.3</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="co">#&gt; 1  2013     1     1     5 EWR    IAH   N14228  UA       39.0  28.0  64.4</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7"><span class="co">#&gt; 2  2013     1     1     5 LGA    IAH   N24211  UA       39.9  25.0  54.8</span></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA       39.0  27.0  61.6</span></a>
+<a class="sourceLine" id="cb2-9" data-line-number="9"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6       39.0  27.0  61.6</span></a>
+<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL       39.9  25.0  54.8</span></a>
 <a class="sourceLine" id="cb2-11" data-line-number="11"><span class="co">#&gt; # ... with 3.368e+05 more rows, and 7 more variables: wind_dir &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb2-12" data-line-number="12"><span class="co">#&gt; #   wind_speed &lt;dbl&gt;, wind_gust &lt;dbl&gt;, precip &lt;dbl&gt;, pressure &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb2-13" data-line-number="13"><span class="co">#&gt; #   visib &lt;dbl&gt;, time_hour &lt;dttm&gt;</span></a></code></pre></div></li>
@@ -368,17 +368,20 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <h3>Types of join</h3>
 <p>There are four types of mutating join, which differ in their behaviour when a match is not found. We’ll illustrate each with a simple example:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">(df1 &lt;-<span class="st"> </span><span class="kw">data_frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="dt">y =</span> <span class="dv">2</span><span class="op">:</span><span class="dv">1</span>))</a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">#&gt; # A tibble: 2 x 2</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="co">#&gt;       x     y</span></a>
-<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt;</span></a>
-<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="co">#&gt; 1     1     2</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="co">#&gt; 2     2     1</span></a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">(df2 &lt;-<span class="st"> </span><span class="kw">data_frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="dt">a =</span> <span class="dv">10</span>, <span class="dt">b =</span> <span class="st">&quot;a&quot;</span>))</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="co">#&gt; # A tibble: 2 x 3</span></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="co">#&gt;       x     a b    </span></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10"><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;</span></a>
-<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="co">#&gt; 1     1    10 a    </span></a>
-<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="co">#&gt; 2     3    10 a</span></a></code></pre></div>
+<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">#&gt; Warning: `list_len()` is soft-deprecated as of rlang 0.2.0.</span></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="co">#&gt; Please use `new_list()` instead</span></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"><span class="co">#&gt; This warning is displayed once per session.</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5"><span class="co">#&gt; # A tibble: 2 x 2</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6"><span class="co">#&gt;       x     y</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt;</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8"><span class="co">#&gt; 1     1     2</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="co">#&gt; 2     2     1</span></a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">(df2 &lt;-<span class="st"> </span><span class="kw">data_frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">3</span>), <span class="dt">a =</span> <span class="dv">10</span>, <span class="dt">b =</span> <span class="st">&quot;a&quot;</span>))</a>
+<a class="sourceLine" id="cb5-11" data-line-number="11"><span class="co">#&gt; # A tibble: 2 x 3</span></a>
+<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="co">#&gt;       x     a b    </span></a>
+<a class="sourceLine" id="cb5-13" data-line-number="13"><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;</span></a>
+<a class="sourceLine" id="cb5-14" data-line-number="14"><span class="co">#&gt; 1     1    10 a    </span></a>
+<a class="sourceLine" id="cb5-15" data-line-number="15"><span class="co">#&gt; 2     3    10 a</span></a></code></pre></div>
 <ul>
 <li><p><code>inner_join(x, y)</code> only includes observations that match in both <code>x</code> and <code>y</code>.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">df1 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">inner_join</span>(df2) <span class="op">%&gt;%</span><span class="st"> </span>knitr<span class="op">::</span><span class="kw">kable</span>()</a>
@@ -466,18 +469,15 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb11-2" data-line-number="2">flights <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb11-3" data-line-number="3"><span class="st">  </span><span class="kw">anti_join</span>(planes, <span class="dt">by =</span> <span class="st">&quot;tailnum&quot;</span>) <span class="op">%&gt;%</span><span class="st"> </span></a>
 <a class="sourceLine" id="cb11-4" data-line-number="4"><span class="st">  </span><span class="kw">count</span>(tailnum, <span class="dt">sort =</span> <span class="ot">TRUE</span>)</a>
-<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="co">#&gt; Warning: 'as_data_frame' is deprecated.</span></a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt; Use 'as_tibble' instead.</span></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="co">#&gt; See help(&quot;Deprecated&quot;)</span></a>
-<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#&gt; # A tibble: 722 x 2</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="co">#&gt;   tailnum     n</span></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co">#&gt;   &lt;chr&gt;   &lt;int&gt;</span></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="co">#&gt; 1 &lt;NA&gt;     2512</span></a>
-<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="co">#&gt; 2 N725MQ    575</span></a>
-<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co">#&gt; 3 N722MQ    513</span></a>
-<a class="sourceLine" id="cb11-14" data-line-number="14"><span class="co">#&gt; 4 N723MQ    507</span></a>
-<a class="sourceLine" id="cb11-15" data-line-number="15"><span class="co">#&gt; 5 N713MQ    483</span></a>
-<a class="sourceLine" id="cb11-16" data-line-number="16"><span class="co">#&gt; # ... with 717 more rows</span></a></code></pre></div>
+<a class="sourceLine" id="cb11-5" data-line-number="5"><span class="co">#&gt; # A tibble: 722 x 2</span></a>
+<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt;   tailnum     n</span></a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="co">#&gt;   &lt;chr&gt;   &lt;int&gt;</span></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#&gt; 1 &lt;NA&gt;     2512</span></a>
+<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="co">#&gt; 2 N725MQ    575</span></a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co">#&gt; 3 N722MQ    513</span></a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="co">#&gt; 4 N723MQ    507</span></a>
+<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="co">#&gt; 5 N713MQ    483</span></a>
+<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co">#&gt; # ... with 717 more rows</span></a></code></pre></div>
 <p>If you’re worried about what observations your joins will match, start with a <code>semi_join()</code> or <code>anti_join()</code>. <code>semi_join()</code> and <code>anti_join()</code> never duplicate; they only ever remove observations.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">df1 &lt;-<span class="st"> </span><span class="kw">data_frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">4</span>), <span class="dt">y =</span> <span class="dv">1</span><span class="op">:</span><span class="dv">4</span>)</a>
 <a class="sourceLine" id="cb12-2" data-line-number="2">df2 &lt;-<span class="st"> </span><span class="kw">data_frame</span>(<span class="dt">x =</span> <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>), <span class="dt">z =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>, <span class="st">&quot;a&quot;</span>))</a>

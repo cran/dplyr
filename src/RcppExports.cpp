@@ -207,17 +207,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// as_regular_df
-DataFrame as_regular_df(DataFrame df);
-RcppExport SEXP _dplyr_as_regular_df(SEXP dfSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< DataFrame >::type df(dfSEXP);
-    rcpp_result_gen = Rcpp::wrap(as_regular_df(df));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ungroup_grouped_df
 DataFrame ungroup_grouped_df(DataFrame df);
 RcppExport SEXP _dplyr_ungroup_grouped_df(SEXP dfSEXP) {
@@ -282,6 +271,10 @@ RcppExport SEXP _dplyr_get_date_classes() {
         UNPROTECT(1);
         Rf_onintr();
     }
+    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+    if (rcpp_isLongjump_gen) {
+        Rcpp::internal::resumeJump(rcpp_result_gen);
+    }
     Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
     if (rcpp_isError_gen) {
         SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
@@ -311,6 +304,10 @@ RcppExport SEXP _dplyr_get_time_classes() {
         UNPROTECT(1);
         Rf_onintr();
     }
+    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+    if (rcpp_isLongjump_gen) {
+        Rcpp::internal::resumeJump(rcpp_result_gen);
+    }
     Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
     if (rcpp_isError_gen) {
         SEXP rcpp_msgSEXP_gen = Rf_asChar(rcpp_result_gen);
@@ -321,12 +318,13 @@ RcppExport SEXP _dplyr_get_time_classes() {
     return rcpp_result_gen;
 }
 // build_index_cpp
-void build_index_cpp(DataFrame& data);
+DataFrame build_index_cpp(DataFrame data);
 static SEXP _dplyr_build_index_cpp_try(SEXP dataSEXP) {
 BEGIN_RCPP
-    Rcpp::traits::input_parameter< DataFrame& >::type data(dataSEXP);
-    build_index_cpp(data);
-    return R_NilValue;
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< DataFrame >::type data(dataSEXP);
+    rcpp_result_gen = Rcpp::wrap(build_index_cpp(data));
+    return rcpp_result_gen;
 END_RCPP_RETURN_ERROR
 }
 RcppExport SEXP _dplyr_build_index_cpp(SEXP dataSEXP) {
@@ -339,6 +337,10 @@ RcppExport SEXP _dplyr_build_index_cpp(SEXP dataSEXP) {
     if (rcpp_isInterrupt_gen) {
         UNPROTECT(1);
         Rf_onintr();
+    }
+    bool rcpp_isLongjump_gen = Rcpp::internal::isLongjumpSentinel(rcpp_result_gen);
+    if (rcpp_isLongjump_gen) {
+        Rcpp::internal::resumeJump(rcpp_result_gen);
     }
     Rboolean rcpp_isError_gen = Rf_inherits(rcpp_result_gen, "try-error");
     if (rcpp_isError_gen) {
@@ -675,7 +677,7 @@ static int _dplyr_RcppExport_validate(const char* sig) {
     if (signatures.empty()) {
         signatures.insert("SEXP(*get_date_classes)()");
         signatures.insert("SEXP(*get_time_classes)()");
-        signatures.insert("void(*build_index_cpp)(DataFrame&)");
+        signatures.insert("DataFrame(*build_index_cpp)(DataFrame)");
     }
     return signatures.find(sig) != signatures.end();
 }
@@ -707,7 +709,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_dplyr_n_distinct_multi", (DL_FUNC) &_dplyr_n_distinct_multi, 2},
     {"_dplyr_filter_impl", (DL_FUNC) &_dplyr_filter_impl, 2},
     {"_dplyr_grouped_df_impl", (DL_FUNC) &_dplyr_grouped_df_impl, 4},
-    {"_dplyr_as_regular_df", (DL_FUNC) &_dplyr_as_regular_df, 1},
     {"_dplyr_ungroup_grouped_df", (DL_FUNC) &_dplyr_ungroup_grouped_df, 1},
     {"_dplyr_test_grouped_df", (DL_FUNC) &_dplyr_test_grouped_df, 1},
     {"_dplyr_grouped_indices_grouped_df_impl", (DL_FUNC) &_dplyr_grouped_indices_grouped_df_impl, 1},

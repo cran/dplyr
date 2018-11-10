@@ -336,36 +336,36 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb6-2" data-line-number="2"><span class="kw">select</span>(mtcars, <span class="op">!!</span><span class="st"> </span>sym)</a>
 <a class="sourceLine" id="cb6-3" data-line-number="3"></a>
 <a class="sourceLine" id="cb6-4" data-line-number="4">call &lt;-<span class="st"> </span><span class="kw">quote</span>(<span class="kw">mean</span>(cyl))</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw">summarise</span>(mtcars, <span class="op">!!</span><span class="st"> </span>call)</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"><span class="co">#&gt; Warning: 'as_data_frame' is deprecated.</span></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="co">#&gt; Use 'as_tibble' instead.</span></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8"><span class="co">#&gt; See help(&quot;Deprecated&quot;)</span></a></code></pre></div>
+<a class="sourceLine" id="cb6-5" data-line-number="5"><span class="kw">summarise</span>(mtcars, <span class="op">!!</span><span class="st"> </span>call)</a></code></pre></div>
 <p>Transforming objects into quosures is generally straightforward. To enclose with the current environment, you can unquote directly in <code>quo()</code> or you can use <code>as_quosure()</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>sym)</a>
 <a class="sourceLine" id="cb7-2" data-line-number="2"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="co">#&gt;   expr: ^cyl</span></a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="co">#&gt;   env:  global</span></a>
+<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="co">#&gt; expr: ^cyl</span></a>
+<a class="sourceLine" id="cb7-4" data-line-number="4"><span class="co">#&gt; env:  global</span></a>
 <a class="sourceLine" id="cb7-5" data-line-number="5"><span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>call)</a>
 <a class="sourceLine" id="cb7-6" data-line-number="6"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="co">#&gt;   expr: ^mean(cyl)</span></a>
-<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="co">#&gt;   env:  global</span></a>
+<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="co">#&gt; expr: ^mean(cyl)</span></a>
+<a class="sourceLine" id="cb7-8" data-line-number="8"><span class="co">#&gt; env:  global</span></a>
 <a class="sourceLine" id="cb7-9" data-line-number="9"></a>
 <a class="sourceLine" id="cb7-10" data-line-number="10">rlang<span class="op">::</span><span class="kw">as_quosure</span>(sym)</a>
-<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="co">#&gt;   expr: ^cyl</span></a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"><span class="co">#&gt;   env:  global</span></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)</a>
-<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb7-16" data-line-number="16"><span class="co">#&gt;   expr: ^mean(cyl)</span></a>
-<a class="sourceLine" id="cb7-17" data-line-number="17"><span class="co">#&gt;   env:  global</span></a></code></pre></div>
+<a class="sourceLine" id="cb7-11" data-line-number="11"><span class="co">#&gt; Warning: `as_quosure()` requires an explicit environment as of rlang 0.3.0.</span></a>
+<a class="sourceLine" id="cb7-12" data-line-number="12"><span class="co">#&gt; Please supply `env`.</span></a>
+<a class="sourceLine" id="cb7-13" data-line-number="13"><span class="co">#&gt; This warning is displayed once per session.</span></a>
+<a class="sourceLine" id="cb7-14" data-line-number="14"><span class="co">#&gt; &lt;quosure&gt;</span></a>
+<a class="sourceLine" id="cb7-15" data-line-number="15"><span class="co">#&gt; expr: ^cyl</span></a>
+<a class="sourceLine" id="cb7-16" data-line-number="16"><span class="co">#&gt; env:  global</span></a>
+<a class="sourceLine" id="cb7-17" data-line-number="17">rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)</a>
+<a class="sourceLine" id="cb7-18" data-line-number="18"><span class="co">#&gt; &lt;quosure&gt;</span></a>
+<a class="sourceLine" id="cb7-19" data-line-number="19"><span class="co">#&gt; expr: ^mean(cyl)</span></a>
+<a class="sourceLine" id="cb7-20" data-line-number="20"><span class="co">#&gt; env:  global</span></a></code></pre></div>
 <p>Note that while formulas and quosures are very similar objects (and in the most general sense, formulas are quosures), they can’t be used interchangeably in tidyeval functions. Early implementations did treat bare formulas as quosures, but this created compatibility issues with modelling functions of the stats package. Fortunately, it’s easy to transform formulas to quosures that will self-evaluate in tidyeval functions:</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1">f &lt;-<span class="st"> </span><span class="er">~</span>cyl</a>
 <a class="sourceLine" id="cb8-2" data-line-number="2">f</a>
 <a class="sourceLine" id="cb8-3" data-line-number="3"><span class="co">#&gt; ~cyl</span></a>
 <a class="sourceLine" id="cb8-4" data-line-number="4">rlang<span class="op">::</span><span class="kw">as_quosure</span>(f)</a>
 <a class="sourceLine" id="cb8-5" data-line-number="5"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="co">#&gt;   expr: ^cyl</span></a>
-<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="co">#&gt;   env:  global</span></a></code></pre></div>
+<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="co">#&gt; expr: ^cyl</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7"><span class="co">#&gt; env:  global</span></a></code></pre></div>
 <p>Finally, and perhaps most importantly, <strong>strings are not and should not be parsed</strong>. As developers, it is tempting to try and solve problems using strings because we have been trained to work with strings rather than quoted expressions. However it’s almost always the wrong way to approach the problem. The exception is for creating symbols. In that case it is perfectly legitimate to use strings:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb9-1" data-line-number="1">rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;cyl&quot;</span>)</a>
 <a class="sourceLine" id="cb9-2" data-line-number="2"><span class="co">#&gt; cyl</span></a>
@@ -382,29 +382,32 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1">syms &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">syms</span>(<span class="kw">c</span>(<span class="st">&quot;foo&quot;</span>, <span class="st">&quot;bar&quot;</span>, <span class="st">&quot;baz&quot;</span>))</a>
 <a class="sourceLine" id="cb10-2" data-line-number="2"><span class="kw">quo</span>(<span class="kw">my_call</span>(<span class="op">!!!</span><span class="st"> </span>syms))</a>
 <a class="sourceLine" id="cb10-3" data-line-number="3"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span></a>
-<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="co">#&gt;   env:  global</span></a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"><span class="co">#&gt; expr: ^my_call(foo, bar, baz)</span></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5"><span class="co">#&gt; env:  global</span></a>
 <a class="sourceLine" id="cb10-6" data-line-number="6"></a>
 <a class="sourceLine" id="cb10-7" data-line-number="7">fun &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;my_call&quot;</span>)</a>
 <a class="sourceLine" id="cb10-8" data-line-number="8"><span class="kw">quo</span>((<span class="op">!!</span>fun)(<span class="op">!!!</span><span class="st"> </span>syms))</a>
 <a class="sourceLine" id="cb10-9" data-line-number="9"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb10-10" data-line-number="10"><span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span></a>
-<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="co">#&gt;   env:  global</span></a></code></pre></div>
+<a class="sourceLine" id="cb10-10" data-line-number="10"><span class="co">#&gt; expr: ^my_call(foo, bar, baz)</span></a>
+<a class="sourceLine" id="cb10-11" data-line-number="11"><span class="co">#&gt; env:  global</span></a></code></pre></div>
 <p>Or create the call with <code>lang()</code>:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1">call &lt;-<span class="st"> </span>rlang<span class="op">::</span><span class="kw">lang</span>(<span class="st">&quot;my_call&quot;</span>, <span class="op">!!!</span><span class="st"> </span>syms)</a>
-<a class="sourceLine" id="cb11-2" data-line-number="2">call</a>
-<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="co">#&gt; my_call(foo, bar, baz)</span></a>
-<a class="sourceLine" id="cb11-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb11-5" data-line-number="5">rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)</a>
-<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb11-7" data-line-number="7"><span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span></a>
-<a class="sourceLine" id="cb11-8" data-line-number="8"><span class="co">#&gt;   env:  global</span></a>
-<a class="sourceLine" id="cb11-9" data-line-number="9"></a>
-<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co"># Or equivalently:</span></a>
-<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>rlang<span class="op">::</span><span class="kw">lang</span>(<span class="st">&quot;my_call&quot;</span>, <span class="op">!!!</span><span class="st"> </span>syms))</a>
-<a class="sourceLine" id="cb11-12" data-line-number="12"><span class="co">#&gt; &lt;quosure&gt;</span></a>
-<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co">#&gt;   expr: ^my_call(foo, bar, baz)</span></a>
-<a class="sourceLine" id="cb11-14" data-line-number="14"><span class="co">#&gt;   env:  global</span></a></code></pre></div>
+<a class="sourceLine" id="cb11-2" data-line-number="2"><span class="co">#&gt; Warning: `lang()` is soft-deprecated as of rlang 0.2.0.</span></a>
+<a class="sourceLine" id="cb11-3" data-line-number="3"><span class="co">#&gt; Please use `call2()` instead</span></a>
+<a class="sourceLine" id="cb11-4" data-line-number="4"><span class="co">#&gt; This warning is displayed once per session.</span></a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">call</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6"><span class="co">#&gt; my_call(foo, bar, baz)</span></a>
+<a class="sourceLine" id="cb11-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb11-8" data-line-number="8">rlang<span class="op">::</span><span class="kw">as_quosure</span>(call)</a>
+<a class="sourceLine" id="cb11-9" data-line-number="9"><span class="co">#&gt; &lt;quosure&gt;</span></a>
+<a class="sourceLine" id="cb11-10" data-line-number="10"><span class="co">#&gt; expr: ^my_call(foo, bar, baz)</span></a>
+<a class="sourceLine" id="cb11-11" data-line-number="11"><span class="co">#&gt; env:  global</span></a>
+<a class="sourceLine" id="cb11-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb11-13" data-line-number="13"><span class="co"># Or equivalently:</span></a>
+<a class="sourceLine" id="cb11-14" data-line-number="14"><span class="kw">quo</span>(<span class="op">!!</span><span class="st"> </span>rlang<span class="op">::</span><span class="kw">lang</span>(<span class="st">&quot;my_call&quot;</span>, <span class="op">!!!</span><span class="st"> </span>syms))</a>
+<a class="sourceLine" id="cb11-15" data-line-number="15"><span class="co">#&gt; &lt;quosure&gt;</span></a>
+<a class="sourceLine" id="cb11-16" data-line-number="16"><span class="co">#&gt; expr: ^my_call(foo, bar, baz)</span></a>
+<a class="sourceLine" id="cb11-17" data-line-number="17"><span class="co">#&gt; env:  global</span></a></code></pre></div>
 <p>Note that idioms based on <code>interp()</code> should now generally be avoided and replaced with quasiquotation. Where you used to interpolate:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1">lazyeval<span class="op">::</span><span class="kw">interp</span>(<span class="op">~</span><span class="st"> </span><span class="kw">mean</span>(var), <span class="dt">var =</span> rlang<span class="op">::</span><span class="kw">sym</span>(<span class="st">&quot;mpg&quot;</span>))</a></code></pre></div>
 <p>You would now unquote:</p>

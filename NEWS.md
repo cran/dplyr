@@ -1,3 +1,21 @@
+# dplyr 0.7.8
+
+* Fix return value of `setequal()` for data frames (#3704).
+
+* Remove `as.data.frame.tbl_df()` method for compatibility with R-devel (#3943).
+
+* Bump rlang dependency to 0.3.0.
+
+* Make compatibile with upcoming release of tibble.
+
+* Remove deprecated functions from programming vignette.
+
+* Restore interface of the exported C++ function `build_index_cpp()` for compatibility with the _valr_ package.
+
+# dplyr 0.7.7
+
+* Fix invalid character in `NEWS.md` file.
+
 # dplyr 0.7.6
 
 * `exprs()` is no longer exported to avoid conflicts with `Biobase::exprs()`
