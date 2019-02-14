@@ -12,8 +12,8 @@ test_that(".funs is applied to variables before sorting", {
   expect_identical(arrange_all(df, `-`), arrange(df, -mpg, -cyl, -disp))
 })
 
-test_that("arrange_at can arrange by grouping variables (#3351, #3332)", {
-  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+test_that("arrange_at can arrange by grouping variables (#3351, #3332, #3480)", {
+  tbl <- tibble(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
     group_by(gr1)
 
   expect_identical(
@@ -27,8 +27,8 @@ test_that("arrange_at can arrange by grouping variables (#3351, #3332)", {
   )
 })
 
-test_that("arrange_all arranges by grouping variable (#3351)", {
-  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+test_that("arrange_all arranges by grouping variable (#3351, #3480)", {
+  tbl <- tibble(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
     group_by(gr1)
 
   expect_identical(
@@ -42,12 +42,28 @@ test_that("arrange_all arranges by grouping variable (#3351)", {
   )
 })
 
-test_that("arrange_if arranges by grouping variable (#3351)", {
-  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+test_that("arrange_if arranges by grouping variable (#3351, #3480)", {
+  tbl <- tibble(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
     group_by(gr1)
 
   expect_identical(
     arrange_if(tbl, is.integer),
     arrange(tbl, gr1, gr2, x)
+  )
+})
+
+test_that("scoped arrange respect .by_group (#3245)",{
+  d <- group_by(df, cyl)
+  expect_identical(
+    arrange_all(d, .by_group = TRUE),
+    arrange(d, cyl, mpg, disp)
+  )
+  expect_identical(
+    arrange_if(d, is.numeric, .by_group = TRUE),
+    arrange(d, cyl, mpg, disp)
+  )
+  expect_identical(
+    arrange_at(d, vars(mpg, disp), .by_group = TRUE),
+    arrange(d, cyl, mpg, disp)
   )
 })

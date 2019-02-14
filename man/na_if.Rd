@@ -28,8 +28,23 @@ x <- c(1, -1, 0, 10)
 
 y <- c("abc", "def", "", "ghi")
 na_if(y, "")
+
+# na_if is particularly useful inside mutate,
+# and is meant for use with vectors rather than entire data frames
+starwars \%>\%
+  select(name, eye_color) \%>\%
+  mutate(eye_color = na_if(eye_color, "unknown"))
+
+# na_if can also be used with scoped variants of mutate
+# like mutate_if to mutate multiple columns
+starwars \%>\%
+  mutate_if(is.character, list(~na_if(., "unknown")))
 }
 \seealso{
 \code{\link[=coalesce]{coalesce()}} to replace missing values with a specified
 value.
+
+\code{\link[tidyr:replace_na]{tidyr::replace_na()}} to replace \code{NA} with a value.
+
+\code{\link[=recode]{recode()}} to more generally replace values.
 }

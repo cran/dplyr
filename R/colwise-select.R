@@ -16,24 +16,35 @@
 #' data frames.
 #'
 #' @inheritParams scoped
-#' @param .funs A single expression quoted with [funs()] or within a
-#'   quosure, a string naming a function, or a function.
-#' @export
+#' @param .funs A function `fun`, a purrr style lambda `~ fun(.)` or a list of either form.
+#'
+#' @section Grouping variables:
+#'
+#' Existing grouping variables are always kept in the data frame, even
+#' if not included in the selection.
+#'
 #' @examples
+#'
 #' # Supply a renaming function:
 #' select_all(mtcars, toupper)
 #' select_all(mtcars, "toupper")
-#' select_all(mtcars, funs(toupper(.)))
+#' select_all(mtcars, list(~toupper(.)))
 #'
 #' # Selection drops unselected variables:
 #' is_whole <- function(x) all(floor(x) == x)
 #' select_if(mtcars, is_whole, toupper)
+#' select_at(mtcars, vars(-contains("ar"), starts_with("c")), toupper)
 #'
 #' # But renaming retains them:
 #' rename_if(mtcars, is_whole, toupper)
+#' rename_at(mtcars, vars(-(1:3)), toupper)
+#' rename_all(mtcars, toupper)
 #'
 #' # The renaming function is optional for selection:
 #' select_if(mtcars, is_whole)
+#' select_at(mtcars, vars(-everything()))
+#' select_all(mtcars)
+#' @export
 select_all <- function(.tbl, .funs = list(), ...) {
   funs <- as_fun_list(.funs, enquo(.funs), caller_env(), ...)
   vars <- tbl_vars(.tbl)
@@ -53,6 +64,7 @@ rename_all <- function(.tbl, .funs = list(), ...) {
 #' @export
 select_if <- function(.tbl, .predicate, .funs = list(), ...) {
   funs <- as_fun_list(.funs, enquo(.funs), caller_env(), ...)
+  .predicate <- as_fun_list(.predicate, enquo(.predicate), caller_env())
   vars <- tbl_if_vars(.tbl, .predicate, caller_env(), .include_group_vars = TRUE)
   syms <- vars_select_syms(vars, funs, .tbl)
   select(.tbl, !!!syms)
@@ -61,6 +73,7 @@ select_if <- function(.tbl, .predicate, .funs = list(), ...) {
 #' @export
 rename_if <- function(.tbl, .predicate, .funs = list(), ...) {
   funs <- as_fun_list(.funs, enquo(.funs), caller_env(), ...)
+  .predicate <- as_fun_list(.predicate, enquo(.predicate), caller_env())
   vars <- tbl_if_vars(.tbl, .predicate, caller_env(), .include_group_vars = TRUE)
   syms <- vars_select_syms(vars, funs, .tbl, strict = TRUE)
   rename(.tbl, !!!syms)

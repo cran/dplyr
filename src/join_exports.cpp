@@ -5,26 +5,29 @@
 #include <tools/match.h>
 
 #include <tools/Quosure.h>
+#include <tools/set_rownames.h>
 
 #include <dplyr/visitor_set/VisitorSetIndexMap.h>
 
-#include <dplyr/GroupedDataFrame.h>
+#include <dplyr/data/GroupedDataFrame.h>
+#include <dplyr/visitors/join/DataFrameJoinVisitors.h>
 
-#include <dplyr/DataFrameJoinVisitors.h>
+#include <dplyr/visitors/subset/DataFrameSelect.h>
+#include <dplyr/visitors/subset/DataFrameSubsetVisitors.h>
 
-#include <dplyr/train.h>
-
-#include <dplyr/bad.h>
+#include <tools/train.h>
+#include <tools/bad.h>
 
 using namespace Rcpp;
 using namespace dplyr;
+#include <tools/debug.h>
 
-template <typename Index>
 DataFrame subset_join(DataFrame x, DataFrame y,
-                      const Index& indices_x, const Index& indices_y,
+                      const std::vector<int>& indices_x, const std::vector<int>& indices_y,
                       const IntegerVector& by_x, const IntegerVector& by_y,
                       const IntegerVector& aux_x, const IntegerVector& aux_y,
-                      CharacterVector classes) {
+                      CharacterVector classes,
+                      SEXP frame) {
   // construct out object
   List out(x.ncol() + aux_y.size());
 
@@ -36,22 +39,35 @@ DataFrame subset_join(DataFrame x, DataFrame y,
   }
 
   // then the auxiliary x columns (all x columns keep their location)
-  DataFrameSubsetVisitors visitors_x(x, aux_x);
+  DataFrameSubsetVisitors subset_x(DataFrameSelect(x, aux_x), frame);
+
+  // convert indices_x to 1-based R indices
+  int n_x = indices_x.size();
+  IntegerVector indices_x_one_based(indices_x.size());
+  for (int j = 0; j < n_x; j++) {
+    indices_x_one_based[j] = indices_x[j] < 0 ? NA_INTEGER : (indices_x[j] + 1);
+  }
+
+  // materialize the first few columns
   for (int i = 0; i < aux_x.size(); i++) {
-    SubsetVectorVisitor* const v = visitors_x.get(i);
-    out[aux_x[i] - 1] = v->subset(indices_x);
+    out[aux_x[i] - 1] = subset_x.subset_one(i, indices_x_one_based);
+  }
+
+  // convert indices_y
+  int n_y = indices_y.size();
+  IntegerVector indices_y_one_based(indices_y.size());
+  for (int j = 0; j < n_y; j++) {
+    indices_y_one_based[j] = indices_y[j] < 0 ? NA_INTEGER : (indices_y[j] + 1);
   }
 
   // then the auxiliary y columns (all y columns keep their relative location)
-  DataFrameSubsetVisitors visitors_y(y, aux_y);
-  for (int i = 0, k = x.ncol(); i < visitors_y.size(); i++, k++) {
-    SubsetVectorVisitor* const v = visitors_y.get(i);
-    out[k] = v->subset(indices_y);
+  DataFrameSubsetVisitors subset_y(DataFrameSelect(y, aux_y), frame);
+  for (int i = 0, k = x.ncol(); i < aux_y.size(); i++, k++) {
+    out[k] = subset_y.subset_one(i, indices_y_one_based);
   }
 
   int nrows = indices_x.size();
   set_rownames(out, nrows);
-
   set_class(out, classes);
 
   return (SEXP)out;
@@ -81,7 +97,7 @@ void check_by(const CharacterVector& by) {
 }
 
 // [[Rcpp::export]]
-DataFrame semi_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y, bool na_match) {
+DataFrame semi_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y, bool na_match, SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
@@ -92,9 +108,13 @@ DataFrame semi_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, Charact
   train_push_back(map, x.nrows());
 
   int n_y = y.nrows();
+
   // this will collect indices from rows in x that match rows in y
-  std::vector<int> indices;
-  indices.reserve(x.nrows());
+  //
+  // allocate a big enough R vector
+  IntegerVector indices(x.nrows());
+
+  int k = 0;
   for (int i = 0; i < n_y; i++) {
     // find a row in x that matches row i from y
     Map::iterator it = map.find(-i - 1);
@@ -102,50 +122,69 @@ DataFrame semi_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, Charact
     if (it != map.end()) {
       // collect the indices and remove them from the
       // map so that they are only found once.
-      push_back(indices, it->second);
+      const std::vector<int>& zero_based_chunk = it->second;
+
+      for (size_t j = 0; j < zero_based_chunk.size(); j++, k++) {
+        indices[k] = zero_based_chunk[j] + 1;
+      }
 
       map.erase(it);
-
     }
   }
 
+  // pretend indices is of length k
+  SETLENGTH(indices, k);
   std::sort(indices.begin(), indices.end());
 
-  const DataFrame& out = subset(x, indices, get_class(x));
-  strip_index(out);
-  return out;
+  DataFrame res = DataFrameSubsetVisitors(x, frame).subset_all(indices);
+
+  // stop pretending
+  SETLENGTH(indices, x.nrows());
+
+  return res;
 }
 
 // [[Rcpp::export]]
-DataFrame anti_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y, bool na_match) {
+DataFrame anti_join_impl(DataFrame x, DataFrame y, CharacterVector by_x, CharacterVector by_y, bool na_match, SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
   DataFrameJoinVisitors visitors(x, y, SymbolVector(by_x), SymbolVector(by_y), true, na_match);
   Map map(visitors);
 
-  // train the map in terms of x
-  train_push_back(map, x.nrows());
+  int n_x = x.nrows();
 
-  int n_y = y.nrows();
+  // train the map in terms of x
+  train_push_back(map, n_x);
+
   // remove the rows in x that match
+  int n_y = y.nrows();
   for (int i = 0; i < n_y; i++) {
     Map::iterator it = map.find(-i - 1);
     if (it != map.end())
       map.erase(it);
   }
 
-  // collect what's left
-  std::vector<int> indices;
-  indices.reserve(map.size());
-  for (Map::iterator it = map.begin(); it != map.end(); ++it)
-    push_back(indices, it->second);
+  // allocate a big enough R vector
+  IntegerVector indices(n_x);
+  int k = 0;
+  for (Map::iterator it = map.begin(); it != map.end(); ++it) {
+    const std::vector<int>& zero_based_chunk = it->second;
+    for (size_t j = 0; j < zero_based_chunk.size(); j++, k++) {
+      indices[k] = zero_based_chunk[j] + 1;
+    }
+  }
 
+  // pretend length
+  SETLENGTH(indices, k);
   std::sort(indices.begin(), indices.end());
 
-  const DataFrame& out = subset(x, indices, get_class(x));
-  strip_index(out);
-  return out;
+  DataFrame res = DataFrameSubsetVisitors(x, frame).subset_all(indices);
+
+  // stop pretending
+  SETLENGTH(indices, k);
+
+  return res;
 }
 
 void check_by(const IntegerVector& by) {
@@ -156,7 +195,8 @@ void check_by(const IntegerVector& by) {
 DataFrame inner_join_impl(DataFrame x, DataFrame y,
                           IntegerVector by_x, IntegerVector by_y,
                           IntegerVector aux_x, IntegerVector aux_y,
-                          bool na_match) {
+                          bool na_match,
+                          SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
@@ -182,15 +222,93 @@ DataFrame inner_join_impl(DataFrame x, DataFrame y,
                      indices_x, indices_y,
                      by_x, by_y,
                      aux_x, aux_y,
-                     get_class(x)
+                     get_class(x),
+                     frame
                     );
 }
+
+// [[Rcpp::export]]
+List nest_join_impl(DataFrame x, DataFrame y,
+                    IntegerVector by_x, IntegerVector by_y,
+                    IntegerVector aux_y,
+                    String yname,
+                    SEXP frame
+                   ) {
+
+  check_by(by_x);
+
+  typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
+  DataFrameJoinVisitors visitors(x, y, by_x, by_y, false, true);
+  Map map(visitors);
+
+  int n_x = x.nrows(), n_y = y.nrows();
+
+  train_push_back_right(map, n_y);
+
+  List list_col(n_x);
+
+  DataFrameSubsetVisitors y_subset_visitors(DataFrameSelect(y, aux_y), frame);
+
+  // to deal with the case where multiple rows of x match rows in y
+  dplyr_hash_map<int, SEXP> resolved_map(y_subset_visitors.size());
+
+  // empty integer vector
+  IntegerVector empty(0);
+
+  for (int i = 0; i < n_x; i++) {
+
+    // check if the i row of x matches rows in y
+    Map::iterator it = map.find(i);
+    if (it != map.end()) {
+
+      // then check if we have already seen that match
+      dplyr_hash_map<int, SEXP>::iterator rit = resolved_map.find(it->first);
+      if (rit == resolved_map.end()) {
+        // first time we see the match, perform the subset
+        const std::vector<int>& indices_negative = it->second;
+        int n = indices_negative.size();
+        IntegerVector indices_one_based(n);
+        for (int j = 0; j < n; j++) {
+          indices_one_based[j] = -indices_negative[j];
+        }
+
+        resolved_map[it->first] = list_col[i] = y_subset_visitors.subset_all(indices_one_based);
+      } else {
+        // we have seen that match already, just lazy duplicate the tibble that is
+        // stored in the resolved map
+        list_col[i] = Rf_lazy_duplicate(rit->second);
+      }
+
+    } else {
+      list_col[i] = y_subset_visitors.subset_all(empty);
+    }
+  }
+
+  int ncol_x = x.size();
+  List out(ncol_x + 1);
+  CharacterVector names_x = x.names();
+  for (int i = 0; i < ncol_x; i++) {
+    out[i] = x[i];
+  }
+  names_x.push_back(yname) ;
+  out[ncol_x] = list_col ;
+  out.names() = names_x;
+  out.attr("class") = x.attr("class");
+  out.attr("row.names") = x.attr("row.names");
+
+  GroupedDataFrame::copy_groups(out, x) ;
+
+  return out;
+}
+
+
 
 // [[Rcpp::export]]
 DataFrame left_join_impl(DataFrame x, DataFrame y,
                          IntegerVector by_x, IntegerVector by_y,
                          IntegerVector aux_x, IntegerVector aux_y,
-                         bool na_match) {
+                         bool na_match,
+                         SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
@@ -221,7 +339,8 @@ DataFrame left_join_impl(DataFrame x, DataFrame y,
                      indices_x, indices_y,
                      by_x, by_y,
                      aux_x, aux_y,
-                     get_class(x)
+                     get_class(x),
+                     frame
                     );
 }
 
@@ -229,7 +348,8 @@ DataFrame left_join_impl(DataFrame x, DataFrame y,
 DataFrame right_join_impl(DataFrame x, DataFrame y,
                           IntegerVector by_x, IntegerVector by_y,
                           IntegerVector aux_x, IntegerVector aux_y,
-                          bool na_match) {
+                          bool na_match,
+                          SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
@@ -258,7 +378,8 @@ DataFrame right_join_impl(DataFrame x, DataFrame y,
                      indices_x, indices_y,
                      by_x, by_y,
                      aux_x, aux_y,
-                     get_class(x)
+                     get_class(x),
+                     frame
                     );
 }
 
@@ -266,7 +387,8 @@ DataFrame right_join_impl(DataFrame x, DataFrame y,
 DataFrame full_join_impl(DataFrame x, DataFrame y,
                          IntegerVector by_x, IntegerVector by_y,
                          IntegerVector aux_x, IntegerVector aux_y,
-                         bool na_match) {
+                         bool na_match,
+                         SEXP frame) {
   check_by(by_x);
 
   typedef VisitorSetIndexMap<DataFrameJoinVisitors, std::vector<int> > Map;
@@ -312,6 +434,7 @@ DataFrame full_join_impl(DataFrame x, DataFrame y,
                      indices_x, indices_y,
                      by_x, by_y,
                      aux_x, aux_y,
-                     get_class(x)
+                     get_class(x),
+                     frame
                     );
 }

@@ -1,6 +1,6 @@
 context("colwise select")
 
-df <- data_frame(x = 0L, y = 0.5, z = 1)
+df <- tibble(x = 0L, y = 0.5, z = 1)
 
 test_that("can select/rename all variables", {
   expect_identical(select_all(df), df)
@@ -29,6 +29,9 @@ test_that("can select/rename with predicate", {
 test_that("can supply funs()", {
   expect_identical(select_if(df, funs(is_integerish(.)), funs(toupper(.))), set_names(df[c("x", "z")], c("X", "Z")))
   expect_identical(rename_if(df, funs(is_integerish(.)), funs(toupper(.))), set_names(df, c("X", "y", "Z")))
+
+  expect_identical(select_if(df, list(~is_integerish(.)), list(~toupper(.))), set_names(df[c("x", "z")], c("X", "Z")))
+  expect_identical(rename_if(df, list(~is_integerish(.)), list(~toupper(.))), set_names(df, c("X", "y", "Z")))
 })
 
 test_that("fails when more than one renaming function is supplied", {
@@ -39,6 +42,17 @@ test_that("fails when more than one renaming function is supplied", {
   )
   expect_error(
     rename_all(df, funs(tolower, toupper)),
+    "`.funs` must contain one renaming function, not 2",
+    fixed = TRUE
+  )
+
+  expect_error(
+    select_all(df, list(tolower, toupper)),
+    "`.funs` must contain one renaming function, not 2",
+    fixed = TRUE
+  )
+  expect_error(
+    rename_all(df, list(tolower, toupper)),
     "`.funs` must contain one renaming function, not 2",
     fixed = TRUE
   )
@@ -56,8 +70,8 @@ test_that("can select/rename with vars()", {
   expect_identical(rename_at(df, vars(x:y), toupper), set_names(df, c("X", "Y", "z")))
 })
 
-test_that("select variants can use grouping variables (#3351)", {
-  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+test_that("select variants can use grouping variables (#3351, #3480)", {
+  tbl <- tibble(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
     group_by(gr1)
 
   expect_identical(
@@ -80,7 +94,7 @@ test_that("select_if keeps grouping cols", {
 })
 
 test_that("select_if() handles non-syntactic colnames", {
-  df <- data_frame(`x 1` = 1:3)
+  df <- tibble(`x 1` = 1:3)
   expect_identical(select_if(df, is_integer)[[1]], 1:3)
 })
 
@@ -112,7 +126,7 @@ test_that("scoping (#3426)", {
 })
 
 test_that("rename variants can rename a grouping variable (#3351)", {
-  tbl <- data_frame(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
+  tbl <- tibble(gr1 = rep(1:2, 4), gr2 = rep(1:2, each = 4), x = 1:8) %>%
     group_by(gr1)
   res <- rename(tbl, GR1 = gr1, GR2 = gr2, X = x)
 
@@ -145,11 +159,11 @@ test_that("select_all does not change the order of columns (#3351)", {
 
 test_that("mutate_all does not change the order of columns (#3351)", {
   tbl <- group_by(tibble(x = 1:4, y = 1:4), y)
-  expect_identical(names(mutate_all(tbl, identity)), names(tbl))
+  expect_message(expect_identical(names(mutate_all(tbl, identity)), names(tbl)), "ignored")
 
   tbl <- group_by(tibble(x = 1:4, y = 1:4), x)
-  expect_identical(names(mutate_all(tbl, identity)), names(tbl))
+  expect_message(expect_identical(names(mutate_all(tbl, identity)), names(tbl)), "ignored")
 
   tbl <- group_by(tibble(x = 1:4, y = 1:4, z = 1:4), y)
-  expect_identical(names(mutate_all(tbl, identity)), names(tbl))
+  expect_message(expect_identical(names(mutate_all(tbl, identity)), names(tbl)), "ignored")
 })

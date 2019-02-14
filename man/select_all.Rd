@@ -24,8 +24,7 @@ rename_at(.tbl, .vars, .funs = list(), ...)
 \arguments{
 \item{.tbl}{A \code{tbl} object.}
 
-\item{.funs}{A single expression quoted with \code{\link[=funs]{funs()}} or within a
-quosure, a string naming a function, or a function.}
+\item{.funs}{A function \code{fun}, a purrr style lambda \code{~ fun(.)} or a list of either form.}
 
 \item{...}{Additional arguments for the function calls in
 \code{.funs}. These are evaluated only once, with \link[rlang:tidy-dots]{tidy dots} support.}
@@ -54,19 +53,32 @@ renaming.
 The \code{_if} and \code{_at} variants always retain grouping variables for grouped
 data frames.
 }
+\section{Grouping variables}{
+
+
+Existing grouping variables are always kept in the data frame, even
+if not included in the selection.
+}
+
 \examples{
+
 # Supply a renaming function:
 select_all(mtcars, toupper)
 select_all(mtcars, "toupper")
-select_all(mtcars, funs(toupper(.)))
+select_all(mtcars, list(~toupper(.)))
 
 # Selection drops unselected variables:
 is_whole <- function(x) all(floor(x) == x)
 select_if(mtcars, is_whole, toupper)
+select_at(mtcars, vars(-contains("ar"), starts_with("c")), toupper)
 
 # But renaming retains them:
 rename_if(mtcars, is_whole, toupper)
+rename_at(mtcars, vars(-(1:3)), toupper)
+rename_all(mtcars, toupper)
 
 # The renaming function is optional for selection:
 select_if(mtcars, is_whole)
+select_at(mtcars, vars(-everything()))
+select_all(mtcars)
 }

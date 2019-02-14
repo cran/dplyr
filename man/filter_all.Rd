@@ -6,17 +6,24 @@
 \alias{filter_at}
 \title{Filter within a selection of variables}
 \usage{
-filter_all(.tbl, .vars_predicate)
+filter_all(.tbl, .vars_predicate, .preserve = FALSE)
 
-filter_if(.tbl, .predicate, .vars_predicate)
+filter_if(.tbl, .predicate, .vars_predicate, .preserve = FALSE)
 
-filter_at(.tbl, .vars, .vars_predicate)
+filter_at(.tbl, .vars, .vars_predicate, .preserve = FALSE)
 }
 \arguments{
 \item{.tbl}{A \code{tbl} object.}
 
 \item{.vars_predicate}{A quoted predicate expression as returned by
-\code{\link[=all_vars]{all_vars()}} or \code{\link[=any_vars]{any_vars()}}.}
+\code{\link[=all_vars]{all_vars()}} or \code{\link[=any_vars]{any_vars()}}.
+
+Can also be a function or purrr-like formula. In this case, the
+intersection of the results is taken by default and there's
+currently no way to request the union.}
+
+\item{.preserve}{when \code{TRUE} (the default), the grouping structure
+is preserved, otherwise it is recalculated based on the resulting data.}
 
 \item{.predicate}{A predicate function to be applied to the columns
 or a logical vector. The variables for which \code{.predicate} is or
@@ -34,6 +41,13 @@ selection of variables. The predicate expression should be quoted
 with \code{\link[=all_vars]{all_vars()}} or \code{\link[=any_vars]{any_vars()}} and should mention the pronoun
 \code{.} to refer to variables.
 }
+\section{Grouping variables}{
+
+
+The grouping variables that are part of the selection are taken
+into account to determine filtered rows.
+}
+
 \examples{
 # While filter() accepts expressions with specific variables, the
 # scoped filter verbs take an expression with the pronoun `.` and
@@ -56,4 +70,11 @@ filter_at(mtcars, vars(starts_with("d")), any_vars((. \%\% 2) == 0))
 
 # And filter_if() selects variables with a predicate function:
 filter_if(mtcars, ~ all(floor(.) == .), all_vars(. != 0))
+
+
+# We're working on a new syntax to allow functions instead,
+# including purrr-like lambda functions. This is already
+# operational, but there's currently no way to specify the union of
+# the predicate results:
+mtcars \%>\% filter_at(vars(hp, vs), ~ . \%\% 2 == 0)
 }

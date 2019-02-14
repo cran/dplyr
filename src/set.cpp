@@ -5,17 +5,19 @@
 
 #include <tools/match.h>
 #include <tools/collapse.h>
+#include <tools/BoolResult.h>
 
 #include <dplyr/visitor_set/VisitorSetIndexSet.h>
 #include <dplyr/visitor_set/VisitorSetIndexMap.h>
 
-#include <dplyr/BoolResult.h>
+#include <dplyr/visitors/join/Column.h>
+#include <dplyr/visitors/join/JoinVisitor.h>
+#include <dplyr/visitors/join/JoinVisitorImpl.h>
 
-#include <dplyr/DataFrameSubsetVisitors.h>
-#include <dplyr/JoinVisitor.h>
-#include <dplyr/DataFrameJoinVisitors.h>
+#include <dplyr/visitors/join/DataFrameJoinVisitors.h>
 
-#include <dplyr/train.h>
+#include <tools/train.h>
+#include <dplyr/data/GroupedDataFrame.h>
 
 using namespace Rcpp;
 using namespace dplyr;
@@ -90,6 +92,113 @@ dplyr::BoolResult compatible_data_frame_nonames(DataFrame x, DataFrame y, bool c
 
 }
 
+bool same_factor_levels(SEXP x, SEXP y, std::stringstream& ss, const SymbolString& name) {
+  bool res = same_levels(x, y);
+  if (!res) {
+    ss << "Factor levels not equal for column `" << name.get_utf8_cstring() << "`";
+  }
+  return res;
+}
+
+bool type_compatible(SEXP x, SEXP y) {
+  // if one is a matrix but not the other, the types are not compatible
+  if (Rf_isMatrix(x) + Rf_isMatrix(y) == 1) {
+    return false;
+  }
+
+  if (Rf_inherits(x, "Date")) return Rf_inherits(y, "Date");
+
+  switch (TYPEOF(x)) {
+  case RAWSXP:
+    return TYPEOF(y) == RAWSXP;
+  case LGLSXP:
+    return TYPEOF(y) == LGLSXP;
+  case CPLXSXP:
+    return TYPEOF(y) == CPLXSXP;
+  case INTSXP:
+    if (Rf_isFactor(x)) {
+      return TYPEOF(y) == STRSXP || Rf_isFactor(y);
+    } else if (Rf_inherits(x, "Date")) {
+      return Rf_inherits(y, "Date");
+    } else {
+      return !Rf_isFactor(y) && (TYPEOF(y) == INTSXP || TYPEOF(y) == REALSXP);
+    }
+  case REALSXP:
+    return TYPEOF(y) == INTSXP || TYPEOF(y) == REALSXP;
+  case STRSXP:
+    return TYPEOF(y) == STRSXP || Rf_isFactor(y);
+  case VECSXP:
+    if (Rf_inherits(x, "data.frame")) {
+      // TODO: also recurse into the df to check if
+      // - same names
+      // - same type for each column
+      return Rf_inherits(y, "data.frame");
+    } else {
+      return !Rf_inherits(y, "data.frame");
+    }
+  default:
+    break;
+  }
+  return false;
+}
+
+bool type_same(SEXP x, SEXP y, std::stringstream& ss, const SymbolString& name) {
+  // if one is a matrix but not the other, the types are not compatible
+  if (Rf_isMatrix(x) + Rf_isMatrix(y) == 1) {
+    return false;
+  }
+  if (Rf_inherits(x, "Date")) return Rf_inherits(y, "Date");
+
+  switch (TYPEOF(x)) {
+  case RAWSXP:
+    return TYPEOF(y) == RAWSXP;
+  case LGLSXP:
+    return TYPEOF(y) == LGLSXP;
+  case CPLXSXP:
+    return TYPEOF(y) == CPLXSXP;
+  case INTSXP:
+    if (Rf_isFactor(x)) {
+      return Rf_isFactor(y) && same_factor_levels(x, y, ss, name);
+    } else {
+      return !Rf_isFactor(y) && TYPEOF(y) == INTSXP;
+    }
+  case REALSXP:
+    if (Rf_inherits(x, "Date")) {
+      return Rf_inherits(y, "Date");
+    } else {
+      return TYPEOF(y) == REALSXP;
+    }
+  case STRSXP:
+    return TYPEOF(y) == STRSXP;
+  case VECSXP:
+    if (Rf_inherits(x, "data.frame")) {
+      // TODO: also recurse into the df to check if
+      // - same names
+      // - same type for each column
+      return Rf_inherits(y, "data.frame");
+    } else {
+      return !Rf_inherits(y, "data.frame");
+    }
+  default:
+    break;
+  }
+  return false;
+}
+
+std::string type_describe(SEXP x) {
+  if (Rf_isMatrix(x)) {
+    return "matrix";
+  } else if (Rf_inherits(x, "data.frame")) {
+    return get_single_class(x);
+  } else if (Rf_inherits(x, "Date")) {
+    return "Date";
+  } else if (Rf_isFactor(x)) {
+    return get_single_class(x);
+  } else {
+    return get_single_class(x);
+  }
+}
+
 // [[Rcpp::export]]
 dplyr::BoolResult compatible_data_frame(DataFrame x, DataFrame y, bool ignore_col_order = true, bool convert = false) {
   int n = x.size();
@@ -140,20 +249,16 @@ dplyr::BoolResult compatible_data_frame(DataFrame x, DataFrame y, bool ignore_co
   for (int i = 0; i < n; i++) {
     SymbolString name = names_x[i];
     SEXP xi = x[i], yi = y[orders[i] - 1];
-    boost::scoped_ptr<SubsetVectorVisitor> vx(subset_visitor(xi, name));
-    boost::scoped_ptr<SubsetVectorVisitor> vy(subset_visitor(yi, name));
 
     std::stringstream ss;
-    bool compatible = convert ?
-                      vx->is_compatible(vy.get(), ss, name) :
-                      vx->is_same_type(vy.get(), ss, name);
+    bool compatible = convert ? type_compatible(xi, yi) : type_same(xi, yi, ss, name);
 
     if (!compatible) {
       if (ss.str() == "") {
         ss << "Incompatible type for column `"
            << name.get_utf8_cstring()
-           << "`: x " << vx->get_r_type()
-           << ", y " << vy->get_r_type();
+           << "`: x " << type_describe(xi)
+           << ", y " << type_describe(yi);
       }
 
       why.push_back(String(ss.str(), CE_UTF8));
@@ -241,6 +346,16 @@ dplyr::BoolResult equal_data_frame(DataFrame x, DataFrame y, bool ignore_col_ord
   return yes();
 }
 
+DataFrame reconstruct_metadata(DataFrame out, const DataFrame& x) {
+  if (is<GroupedDataFrame>(x)) {
+    // go through the GroupedDataFrame class so that the groups attribute is generated
+    return GroupedDataFrame(out, x).data();
+  } else {
+    // nothing to do for rowwise and natural data frames
+    return out;
+  }
+}
+
 // [[Rcpp::export]]
 DataFrame union_data_frame(DataFrame x, DataFrame y) {
   BoolResult compat = compatible_data_frame(x, y, true, true);
@@ -253,10 +368,27 @@ DataFrame union_data_frame(DataFrame x, DataFrame y) {
   DataFrameJoinVisitors visitors(x, y, x_names, x_names, true, true);
   Set set(visitors);
 
-  train_insert(set, x.nrows());
-  train_insert_right(set, y.nrows());
+  int n_x = x.nrows();
+  int n_y = y.nrows();
 
-  return visitors.subset(set, get_class(x));
+  std::vector<int> indices;
+  indices.reserve(n_x + n_y);
+
+  for (int i = 0; i < n_x; i++) {
+    std::pair<Set::iterator, bool> inserted = set.insert(i);
+    if (inserted.second) {
+      indices.push_back(i);
+    }
+  }
+
+  for (int i = 0; i < n_y; i++) {
+    std::pair<Set::iterator, bool> inserted = set.insert(-i - 1);
+    if (inserted.second) {
+      indices.push_back(-i - 1);
+    }
+  }
+
+  return reconstruct_metadata(visitors.subset(indices, get_class(x)), x);
 }
 
 // [[Rcpp::export]]
@@ -265,25 +397,29 @@ DataFrame intersect_data_frame(DataFrame x, DataFrame y) {
   if (!compat) {
     stop("not compatible: %s", compat.why_not());
   }
-  typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set;
 
+  typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set;
   SymbolVector x_names = x.names();
   DataFrameJoinVisitors visitors(x, y, x_names, x_names, true, true);
   Set set(visitors);
 
-  train_insert(set, x.nrows());
+  int n_x = x.nrows();
+  int n_y = y.nrows();
+
+  train_insert_right(set, n_y);
 
   std::vector<int> indices;
-  int n_y = y.nrows();
-  for (int i = 0; i < n_y; i++) {
-    Set::iterator it = set.find(-i - 1);
+  indices.reserve(std::min(n_x, n_y));
+
+  for (int i = 0; i < n_x; i++) {
+    Set::iterator it = set.find(i);
     if (it != set.end()) {
       indices.push_back(*it);
       set.erase(it);
     }
   }
 
-  return visitors.subset(indices, get_class(x));
+  return reconstruct_metadata(visitors.subset(indices, get_class(x)), x);
 }
 
 // [[Rcpp::export]]
@@ -295,20 +431,23 @@ DataFrame setdiff_data_frame(DataFrame x, DataFrame y) {
 
   typedef VisitorSetIndexSet<DataFrameJoinVisitors> Set;
   SymbolVector y_names = y.names();
-  DataFrameJoinVisitors visitors(y, x, y_names, y_names, true, true);
+  DataFrameJoinVisitors visitors(x, y, y_names, y_names, true, true);
   Set set(visitors);
 
-  train_insert(set, y.nrows());
+  int n_x = x.nrows();
+  int n_y = y.nrows();
+
+  train_insert_right(set, n_y);
 
   std::vector<int> indices;
+  indices.reserve(n_x);
 
-  int n_x = x.nrows();
   for (int i = 0; i < n_x; i++) {
-    if (!set.count(-i - 1)) {
-      set.insert(-i - 1);
-      indices.push_back(-i - 1);
+    std::pair<Set::iterator, bool> inserted = set.insert(i);
+    if (inserted.second) {
+      indices.push_back(i);
     }
   }
 
-  return visitors.subset(indices, get_class(x));
+  return reconstruct_metadata(visitors.subset(indices, get_class(x)), x);
 }

@@ -1,5 +1,9 @@
 #' Create a list of functions calls.
 #'
+#' \Sexpr[results=rd, stage=render]{dplyr:::lifecycle("soft-deprecated")}
+#'
+#' @description
+#'
 #' `funs()` provides a flexible way to generate a named list of
 #' functions for input to other functions like [summarise_at()].
 #'
@@ -37,6 +41,16 @@
 #' funs(function(x) mean(x, na.rm = TRUE))
 #' funs(~mean(x, na.rm = TRUE))}
 funs <- function(..., .args = list()) {
+  signal_soft_deprecated(paste_line(
+    "funs() is soft deprecated as of dplyr 0.8.0",
+    "please use list() instead",
+    "",
+    "# Before:",
+    "funs(name = f(.)",
+    "",
+    "# After: ",
+    "list(name = ~f(.))"
+  ))
   dots <- quos(...)
   default_env <- caller_env()
 
@@ -44,16 +58,14 @@ funs <- function(..., .args = list()) {
   new_funs(funs)
 }
 new_funs <- function(funs) {
-  names(funs) <- names2(funs)
+  attr(funs, "have_name") <- any(names2(funs) != "")
 
-  missing_names <- names(funs) == ""
-  default_names <- map_chr(funs[missing_names], function(dot) {
-    quo_name(node_car(quo_get_expr(dot)))
-  })
-  names(funs)[missing_names] <- default_names
+  # Workaround until rlang:::label() is exported
+  temp <- map(funs, function(fn) node_car(quo_get_expr(fn)))
+  temp <- exprs_auto_name(temp)
+  names(funs) <- names(temp)
 
   class(funs) <- "fun_list"
-  attr(funs, "have_name") <- any(!missing_names)
   funs
 }
 
@@ -96,8 +108,8 @@ as_fun <- function(.x, .env, .args) {
   expr <- quo_get_expr(quo)
 
   if (is_call(expr, c("function", "~"))) {
-    top_level <- fmt_obj(as_string(expr[[1]]))
-    bad_args(quo_text(expr), "must be a function name (quoted or unquoted) or an unquoted call, not {top_level}")
+    top_level <- as_string(expr[[1]])
+    bad_args(quo_text(expr), "must be a function name (quoted or unquoted) or an unquoted call, not `{top_level}`")
   }
 
   if (is_call(expr) && !is_call(expr, c("::", ":::"))) {
@@ -149,6 +161,11 @@ print.fun_list <- function(x, ..., width = getOption("width")) {
 #' @inheritParams funs
 #' @param env The environment in which functions should be evaluated.
 funs_ <- function(dots, args = list(), env = base_env()) {
+  signal_soft_deprecated(paste_line(
+    "funs_() is deprecated. ",
+    "Please use list() instead"
+  ))
+
   dots <- compat_lazy_dots(dots, caller_env())
   funs(!!!dots, .args = args)
 }

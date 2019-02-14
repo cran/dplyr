@@ -20,7 +20,7 @@ add_rownames <- function(df, var = "rowname") {
 
   stopifnot(is.data.frame(df))
 
-  rn <- as_data_frame(setNames(list(rownames(df)), var))
+  rn <- as_tibble(setNames(list(rownames(df)), var))
   rownames(df) <- NULL
 
   bind_cols(rn, df)
@@ -29,9 +29,9 @@ add_rownames <- function(df, var = "rowname") {
 # Grouping methods ------------------------------------------------------------
 
 #' @export
-group_by.data.frame <- function(.data, ..., add = FALSE) {
+group_by.data.frame <- function(.data, ..., add = FALSE, .drop = group_drops(.data)) {
   groups <- group_by_prepare(.data, ..., add = add)
-  grouped_df(groups$data, groups$group_names)
+  grouped_df(groups$data, groups$group_names, .drop)
 }
 #' @export
 group_by_.data.frame <- function(.data, ..., .dots = list(), add = FALSE) {
@@ -57,8 +57,8 @@ n_groups.data.frame <- function(x) 1L
 # is just a convenience layer, I didn't bother. They should still be fast.
 
 #' @export
-filter.data.frame <- function(.data, ...) {
-  as.data.frame(filter(tbl_df(.data), ...))
+filter.data.frame <- function(.data, ..., .preserve = FALSE) {
+  as.data.frame(filter(tbl_df(.data), ..., .preserve = .preserve))
 }
 #' @export
 filter_.data.frame <- function(.data, ..., .dots = list()) {
@@ -67,14 +67,13 @@ filter_.data.frame <- function(.data, ..., .dots = list()) {
 }
 
 #' @export
-slice.data.frame <- function(.data, ...) {
-  dots <- named_quos(...)
-  slice_impl(.data, dots)
+slice.data.frame <- function(.data, ..., .preserve = FALSE) {
+  as.data.frame(slice(tbl_df(.data), ..., .preserve = .preserve))
 }
 #' @export
 slice_.data.frame <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  slice_impl(.data, dots)
+  slice(.data, !!!dots)
 }
 
 #' @export
@@ -98,19 +97,19 @@ mutate_.data.frame <- function(.data, ..., .dots = list()) {
 }
 
 #' @export
-arrange.data.frame <- function(.data, ...) {
-  as.data.frame(arrange(tbl_df(.data), ...))
+arrange.data.frame <- function(.data, ..., .by_group = FALSE) {
+  as.data.frame(arrange(tbl_df(.data), ..., .by_group = .by_group))
 }
 #' @export
-arrange_.data.frame <- function(.data, ..., .dots = list()) {
+arrange_.data.frame <- function(.data, ..., .dots = list(), .by_group = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  arrange(.data, !!!dots)
+  arrange(.data, !!!dots, .by_group = .by_group)
 }
 
 #' @export
 select.data.frame <- function(.data, ...) {
   # Pass via splicing to avoid matching vars_select() arguments
-  vars <- tidyselect::vars_select(names(.data), !!!quos(...))
+  vars <- tidyselect::vars_select(sel_vars(.data), !!!quos(...))
   select_impl(.data, vars)
 }
 #' @export
@@ -141,6 +140,12 @@ inner_join.data.frame <- function(x, y, by = NULL, copy = FALSE, ...) {
 #' @export
 left_join.data.frame <- function(x, y, by = NULL, copy = FALSE, ...) {
   as.data.frame(left_join(tbl_df(x), y, by = by, copy = copy, ...))
+}
+
+#' @export
+#' @rdname join.tbl_df
+nest_join.data.frame <- function(x, y, by = NULL, copy = FALSE, keep = FALSE, name = NULL, ... ) {
+  as.data.frame(nest_join(tbl_df(x), y, by = by, copy = copy, ..., keep = keep, name = name))
 }
 
 #' @export
@@ -197,7 +202,7 @@ setequal.data.frame <- function(x, y, ...) {
 
 reconstruct_set <- function(out, x) {
   if (is_grouped_df(x)) {
-    out <- grouped_df_impl(out, group_vars(x), group_drop(x), FALSE)
+    out <- grouped_df_impl(out, group_vars(x), group_drops(x))
   }
 
   out
@@ -205,10 +210,10 @@ reconstruct_set <- function(out, x) {
 
 #' @export
 distinct.data.frame <- function(.data, ..., .keep_all = FALSE) {
-  dist <- distinct_vars(.data, quos(...), .keep_all = .keep_all)
+  dist <- distinct_prepare(.data, quos(...), .keep_all = .keep_all)
   vars <- match_vars(dist$vars, dist$data)
   keep <- match_vars(dist$keep, dist$data)
-  distinct_impl(dist$data, vars, keep)
+  distinct_impl(dist$data, vars, keep, environment())
 }
 #' @export
 distinct_.data.frame <- function(.data, ..., .dots = list(), .keep_all = FALSE) {
@@ -252,45 +257,30 @@ do_.data.frame <- function(.data, ..., .dots = list()) {
 
 #' @export
 sample_n.data.frame <- function(tbl, size, replace = FALSE,
-                                weight = NULL, .env = NULL) {
+                                weight = NULL, .env = NULL, ...) {
   if (!is_null(.env)) {
     inform("`.env` is deprecated and no longer has any effect")
   }
 
-  weight <- eval_tidy(enquo(weight), tbl)
-  sample_n_basic(tbl, size, FALSE, replace = replace, weight = weight)
+  size <- enquo(size)
+  weight <- enquo(weight)
+
+  slice(tbl, sample.int(n(), check_size(!!size, n(), replace = replace), replace = replace, prob = !!weight))
 }
 
 
 #' @export
 sample_frac.data.frame <- function(tbl, size = 1, replace = FALSE,
-                                   weight = NULL, .env = NULL) {
+                                   weight = NULL, .env = NULL, ...) {
   if (!is_null(.env)) {
     inform("`.env` is deprecated and no longer has any effect")
   }
 
-  weight <- eval_tidy(enquo(weight), tbl)
-  sample_n_basic(tbl, size, TRUE, replace = replace, weight = weight)
+  size <- enquo(size)
+  weight <- enquo(weight)
+
+  slice(tbl, sample.int(n(), round(n() * check_frac(!!size, replace = replace)), replace = replace, prob = !!weight))
 }
-
-sample_n_basic <- function(tbl, size, frac, replace = FALSE, weight = NULL) {
-  n <- nrow(tbl)
-
-  weight <- check_weight(weight, n)
-  assert_that(is.numeric(size), length(size) == 1, size >= 0)
-
-  if (frac) {
-    check_frac(size, replace)
-    size <- round(size * n)
-  } else {
-    check_size(size, n, replace)
-  }
-
-  idx <- sample.int(n, size, replace = replace, prob = weight)
-  tbl[idx, , drop = FALSE]
-}
-
-
 
 # Misc -------------------------------------------------------------------------
 

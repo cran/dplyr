@@ -2,29 +2,35 @@
 % Please edit documentation in R/manip.r
 \name{slice}
 \alias{slice}
-\title{Select rows by position}
+\title{Choose rows by position}
 \usage{
-slice(.data, ...)
+slice(.data, ..., .preserve = FALSE)
 }
 \arguments{
 \item{.data}{A tbl.}
 
-\item{...}{Integer row values.
+\item{...}{Integer row values.  Provide either positive values to keep,
+or negative values to drop. The values provided must be either all
+positive or all negative.  Indices beyond the number of rows in the
+input are silently ignored.
 
-These arguments are automatically \link[rlang:quo]{quoted} and
+The arguments in \code{...} are automatically \link[rlang:quo]{quoted} and
 \link[rlang:eval_tidy]{evaluated} in the context of the data
 frame. They support \link[rlang:quasiquotation]{unquoting} and
 splicing. See \code{vignette("programming")} for an introduction to
 these concepts.}
+
+\item{.preserve}{when \code{FALSE} (the default), the grouping structure
+is recalculated based on the resulting data, otherwise it is kept as is.}
 }
 \description{
+Choose rows by their ordinal position in the tbl.  Grouped tbls use
+the ordinal position within the group.
+}
+\details{
 Slice does not work with relational databases because they have no
 intrinsic notion of row order. If you want to perform the equivalent
 operation, use \code{\link[=filter]{filter()}} and \code{\link[=row_number]{row_number()}}.
-}
-\details{
-Positive values select rows to keep; negative values drop rows. The
-values provided must be either all positive or all negative.
 }
 \section{Tidy data}{
 
@@ -34,6 +40,7 @@ convert to an explicit variable with \code{\link[tibble:rownames_to_column]{tibb
 
 \examples{
 slice(mtcars, 1L)
+# Similar to tail(mtcars, 1):
 slice(mtcars, n())
 slice(mtcars, 5:n())
 # Rows can be dropped with negative indices:

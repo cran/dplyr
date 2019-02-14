@@ -3,7 +3,7 @@
 \name{mutate}
 \alias{mutate}
 \alias{transmute}
-\title{Add new variables}
+\title{Create or transform variables}
 \usage{
 mutate(.data, ...)
 
@@ -13,10 +13,14 @@ transmute(.data, ...)
 \item{.data}{A tbl. All main verbs are S3 generics and provide methods
 for \code{\link[=tbl_df]{tbl_df()}}, \code{\link[dtplyr:tbl_dt]{dtplyr::tbl_dt()}} and \code{\link[dbplyr:tbl_dbi]{dbplyr::tbl_dbi()}}.}
 
-\item{...}{Name-value pairs of expressions. Use \code{NULL} to drop
-a variable.
+\item{...}{Name-value pairs of expressions, each with length 1 or the same
+length as the number of rows in the group (if using \code{\link[=group_by]{group_by()}}) or in the entire
+input (if not using groups). The name of each argument will be the name of
+a new variable, and the value will be its corresponding value.  Use a \code{NULL}
+value in \code{mutate} to drop a variable.  New variables overwrite existing variables
+of the same name.
 
-These arguments are automatically \link[rlang:quo]{quoted} and
+The arguments in \code{...} are automatically \link[rlang:quo]{quoted} and
 \link[rlang:eval_tidy]{evaluated} in the context of the data
 frame. They support \link[rlang:quasiquotation]{unquoting} and
 splicing. See \code{vignette("programming")} for an introduction to
@@ -26,14 +30,15 @@ these concepts.}
 An object of the same class as \code{.data}.
 }
 \description{
-\code{mutate()} adds new variables and preserves existing;
-\code{transmute()} drops existing variables.
+\code{mutate()} adds new variables and preserves existing ones;
+\code{transmute()} adds new variables and drops existing ones.  Both
+functions preserve the number of rows of the input.
+New variables overwrite existing variables of the same name.
 }
-\section{Useful functions}{
+\section{Useful functions available in calculations of variables}{
 
 \itemize{
-\item \code{\link{+}}, \code{\link{-}} etc
-\item \code{\link[=log]{log()}}
+\item \code{\link{+}}, \code{\link{-}}, \code{\link[=log]{log()}}, etc., for their usual mathematical meanings
 \item \code{\link[=lead]{lead()}}, \code{\link[=lag]{lag()}}
 \item \code{\link[=dense_rank]{dense_rank()}}, \code{\link[=min_rank]{min_rank()}}, \code{\link[=percent_rank]{percent_rank()}}, \code{\link[=row_number]{row_number()}},
 \code{\link[=cume_dist]{cume_dist()}}, \code{\link[=ntile]{ntile()}}
@@ -41,6 +46,32 @@ An object of the same class as \code{.data}.
 \item \code{\link[=na_if]{na_if()}}, \code{\link[=coalesce]{coalesce()}}
 \item \code{\link[=if_else]{if_else()}}, \code{\link[=recode]{recode()}}, \code{\link[=case_when]{case_when()}}
 }
+}
+
+\section{Grouped tibbles}{
+
+
+Because mutating expressions are computed within groups, they may
+yield different results on grouped tibbles. This will be the case
+as soon as an aggregating, lagging, or ranking function is
+involved. Compare this ungrouped mutate:\preformatted{starwars \%>\%
+  mutate(mass / mean(mass, na.rm = TRUE)) \%>\%
+  pull()
+}
+
+With the grouped equivalent:\preformatted{starwars \%>\%
+  group_by(gender) \%>\%
+  mutate(mass / mean(mass, na.rm = TRUE)) \%>\%
+  pull()
+}
+
+The former normalises \code{mass} by the global average whereas the
+latter normalises by the averages within gender levels.
+
+Note that you can't overwrite a grouping variable within
+\code{mutate()}.
+
+\code{mutate()} does not evaluate the expressions when the group is empty.
 }
 
 \section{Scoped mutation and transmutation}{
@@ -93,10 +124,37 @@ mtcars \%>\%
   transmute(displ_l = disp / 61.0237)
 
 
-# mutate() supports quasiquotation. You can unquote quosures, which
-# can refer to both contextual variables and variable names:
-var <- 100
-as_tibble(mtcars) \%>\% mutate(cyl = !!quo(cyl * var))
+# The mutate operation may yield different results on grouped
+# tibbles because the expressions are computed within groups.
+# The following normalises `mass` by the global average:
+starwars \%>\%
+  mutate(mass / mean(mass, na.rm = TRUE)) \%>\%
+  pull()
+
+# Whereas this normalises `mass` by the averages within gender
+# levels:
+starwars \%>\%
+  group_by(gender) \%>\%
+  mutate(mass / mean(mass, na.rm = TRUE)) \%>\%
+  pull()
+
+# Note that you can't overwrite grouping variables:
+gdf <- mtcars \%>\% group_by(cyl)
+try(mutate(gdf, cyl = cyl * 100))
+
+
+# Refer to column names stored as strings with the `.data` pronoun:
+vars <- c("mass", "height")
+mutate(starwars, prod = .data[[vars[[1]]]] * .data[[vars[[2]]]])
+
+# For more complex cases, knowledge of tidy evaluation and the
+# unquote operator `!!` is required. See https://tidyeval.tidyverse.org/
+#
+# One useful and simple tidy eval technique is to use `!!` to
+# bypass the data frame and its columns. Here is how to divide the
+# column `mass` by an object of the same name:
+mass <- 100
+mutate(starwars, mass = mass / !!mass)
 }
 \seealso{
 Other single table verbs: \code{\link{arrange}},

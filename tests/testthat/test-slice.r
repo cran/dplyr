@@ -19,10 +19,6 @@ test_that("slice silently ignores out of range values (#226)", {
   expect_equal(slice(g, c(2, 100)), slice(g, 2))
 })
 
-test_that("slice works with 0 args", {
-  expect_equivalent(slice(mtcars), mtcars)
-})
-
 test_that("slice works with negative indices", {
   res <- slice(mtcars, -(1:2))
   exp <- tail(mtcars, -2)
@@ -55,14 +51,18 @@ test_that("slice works with grouped data", {
   res <- slice(g, -(1:2))
   exp <- filter(g, row_number() >= 3)
   expect_equal(res, exp)
+
+  g <- group_by(data.frame(x = c(1, 1, 2, 2, 2)), x)
+  expect_equal(group_keys(slice(g, 3, .preserve = TRUE))$x, c(1, 2))
+  expect_equal(group_keys(slice(g, 3, .preserve = FALSE))$x, 2)
 })
 
 test_that("slice gives correct rows (#649)", {
-  a <- data_frame(value = paste0("row", 1:10))
+  a <- tibble(value = paste0("row", 1:10))
   expect_equal(slice(a, 1:3)$value, paste0("row", 1:3))
   expect_equal(slice(a, c(4, 6, 9))$value, paste0("row", c(4, 6, 9)))
 
-  a <- data_frame(
+  a <- tibble(
     value = paste0("row", 1:10),
     group = rep(1:2, each = 5)
   ) %>%
@@ -73,15 +73,21 @@ test_that("slice gives correct rows (#649)", {
 })
 
 test_that("slice handles NA (#1235)", {
-  df <- data_frame(x = 1:3)
+  df <- tibble(x = 1:3)
   expect_equal(nrow(slice(df, NA_integer_)), 0L)
   expect_equal(nrow(slice(df, c(1L, NA_integer_))), 1L)
   expect_equal(nrow(slice(df, c(-1L, NA_integer_))), 2L)
 
-  df <- data_frame(x = 1:4, g = rep(1:2, 2)) %>% group_by(g)
-  expect_equal(nrow(slice(df, NA)), 0L)
+  df <- tibble(x = 1:4, g = rep(1:2, 2)) %>% group_by(g)
   expect_equal(nrow(slice(df, c(1, NA))), 2)
   expect_equal(nrow(slice(df, c(-1, NA))), 2)
+})
+
+test_that("slice handles logical NA (#3970)", {
+  df <- tibble(x = 1:3)
+  expect_equal(nrow(slice(df, NA)), 0L)
+  expect_error(slice(df, TRUE))
+  expect_error(slice(df, FALSE))
 })
 
 test_that("slice handles empty data frames (#1219)", {
@@ -100,12 +106,12 @@ test_that("slice works fine if n > nrow(df) (#1269)", {
 test_that("slice strips grouped indices (#1405)", {
   res <- mtcars %>% group_by(cyl) %>% slice(1) %>% mutate(mpgplus = mpg + 1)
   expect_equal(nrow(res), 3L)
-  expect_equal(attr(res, "indices"), as.list(0:2))
+  expect_equal(group_rows(res), as.list(1:3))
 })
 
 test_that("slice works with zero-column data frames (#2490)", {
   expect_equal(
-    data_frame(a = 1:3) %>% select(-a) %>% slice(1) %>% nrow(),
+    tibble(a = 1:3) %>% select(-a) %>% slice(1) %>% nrow(),
     1L
   )
 })
@@ -122,9 +128,7 @@ test_that("slice correctly computes positive indices from negative indices (#307
 })
 
 test_that("slice handles raw matrices", {
-  df <- data.frame(a = 1:4)
-  df$b <- matrix(as.raw(1:8), ncol = 2)
-
+  df <- tibble(a = 1:4, b = matrix(as.raw(1:8), ncol = 2))
   expect_identical(
     slice(df, 1:2)$b,
     matrix(as.raw(c(1, 2, 5, 6)), ncol = 2)
@@ -153,4 +157,37 @@ test_that("slice skips 0 (#3313)", {
 
   expect_identical(slice(d, c(-1, 0)), slice(d, -1))
   expect_identical(slice(d, c(0, -1)), slice(d, -1))
+})
+
+test_that("slice is not confused about dense groups (#3753)",{
+  df <- tibble(row = 1:3)
+  expect_equal(slice(df, c(2,1,3))$row, c(2L,1L,3L))
+  expect_equal(slice(df, c(1,1,1))$row, rep(1L, 3))
+})
+
+test_that("slice accepts ... (#3804)", {
+  expect_equal(slice(mtcars, 1, 2), slice(mtcars, 1:2))
+  expect_equal(slice(mtcars, 1, n()), slice(mtcars, c(1, nrow(mtcars))))
+
+  g <- mtcars %>% group_by(cyl)
+  expect_equal(slice(g, 1, n()), slice(g, c(1, n())))
+})
+
+test_that("slice does not evaluate the expression in empty groups (#1438)", {
+  res <- mtcars %>%
+    group_by(cyl) %>%
+    filter(cyl==6) %>%
+    slice(1:2)
+  expect_equal(nrow(res), 2L)
+
+  expect_condition(
+    res <- mtcars %>% group_by(cyl) %>% filter(cyl==6) %>% sample_n(size=3),
+    NA
+  )
+  expect_equal(nrow(res), 3L)
+})
+
+test_that("column_subset() falls back to R indexing on esoteric data types (#4128)", {
+  res <- slice(tibble::enframe(formals(rnorm)), 2:3)
+  expect_identical(res, tibble(name = c("mean", "sd"), value = list(0, 1)))
 })

@@ -3,22 +3,27 @@
 
 #include <tools/Quosure.h>
 
-#include <dplyr/white_list.h>
+#include <dplyr/allow_list.h>
 
-#include <dplyr/GroupedDataFrame.h>
+#include <dplyr/data/GroupedDataFrame.h>
 
-#include <dplyr/Order.h>
-
-#include <dplyr/Result/CallProxy.h>
-
+#include <dplyr/visitors/subset/DataFrameSubsetVisitors.h>
+#include <dplyr/visitors/order/Order.h>
 #include <dplyr/Groups.h>
-#include <dplyr/bad.h>
+#include <tools/bad.h>
+
+#include <dplyr/data/DataMask.h>
+#include <dplyr/symbols.h>
+#include <dplyr/visitors/order/Order.h>
 
 using namespace Rcpp;
 using namespace dplyr;
 
-// [[Rcpp::export]]
-List arrange_impl(DataFrame data, QuosureList quosures) {
+#include <tools/debug.h>
+
+template <typename SlicedTibble>
+SEXP arrange_template(const SlicedTibble& gdf, const QuosureList& quosures, SEXP frame) {
+  const DataFrame& data = gdf.data();
   if (data.size() == 0 || data.nrows() == 0)
     return data;
 
@@ -27,21 +32,47 @@ List arrange_impl(DataFrame data, QuosureList quosures) {
     return data;
 
   check_valid_colnames(data);
-  assert_all_white_list(data);
+  assert_all_allow_list(data);
   List variables(nargs);
   LogicalVector ascending(nargs);
 
+  NaturalDataFrame ndf(data);
+  DataMask<NaturalDataFrame> mask(ndf);
+  NaturalSlicingIndex indices_all(gdf.nrows());
+
   for (int i = 0; i < nargs; i++) {
-    const NamedQuosure& quosure = quosures[i];
+    const NamedQuosure& named_quosure = quosures[i];
 
-    Shield<SEXP> call_(quosure.expr());
-    SEXP call = call_;
-    bool is_desc = TYPEOF(call) == LANGSXP && Rf_install("desc") == CAR(call);
+    SEXP expr = named_quosure.expr();
 
-    CallProxy call_proxy(is_desc ? CADR(call) : call, data, quosure.env());
+    bool is_desc = TYPEOF(expr) == LANGSXP && symbols::desc == CAR(expr);
+    expr = is_desc ? CADR(expr) : expr ;
 
-    Shield<SEXP> v(call_proxy.eval());
-    if (!white_list(v)) {
+    RObject v(R_NilValue);
+
+    // if expr is a symbol from the data, just use it
+    if (TYPEOF(expr) == SYMSXP) {
+      const ColumnBinding<NaturalDataFrame>* binding = mask.maybe_get_subset_binding(CHAR(PRINTNAME(expr)));
+      if (binding) {
+        v = binding->get_data();
+      }
+    }
+
+    // otherwise need to evaluate in the data mask
+    if (v.isNULL()) {
+      if (is_desc) {
+        // we need a new quosure that peels off `desc` from the original
+        // quosure, and uses the same environment
+        Quosure quo(PROTECT(rlang::quo_set_expr(named_quosure.get(), expr)));
+        v = mask.eval(quo, indices_all);
+        UNPROTECT(1);
+      } else {
+        // just use the original quosure
+        v = mask.eval(named_quosure.get(), indices_all);
+      }
+    }
+
+    if (!allow_list(v)) {
       stop("cannot arrange column of class '%s' at position %d", get_single_class(v), i + 1);
     }
 
@@ -54,26 +85,29 @@ List arrange_impl(DataFrame data, QuosureList quosures) {
         stop("incorrect size (%d) at position %d, expecting : %d", Rf_length(v), i + 1, data.nrows());
       }
     }
+
     variables[i] = v;
     ascending[i] = !is_desc;
   }
   variables.names() = quosures.names();
-  OrderVisitors o(variables, ascending, nargs);
-  IntegerVector index = o.apply();
-  DataFrameSubsetVisitors visitors(data, SymbolVector(data.names()));
-  List res = visitors.subset(index, get_class(data));
 
-  if (is<GroupedDataFrame>(data)) {
-    // so that all attributes are recalculated (indices ... )
-    // see the lazyness feature in GroupedDataFrame
-    // if we don't do that, we get the values of the un-arranged data
-    // set for free from subset (#1064)
-    res.attr("labels") = R_NilValue;
-    copy_vars(res, data);
-    return GroupedDataFrame(res).data();
-  }
-  else {
-    SET_ATTRIB(res, strip_group_attributes(res));
-    return res;
+  OrderVisitors o(variables, ascending, nargs);
+  IntegerVector one_based_index = o.apply();
+
+  List res = DataFrameSubsetVisitors(data, frame).subset_all(one_based_index);
+
+  // let the grouping class organise the rest (the groups attribute etc ...)
+  return SlicedTibble(res, gdf).data();
+}
+
+// [[Rcpp::export]]
+SEXP arrange_impl(DataFrame df, QuosureList quosures, SEXP frame) {
+  if (is<RowwiseDataFrame>(df)) {
+    return arrange_template<RowwiseDataFrame>(RowwiseDataFrame(df), quosures, frame);
+  } else if (is<GroupedDataFrame>(df)) {
+    return arrange_template<GroupedDataFrame>(GroupedDataFrame(df), quosures, frame);
+  } else {
+    return arrange_template<NaturalDataFrame>(NaturalDataFrame(df), quosures, frame);
   }
 }
+

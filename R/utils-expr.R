@@ -30,23 +30,3 @@ expr_substitute <- function(expr, old, new) {
   )
   expr
 }
-
-sym_dollar <- quote(`$`)
-sym_brackets2 <- quote(`[[`)
-is_data_pronoun <- function(expr) {
-  is_call(expr, list(sym_dollar, sym_brackets2)) &&
-    identical(node_cadr(expr), quote(.data))
-}
-tidy_text <- function(quo, width = 60L) {
-  expr <- quo_get_expr(quo)
-  if (is_data_pronoun(expr)) {
-    as_string(node_cadr(node_cdr(expr)))
-  } else {
-    quo_text(quo, width = width)
-  }
-}
-named_quos <- function(...) {
-  scoped_options(lifecycle_disable_verbose_retirement = TRUE)
-  quos <- quos(...)
-  exprs_auto_name(quos, printer = tidy_text)
-}

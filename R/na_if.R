@@ -9,6 +9,10 @@
 #'   are equal to `y` with NA.
 #' @seealso [coalesce()] to replace missing values with a specified
 #'   value.
+#'
+#'   [tidyr::replace_na()] to replace `NA` with a value.
+#'
+#'   [recode()] to more generally replace values.
 #' @export
 #' @examples
 #' na_if(1:5, 5:1)
@@ -19,6 +23,17 @@
 #'
 #' y <- c("abc", "def", "", "ghi")
 #' na_if(y, "")
+#'
+#' # na_if is particularly useful inside mutate,
+#' # and is meant for use with vectors rather than entire data frames
+#' starwars %>%
+#'   select(name, eye_color) %>%
+#'   mutate(eye_color = na_if(eye_color, "unknown"))
+#'
+#' # na_if can also be used with scoped variants of mutate
+#' # like mutate_if to mutate multiple columns
+#' starwars %>%
+#'   mutate_if(is.character, list(~na_if(., "unknown")))
 na_if <- function(x, y) {
   check_length(y, x, fmt_args("y"), glue("same as {fmt_args(~x)}"))
 

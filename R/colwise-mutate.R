@@ -1,73 +1,110 @@
-#' Summarise and mutate multiple columns.
+#' Summarise multiple columns
 #'
 #' @description
-#' These verbs are [scoped] variants of [summarise()], [mutate()] and
-#' [transmute()]. They apply operations on a selection of variables.
 #'
-#' * `summarise_all()`, `mutate_all()` and `transmute_all()` apply the
-#'   functions to all (non-grouping) columns.
+#' The [scoped] variants of [summarise()] make it easy to apply the same
+#' transformation to multiple variables.
+#' There are three variants.
+#'  * `summarise_all()` affects every variable
+#'  * `summarise_at()` affects variables selected with a character vector or
+#'   vars()
+#'  * `summarise_if()` affects variables selected with a predicate function
 #'
-#' * `summarise_at()`, `mutate_at()` and `transmute_at()` allow you to
-#'   select columns using the same name-based [select_helpers] just
-#'   like with [select()].
-#'
-#' * `summarise_if`(), `mutate_if`() and `transmute_if()` operate on
-#'   columns for which a predicate returns `TRUE`.
 #' @inheritParams scoped
 #' @param .cols This argument has been renamed to `.vars` to fit
 #'   dplyr's terminology and is deprecated.
 #' @return A data frame. By default, the newly created columns have the shortest
 #'   names needed to uniquely identify the output. To force inclusion of a name,
 #'   even when not needed, name the input (see examples for details).
-#' @seealso [vars()], [funs()]
-#' @export
+#' @seealso [The other scoped verbs][scoped], [vars()]
+#'
+#' @section Grouping variables:
+#'
+#' If applied on a grouped tibble, these operations are *not* applied
+#' to the grouping variables. The behaviour depends on whether the
+#' selection is **implicit** (`all` and `if` selections) or
+#' **explicit** (`at` selections).
+#'
+#' * Grouping variables covered by explicit selections in
+#'   `summarise_at()` are always an error. Add `-group_cols()` to the
+#'   [vars()] selection to avoid this:
+#'
+#'   ```
+#'   data %>%
+#'     summarise_at(vars(-group_cols(), ...), myoperation)
+#'   ```
+#'
+#'   Or remove `group_vars()` from the character vector of column names:
+#'
+#'   ```
+#'   nms <- setdiff(nms, group_vars(data))
+#'   data %>% summarise_at(vars, myoperation)
+#'   ```
+#'
+#' * Grouping variables covered by implicit selections are silently
+#'   ignored by `summarise_all()` and `summarise_if()`.
+#'
+#' @section Naming:
+#'
+#' The names of the created columns is derived from the names of the
+#' input variables and the names of the functions.
+#'
+#' - if there is only one unnamed function, the names of the input variables
+#'   are used to name the created columns
+#'
+#' - if there is only one unnamed variable, the names of the functions
+#'   are used to name the created columns.
+#'
+#' - otherwise in the most general case, the created names are created by
+#'   concatenating the names of the input variables and the names of the functions.
+#'
+#' The names of the functions here means the names of the list of functions
+#' that is supplied. When needed and not supplied, the name of a function
+#' is the prefix "fn" followed by the index of this function within the
+#' unnamed functions in the list. Ultimately, names are made
+#' unique.
+#'
 #' @examples
-#' # The scoped variants of summarise() and mutate() make it easy to
-#' # apply the same transformation to multiple variables:
+#' by_species <- iris %>%
+#'   group_by(Species)
 #'
-#' iris %>%
-#'   group_by(Species) %>%
-#'   summarise_all(mean)
-#'
-#' # There are three variants.
-#' # * _all affects every variable
-#' # * _at affects variables selected with a character vector or vars()
-#' # * _if affects variables selected with a predicate function:
 #'
 #' # The _at() variants directly support strings:
-#' starwars %>% summarise_at(c("height", "mass"), mean, na.rm = TRUE)
+#' starwars %>%
+#'   summarise_at(c("height", "mass"), mean, na.rm = TRUE)
 #'
 #' # You can also supply selection helpers to _at() functions but you have
 #' # to quote them with vars():
-#' iris %>% mutate_at(vars(matches("Sepal")), log)
-#' starwars %>% summarise_at(vars(height:mass), mean, na.rm = TRUE)
+#' starwars %>%
+#'   summarise_at(vars(height:mass), mean, na.rm = TRUE)
 #'
 #' # The _if() variants apply a predicate function (a function that
 #' # returns TRUE or FALSE) to determine the relevant subset of
 #' # columns. Here we apply mean() to the numeric columns:
-#' starwars %>% summarise_if(is.numeric, mean, na.rm = TRUE)
+#' starwars %>%
+#'   summarise_if(is.numeric, mean, na.rm = TRUE)
 #'
-#' # mutate_if() is particularly useful for transforming variables from
-#' # one type to another
-#' iris %>% as_tibble() %>% mutate_if(is.factor, as.character)
-#' iris %>% as_tibble() %>% mutate_if(is.double, as.integer)
+#' # If you want to apply multiple transformations, pass a list of
+#' # functions. When there are multiple functions, they create new
+#' # variables instead of modifying the variables in place:
+#' by_species %>%
+#'   summarise_all(list(min, max))
 #'
-#' # ---------------------------------------------------------------------------
-#' # If you want apply multiple transformations, use funs()
-#' by_species <- iris %>% group_by(Species)
+#' # Note how the new variables include the function name, in order to
+#' # keep things distinct. Passing purrr-style lambdas often creates
+#' # better default names:
+#' by_species %>%
+#'   summarise_all(list(~min(.), ~max(.)))
 #'
-#' by_species %>% summarise_all(funs(min, max))
-#' # Note that output variable name now includes the function name, in order to
-#' # keep things distinct.
+#' # When that's not good enough, you can also supply the names explicitly:
+#' by_species %>%
+#'   summarise_all(list(min = min, max = max))
 #'
-#' # You can express more complex inline transformations using .
-#' by_species %>% mutate_all(funs(. / 2.54))
-#'
-#' # Function names will be included if .funs has names or multiple inputs
-#' by_species %>% mutate_all(funs(inches = . / 2.54))
-#' by_species %>% summarise_all(funs(med = median))
-#' by_species %>% summarise_all(funs(Q3 = quantile), probs = 0.75)
-#' by_species %>% summarise_all(c("min", "max"))
+#' # When there's only one function in the list, it modifies existing
+#' # variables in place. Give it a name to create new variables instead:
+#' by_species %>% summarise_all(list(med = median))
+#' by_species %>% summarise_all(list(Q3 = quantile), probs = 0.75)
+#' @export
 summarise_all <- function(.tbl, .funs, ...) {
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
   summarise(.tbl, !!!funs)
@@ -82,7 +119,7 @@ summarise_if <- function(.tbl, .predicate, .funs, ...) {
 #' @export
 summarise_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
-  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), .include_group_vars = TRUE, ...)
+  funs <- manip_at(.tbl, .vars, .funs, enquo(.funs), caller_env(), ...)
   summarise(.tbl, !!!funs)
 }
 
@@ -96,19 +133,114 @@ summarize_if <- summarise_if
 #' @export
 summarize_at <- summarise_at
 
-#' @rdname summarise_all
+#' Mutate multiple columns
+#'
+#' @description
+#'
+#' The [scoped] variants of [mutate()] and [transmute()] make it easy to apply
+#' the same transformation to multiple variables. There are three variants:
+#'  * _all affects every variable
+#'  * _at affects variables selected with a character vector or vars()
+#'  * _if affects variables selected with a predicate function:
+#'
+#' @inheritParams scoped
+#' @inheritParams summarise_all
+#' @return A data frame. By default, the newly created columns have the shortest
+#'   names needed to uniquely identify the output. To force inclusion of a name,
+#'   even when not needed, name the input (see examples for details).
+#' @seealso [The other scoped verbs][scoped], [vars()]
+#'
+#' @section Grouping variables:
+#'
+#' If applied on a grouped tibble, these operations are *not* applied
+#' to the grouping variables. The behaviour depends on whether the
+#' selection is **implicit** (`all` and `if` selections) or
+#' **explicit** (`at` selections).
+#'
+#' * Grouping variables covered by explicit selections in
+#'   `mutate_at()` and `transmute_at()` are always an error. Add
+#'   `-group_cols()` to the [vars()] selection to avoid this:
+#'
+#'   ```
+#'   data %>% mutate_at(vars(-group_cols(), ...), myoperation)
+#'   ```
+#'
+#'   Or remove `group_vars()` from the character vector of column names:
+#'
+#'   ```
+#'   nms <- setdiff(nms, group_vars(data))
+#'   data %>% mutate_at(vars, myoperation)
+#'   ```
+#'
+#' * Grouping variables covered by implicit selections are ignored by
+#'   `mutate_all()`, `transmute_all()`, `mutate_if()`, and
+#'   `transmute_if()`.
+#'
+#' @inheritSection summarise_all Naming
+#'
+#' @examples
+#' iris <- as_tibble(iris)
+#'
+#' # All variants can be passed functions and additional arguments,
+#' # purrr-style. The _at() variants directly support strings. Here
+#' # we'll scale the variables `height` and `mass`:
+#' scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
+#' starwars %>% mutate_at(c("height", "mass"), scale2)
+#'
+#' # You can pass additional arguments to the function:
+#' starwars %>% mutate_at(c("height", "mass"), scale2, na.rm = TRUE)
+#'
+#' # You can also pass formulas to create functions on the spot, purrr-style:
+#' starwars %>% mutate_at(c("height", "mass"), ~scale2(., na.rm = TRUE))
+#'
+#' # You can also supply selection helpers to _at() functions but you have
+#' # to quote them with vars():
+#' iris %>% mutate_at(vars(matches("Sepal")), log)
+#'
+#' # The _if() variants apply a predicate function (a function that
+#' # returns TRUE or FALSE) to determine the relevant subset of
+#' # columns. Here we divide all the numeric columns by 100:
+#' starwars %>% mutate_if(is.numeric, scale2, na.rm = TRUE)
+#'
+#' # mutate_if() is particularly useful for transforming variables from
+#' # one type to another
+#' iris %>% mutate_if(is.factor, as.character)
+#' iris %>% mutate_if(is.double, as.integer)
+#'
+#'
+#' # Multiple transformations ----------------------------------------
+#'
+#' # If you want to apply multiple transformations, pass a list of
+#' # functions. When there are multiple functions, they create new
+#' # variables instead of modifying the variables in place:
+#' iris %>% mutate_if(is.numeric, list(scale2, log))
+#'
+#' # The list can contain purrr-style formulas:
+#' iris %>% mutate_if(is.numeric, list(~scale2(.), ~log(.)))
+#'
+#' # Note how the new variables include the function name, in order to
+#' # keep things distinct. The default names are not always helpful
+#' # but you can also supply explicit names:
+#' iris %>% mutate_if(is.numeric, list(scale = scale2, log = log))
+#'
+#' # When there's only one function in the list, it modifies existing
+#' # variables in place. Give it a name to instead create new variables:
+#' iris %>% mutate_if(is.numeric, list(scale2))
+#' iris %>% mutate_if(is.numeric, list(scale = scale2))
 #' @export
 mutate_all <- function(.tbl, .funs, ...) {
+  check_grouped(.tbl, "mutate", "all", alt = TRUE)
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
   mutate(.tbl, !!!funs)
 }
-#' @rdname summarise_all
+#' @rdname mutate_all
 #' @export
 mutate_if <- function(.tbl, .predicate, .funs, ...) {
+  check_grouped(.tbl, "mutate", "if")
   funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
   mutate(.tbl, !!!funs)
 }
-#' @rdname summarise_all
+#' @rdname mutate_all
 #' @export
 mutate_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
@@ -116,19 +248,21 @@ mutate_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   mutate(.tbl, !!!funs)
 }
 
-#' @rdname summarise_all
+#' @rdname mutate_all
 #' @export
 transmute_all <- function(.tbl, .funs, ...) {
+  check_grouped(.tbl, "transmute", "all", alt = TRUE)
   funs <- manip_all(.tbl, .funs, enquo(.funs), caller_env(), ...)
   transmute(.tbl, !!!funs)
 }
-#' @rdname summarise_all
+#' @rdname mutate_all
 #' @export
 transmute_if <- function(.tbl, .predicate, .funs, ...) {
+  check_grouped(.tbl, "transmute", "if")
   funs <- manip_if(.tbl, .predicate, .funs, enquo(.funs), caller_env(), ...)
   transmute(.tbl, !!!funs)
 }
-#' @rdname summarise_all
+#' @rdname mutate_all
 #' @export
 transmute_at <- function(.tbl, .vars, .funs, ..., .cols = NULL) {
   .vars <- check_dot_cols(.vars, .cols)
@@ -156,6 +290,21 @@ manip_at <- function(.tbl, .vars, .funs, .quo, .env, ..., .include_group_vars = 
   syms <- tbl_at_syms(.tbl, .vars, .include_group_vars = .include_group_vars)
   funs <- as_fun_list(.funs, .quo, .env, ...)
   manip_apply_syms(funs, syms, .tbl)
+}
+
+check_grouped <- function(tbl, verb, suffix, alt = FALSE) {
+  if (is_grouped_df(tbl)) {
+    if (alt) {
+      alt_line <- sprintf("Use `%s_at(df, vars(-group_cols()), myoperation)` to silence the message.", verb)
+    } else {
+      alt_line <- chr()
+    }
+    inform(paste_line(
+      sprintf("`%s_%s()` ignored the following grouping variables:", verb, suffix),
+      fmt_cols(group_vars(tbl)),
+      alt_line
+    ))
+  }
 }
 
 check_dot_cols <- function(vars, cols) {
@@ -186,20 +335,30 @@ manip_apply_syms <- function(funs, syms, tbl) {
 
   if (length(funs) == 1 && !attr(funs, "have_name")) {
     names(out) <- names(syms)
-  } else if (length(syms) == 1 && all(unnamed)) {
-    names(out) <- names(funs)
   } else {
-    syms_names <- map_chr(syms, as_string)
-    grid <- expand.grid(var = syms_names, call = names(funs))
-    names(out) <- paste(grid$var, grid$call, sep = "_")
-  }
+    nms <- names(funs)
+    is_fun <- nms == "<fn>"
+    nms[is_fun] <- paste0("fn", seq_len(sum(is_fun)))
 
+    nms <- unique_names(nms, quiet = TRUE)
+    names(funs) <- nms
+
+    if (length(syms) == 1 && all(unnamed)) {
+      names(out) <- names(funs)
+    } else {
+      syms_names <- map_chr(syms, as_string)
+      grid <- expand.grid(var = syms_names, call = names(funs))
+      names(out) <- paste(grid$var, grid$call, sep = "_")
+    }
+  }
   out
 }
 
 # Deprecated --------------------------------------------------------------
 
 #' Summarise and mutate multiple columns.
+#'
+#' \Sexpr[results=rd, stage=render]{dplyr:::lifecycle("deprecated")}
 #'
 #' @description
 #'
@@ -225,15 +384,17 @@ summarise_each <- function(tbl, funs, ...) {
 #' @export
 #' @rdname summarise_each
 summarise_each_ <- function(tbl, funs, vars) {
-  msg <- glue(
-    "`summarise_each()` is deprecated.
-     Use `summarise_all()`, `summarise_at()` or `summarise_if()` instead."
-  )
+  signal_soft_deprecated(paste_line(
+    "summarise_each() is deprecated",
+    "Please use summarise_if(), summarise_at(), or summarise_all() instead: ",
+    "",
+    "  - To map `funs` over all variables, use summarise_all()",
+    "  - To map `funs` over a selection of variables, use summarise_at()"
+  ))
+
   if (is_empty(vars)) {
-    inform(glue(msg, "\nTo map `funs` over all variables, use `summarise_all()`"))
     vars <- tbl_nongroup_vars(tbl)
   } else {
-    inform(glue(msg, "\nTo map `funs` over a selection of variables, use `summarise_at()`"))
     vars <- compat_lazy_dots(vars, caller_env())
     vars <- tidyselect::vars_select(tbl_nongroup_vars(tbl), !!!vars)
     if (length(vars) == 1 && names(vars) == as_string(vars)) {
@@ -243,8 +404,7 @@ summarise_each_ <- function(tbl, funs, vars) {
   if (is_character(funs)) {
     funs <- funs_(funs)
   }
-
-  funs <- manip_apply_syms(funs, syms(vars), tbl)
+  funs <- manip_at(tbl, vars, funs, enquo(funs), caller_env())
   summarise(tbl, !!!funs)
 }
 
@@ -260,22 +420,23 @@ mutate_each <- function(tbl, funs, ...) {
 #' @export
 #' @rdname summarise_each
 mutate_each_ <- function(tbl, funs, vars) {
-  msg <- glue(
-    "`mutate_each()` is deprecated.
-     Use `mutate_all()`, `mutate_at()` or `mutate_if()` instead."
-  )
+  signal_soft_deprecated(paste_line(
+    "mutate_each() is deprecated",
+    "Please use mutate_if(), mutate_at(), or mutate_all() instead: ",
+    "",
+    "  - To map `funs` over all variables, use mutate_all()",
+    "  - To map `funs` over a selection of variables, use mutate_at()"
+  ))
   if (is_empty(vars)) {
-    inform(glue(msg, "\nTo map `funs` over all variables, use `mutate_all()`"))
     vars <- tbl_nongroup_vars(tbl)
   } else {
-    inform(glue(msg, "\nTo map `funs` over a selection of variables, use `mutate_at()`"))
     vars <- compat_lazy_dots(vars, caller_env())
     vars <- tidyselect::vars_select(tbl_nongroup_vars(tbl), !!!vars)
     if (length(vars) == 1 && names(vars) == as_string(vars)) {
       vars <- unname(vars)
     }
   }
-  funs <- manip_apply_syms(funs, syms(vars), tbl)
+  funs <- manip_at(tbl, vars, funs, enquo(funs), caller_env())
   mutate(tbl, !!!funs)
 }
 

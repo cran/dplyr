@@ -32,18 +32,18 @@ auto_copy.tbl_df <- function(x, y, copy = FALSE, ...) {
 # Verbs ------------------------------------------------------------------------
 
 #' @export
-arrange.tbl_df <- function(.data, ...) {
+arrange.tbl_df <- function(.data, ..., .by_group = FALSE) {
   dots <- quos(...)
-  arrange_impl(.data, dots)
+  arrange_impl(.data, dots, environment())
 }
 #' @export
-arrange_.tbl_df <- function(.data, ..., .dots = list()) {
+arrange_.tbl_df <- function(.data, ..., .dots = list(), .by_group = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
-  arrange_impl(.data, dots)
+  arrange_impl(.data, dots, environment())
 }
 
 #' @export
-filter.tbl_df <- function(.data, ...) {
+filter.tbl_df <- function(.data, ..., .preserve = FALSE) {
   dots <- quos(...)
   if (any(have_name(dots))) {
     bad <- dots[have_name(dots)]
@@ -53,7 +53,11 @@ filter.tbl_df <- function(.data, ...) {
   }
 
   quo <- all_exprs(!!!dots, .vectorised = TRUE)
-  filter_impl(.data, quo)
+  out <- filter_impl(.data, quo)
+  if (!.preserve && is_grouped_df(.data)) {
+    attr(out, "groups") <- regroup(attr(out, "groups"), environment())
+  }
+  out
 }
 #' @export
 filter_.tbl_df <- function(.data, ..., .dots = list()) {
@@ -62,36 +66,45 @@ filter_.tbl_df <- function(.data, ..., .dots = list()) {
 }
 
 #' @export
-slice.tbl_df <- function(.data, ...) {
-  dots <- named_quos(...)
-  slice_impl(.data, dots)
+slice.tbl_df <- function(.data, ..., .preserve = FALSE) {
+  dots <- quos(...)
+  if (is_empty(dots)) {
+    return(.data)
+  }
+
+  quo <- quo(c(!!!dots))
+  out <- slice_impl(.data, quo)
+  if (!.preserve && is_grouped_df(.data)) {
+    attr(out, "groups") <- regroup(attr(out, "groups"), environment())
+  }
+  out
 }
 #' @export
 slice_.tbl_df <- function(.data, ..., .dots = list()) {
-  dots <- compat_lazy_dots(.dots, caller_env(), ..., .named = TRUE)
-  slice_impl(.data, dots)
+  dots <- compat_lazy_dots(.dots, caller_env(), ...)
+  slice(.data, !!!dots)
 }
 
 #' @export
 mutate.tbl_df <- function(.data, ...) {
-  dots <- named_quos(...)
-  mutate_impl(.data, dots)
+  dots <- quos(..., .named = TRUE)
+  mutate_impl(.data, dots, caller_env())
 }
 #' @export
 mutate_.tbl_df <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ..., .named = TRUE)
-  mutate_impl(.data, dots)
+  mutate_impl(.data, dots, caller_env())
 }
 
 #' @export
 summarise.tbl_df <- function(.data, ...) {
-  dots <- named_quos(...)
-  summarise_impl(.data, dots)
+  dots <- quos(..., .named = TRUE)
+  summarise_impl(.data, dots, environment(), caller_env())
 }
 #' @export
 summarise_.tbl_df <- function(.data, ..., .dots = list()) {
   dots <- compat_lazy_dots(.dots, caller_env(), ..., .named = TRUE)
-  summarise_impl(.data, dots)
+  summarise_impl(.data, dots, environment(), caller_env())
 }
 
 # Joins ------------------------------------------------------------------------
@@ -157,11 +170,34 @@ inner_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
   aux_x <- vars$idx$x$aux
   aux_y <- vars$idx$y$aux
 
-  out <- inner_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  out <- inner_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches, environment())
   names(out) <- vars$alias
 
   reconstruct_join(out, x, vars)
 }
+
+#' @export
+#' @rdname join.tbl_df
+nest_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, keep = FALSE, name = NULL, ...) {
+  name_var <- name %||% expr_name(enexpr(y))
+  check_valid_names(tbl_vars(x))
+  check_valid_names(tbl_vars(y))
+  by <- common_by(by, x, y)
+
+  y <- auto_copy(x, y, copy = copy)
+
+  vars <- join_vars(tbl_vars(x), tbl_vars(y), by)
+  by_x <- vars$idx$x$by
+  by_y <- vars$idx$y$by
+  aux_y <- vars$idx$y$aux
+  if (keep) {
+    aux_y <- c(by_y, aux_y)
+  }
+
+  out <- nest_join_impl(x, y, by_x, by_y, aux_y, name_var, environment())
+  out
+}
+
 
 #' @export
 #' @rdname join.tbl_df
@@ -182,7 +218,7 @@ left_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
   aux_x <- vars$idx$x$aux
   aux_y <- vars$idx$y$aux
 
-  out <- left_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  out <- left_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches, environment())
   names(out) <- vars$alias
 
   reconstruct_join(out, x, vars)
@@ -207,7 +243,7 @@ right_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
   aux_x <- vars$idx$x$aux
   aux_y <- vars$idx$y$aux
 
-  out <- right_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  out <- right_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches, environment())
   names(out) <- vars$alias
 
   reconstruct_join(out, x, vars)
@@ -232,7 +268,7 @@ full_join.tbl_df <- function(x, y, by = NULL, copy = FALSE,
   aux_x <- vars$idx$x$aux
   aux_y <- vars$idx$y$aux
 
-  out <- full_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches)
+  out <- full_join_impl(x, y, by_x, by_y, aux_x, aux_y, na_matches, environment())
   names(out) <- vars$alias
 
   reconstruct_join(out, x, vars)
@@ -247,7 +283,11 @@ semi_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...,
 
   by <- common_by(by, x, y)
   y <- auto_copy(x, y, copy = copy)
-  semi_join_impl(x, y, by$x, by$y, check_na_matches(na_matches))
+  out <- semi_join_impl(x, y, by$x, by$y, check_na_matches(na_matches), environment())
+  if (is_grouped_df(x)) {
+    out <- grouped_df_impl(out, group_vars(x), group_drops(x))
+  }
+  out
 }
 
 #' @export
@@ -259,16 +299,19 @@ anti_join.tbl_df <- function(x, y, by = NULL, copy = FALSE, ...,
 
   by <- common_by(by, x, y)
   y <- auto_copy(x, y, copy = copy)
-  anti_join_impl(x, y, by$x, by$y, check_na_matches(na_matches))
+  out <- anti_join_impl(x, y, by$x, by$y, check_na_matches(na_matches), environment())
+  if (is_grouped_df(x)) {
+    out <- grouped_df_impl(out, group_vars(x), group_drops(x))
+  }
+  out
 }
 
 reconstruct_join <- function(out, x, vars) {
   if (is_grouped_df(x)) {
     groups_in_old <- match(group_vars(x), tbl_vars(x))
     groups_in_alias <- match(groups_in_old, vars$x)
-    out <- grouped_df_impl(out, vars$alias[groups_in_alias], group_drop(x), FALSE)
+    out <- grouped_df_impl(out, vars$alias[groups_in_alias], group_drops(x))
   }
-
   out
 }
 

@@ -14,37 +14,50 @@ rename(.data, ...)
 for \code{\link[=tbl_df]{tbl_df()}}, \code{\link[dtplyr:tbl_dt]{dtplyr::tbl_dt()}} and \code{\link[dbplyr:tbl_dbi]{dbplyr::tbl_dbi()}}.}
 
 \item{...}{One or more unquoted expressions separated by commas.
-You can treat variable names like they are positions.
+You can treat variable names like they are positions, so you can
+use expressions like \code{x:y} to select ranges of variables.
 
-Positive values select variables; negative values to drop variables.
+Positive values select variables; negative values drop variables.
 If the first expression is negative, \code{select()} will automatically
 start with all variables.
 
-Use named arguments to rename selected variables.
+Use named arguments, e.g. \code{new_name = old_name}, to rename selected variables.
 
-These arguments are automatically \link[rlang:quo]{quoted} and
+The arguments in \code{...} are automatically \link[rlang:quo]{quoted} and
 \link[rlang:eval_tidy]{evaluated} in a context where column names
-represent column positions. They support
+represent column positions. They also support
 \link[rlang:quasiquotation]{unquoting} and splicing. See
-\code{vignette("programming")} for an introduction to these concepts.}
+\code{vignette("programming")} for an introduction to these concepts.
+
+See \link[tidyselect:select_helpers]{select helpers} for more details and
+examples about tidyselect helpers such as \code{starts_with()}, \code{everything()}, ...}
 }
 \value{
 An object of the same class as \code{.data}.
 }
 \description{
+Choose or rename variables from a tbl.
 \code{select()} keeps only the variables you mention; \code{rename()}
 keeps all variables.
+}
+\details{
+These functions work by column index, not value; thus, an expression
+like \code{select(data.frame(x = 1:5, y = 10), z = x+1)} does not create a variable
+with values \code{2:6}. (In the current implementation, the expression \code{z = x+1}
+wouldn't do anything useful.)  To calculate using column values, see
+\code{\link[=mutate]{mutate()}}/\code{\link[=transmute]{transmute()}}.
 }
 \section{Useful functions}{
 
 As well as using existing functions like \code{:} and \code{c()}, there are
-a number of special functions that only work inside \code{select}
+a number of special functions that only work inside \code{select()}:
 \itemize{
 \item \code{\link[=starts_with]{starts_with()}}, \code{\link[=ends_with]{ends_with()}}, \code{\link[=contains]{contains()}}
 \item \code{\link[=matches]{matches()}}
 \item \code{\link[=num_range]{num_range()}}
 \item \code{\link[=one_of]{one_of()}}
 \item \code{\link[=everything]{everything()}}
+\item \code{\link[=group_cols]{group_cols()}}
 }
 
 To drop variables, use \code{-}.
@@ -78,6 +91,10 @@ select(iris, ends_with("Width"))
 # Move Species variable to the front
 select(iris, Species, everything())
 
+# Move Sepal.Length variable to back
+# first select all variables except Sepal.Length, then re select Sepal.Length
+select(iris, -Sepal.Length, Sepal.Length)
+
 df <- as.data.frame(matrix(runif(100), nrow = 10))
 df <- tbl_df(df[c(3, 4, 7, 1, 9, 8, 5, 2, 6, 10)])
 select(df, V4:V6)
@@ -85,6 +102,9 @@ select(df, num_range("V", 4:6))
 
 # Drop variables with -
 select(iris, -starts_with("Petal"))
+
+# Select the grouping variables:
+starwars \%>\% group_by(gender) \%>\% select(group_cols())
 
 
 # The .data pronoun is available:
@@ -103,6 +123,8 @@ select(iris, petal_length = Petal.Length)
 # * rename() keeps all variables
 rename(iris, petal_length = Petal.Length)
 
+# * select() can rename variables in a group
+select(iris, obs = starts_with('S'))
 
 # Unquoting ----------------------------------------
 

@@ -3,7 +3,7 @@
 
 #include <tools/utils.h>
 
-#include <dplyr/GroupedDataFrame.h>
+#include <dplyr/data/GroupedDataFrame.h>
 
 using namespace Rcpp;
 using namespace dplyr;
@@ -32,46 +32,33 @@ SEXP select_not_grouped(const DataFrame& df, const SymbolVector& keep, const Sym
 }
 
 DataFrame select_grouped(GroupedDataFrame gdf, const SymbolVector& keep, const SymbolVector& new_names) {
+  // start by selecting the columns without taking care of the grouping structure
   DataFrame copy = select_not_grouped(gdf.data(), keep, new_names);
 
-  SymbolMap keep_map(keep);
+  // then handle the groups attribute
+  // it is almost the same as the groups attribute of the input data frame, but
+  // names might change so we need to create a shallow copy and then deal with the names
+  DataFrame groups(shallow_copy(List(gdf.group_data())));
 
-  // handle vars  attribute : make a shallow copy of the list and alter
-  //   its names attribute
-  SymbolVector vars(get_vars(copy, true));
+  // update the names of the grouping variables in case they are involved in
+  // the selection, i.e. select(data, g1 = g2)
+  CharacterVector group_names = clone<CharacterVector>(groups.names());
+  IntegerVector positions = keep.match(group_names);
+  int nl = gdf.nvars();
 
-  int nv = vars.size();
-  for (int i = 0; i < nv; i++) {
-    SymbolString s = vars[i];
-    SymbolMapIndex j = keep_map.get_index(s);
-    if (j.origin != NEW) {
-      vars.set(i, new_names[j.pos]);
+  // maybe rename the variables in the groups metadata
+  for (int i = 0; i < nl; i++) {
+    int pos = positions[i];
+    if (pos != NA_INTEGER) {
+      group_names[i] = new_names[pos - 1].get_string();
+    } else {
+      bad_col(group_names[i], "not found in groups metadata. Probably a corrupt grouped_df object.");
     }
   }
+  groups.names() = group_names;
 
-  set_vars(copy, vars);
-
-  // handle labels attribute
-  //   make a shallow copy of the data frame and alter its names attributes
-  if (!Rf_isNull(copy.attr("labels"))) {
-
-    DataFrame original_labels(copy.attr("labels"));
-
-    DataFrame labels(shallow_copy(original_labels));
-    CharacterVector label_names = clone<CharacterVector>(labels.names());
-
-    IntegerVector positions = keep.match(label_names);
-    int nl = label_names.size();
-    for (int i = 0; i < nl; i++) {
-      int pos = positions[i];
-      if (pos != NA_INTEGER) {
-        label_names[i] = new_names[pos - 1].get_string();
-      }
-    }
-    labels.names() = label_names;
-    set_vars(labels, vars);
-    copy.attr("labels") = labels;
-  }
+  // then keep the grouping structure in the groups attribute
+  GroupedDataFrame::set_groups(copy, groups) ;
   return copy;
 }
 

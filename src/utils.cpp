@@ -2,11 +2,18 @@
 #include <dplyr/main.h>
 
 #include <tools/utils.h>
-#include <dplyr/white_list.h>
+#include <dplyr/allow_list.h>
 #include <tools/collapse.h>
-#include <dplyr/bad.h>
+#include <tools/bad.h>
+#include <dplyr/data/GroupedDataFrame.h>
+#include <dplyr/symbols.h>
+#include <dplyr/lifecycle.h>
 
 using namespace Rcpp;
+
+SEXP child_env(SEXP parent) {
+  return Rf_eval(Rf_lang3(symbols::new_env, Rf_ScalarLogical(TRUE), parent), R_BaseEnv);
+}
 
 // [[Rcpp::export]]
 void check_valid_names(const CharacterVector& names, bool warn_only = false) {
@@ -40,19 +47,20 @@ void check_valid_colnames(const DataFrame& df, bool warn_only) {
   check_valid_names(vec_names_or_empty(df), warn_only);
 }
 
-void check_range_one_based(int x, int max) {
+int check_range_one_based(int x, int max) {
   // Also covers NA
   if (x <= 0 || x > max) {
     stop("Index out of range");
   }
+  return x;
 }
 
 // [[Rcpp::export]]
-void assert_all_white_list(const DataFrame& data) {
-  // checking variables are on the white list
+void assert_all_allow_list(const DataFrame& data) {
+  // checking variables are on the allow list
   int nc = data.size();
   for (int i = 0; i < nc; i++) {
-    if (!white_list(data[i])) {
+    if (!allow_list(data[i])) {
       SymbolVector names = data.names();
       const SymbolString& name_i = names[i];
       SEXP v = data[i];
@@ -74,7 +82,6 @@ SEXP shared_SEXP(SEXP x) {
   return x;
 }
 
-// [[Rcpp::export]]
 SEXP shallow_copy(const List& data) {
   int n = data.size();
   List out(n);
@@ -138,6 +145,8 @@ std::string get_single_class(SEXP x) {
   }
 
   switch (TYPEOF(x)) {
+  case RAWSXP:
+    return "raw";
   case INTSXP:
     return "integer";
   case REALSXP :
@@ -146,6 +155,8 @@ std::string get_single_class(SEXP x) {
     return "logical";
   case STRSXP:
     return "character";
+  case CPLXSXP:
+    return "complex";
 
   case VECSXP:
     return "list";
@@ -154,8 +165,7 @@ std::string get_single_class(SEXP x) {
   }
 
   // just call R to deal with other cases
-  // we could call R_data_class directly but we might get a "this is not part of the api"
-  RObject class_call(Rf_lang2(Rf_install("class"), x));
+  RObject class_call(Rf_lang2(R_ClassSymbol, x));
   klass = Rf_eval(class_call, R_GlobalEnv);
   return CHAR(STRING_ELT(klass, 0));
 }
@@ -168,6 +178,18 @@ CharacterVector default_chars(SEXP x, R_xlen_t len) {
 CharacterVector get_class(SEXP x) {
   SEXP class_attr = Rf_getAttrib(x, R_ClassSymbol);
   return default_chars(class_attr, 0);
+}
+
+void copy_attrib(SEXP out, SEXP origin, SEXP symbol) {
+  Rf_setAttrib(out, symbol, Rf_getAttrib(origin, symbol));
+}
+
+void copy_class(SEXP out, SEXP origin) {
+  copy_attrib(out, origin, R_ClassSymbol);
+}
+
+void copy_names(SEXP out, SEXP origin) {
+  copy_attrib(out, origin, R_NamesSymbol);
 }
 
 SEXP set_class(SEXP x, const CharacterVector& class_) {
@@ -208,38 +230,10 @@ SEXP list_as_chr(SEXP x) {
       break;
     }
 
-    stop("The tibble's `vars` attribute has unexpected contents");
+    stop("corrupt grouped data frame");
   }
 
   return chr;
-}
-
-SymbolVector get_vars(SEXP x, bool duplicate) {
-  static SEXP vars_symbol = Rf_install("vars");
-  RObject vars = Rf_getAttrib(x, vars_symbol);
-  if (duplicate && MAYBE_SHARED(vars)) vars = Rf_duplicate(vars);
-
-  switch (TYPEOF(vars)) {
-  case NILSXP:
-  case STRSXP:
-    break;
-  case VECSXP:
-    vars = list_as_chr(vars);
-    break;
-  default:
-    stop("The tibble's `vars` attribute has unexpected type");
-  }
-
-  return SymbolVector(vars);
-}
-
-void set_vars(SEXP x, const SymbolVector& vars) {
-  static SEXP vars_symbol = Rf_install("vars");
-  Rf_setAttrib(x, vars_symbol, null_if_empty(vars.get_vector()));
-}
-
-void copy_vars(SEXP target, SEXP source) {
-  set_vars(target, get_vars(source));
 }
 
 bool character_vector_equal(const CharacterVector& x, const CharacterVector& y) {
@@ -317,28 +311,81 @@ bool has_name_at(SEXP x, R_len_t i) {
   return TYPEOF(nms) == STRSXP && !is_str_empty(STRING_ELT(nms, i));
 }
 
-SEXP name_at(SEXP x, size_t i) {
-  SEXP names = vec_names(x);
-  if (Rf_isNull(names))
-    return Rf_mkChar("");
-  else
-    return STRING_ELT(names, i);
+// [[Rcpp::export]]
+bool is_data_pronoun(SEXP expr) {
+  if (TYPEOF(expr) != LANGSXP || Rf_length(expr) != 3)
+    return false;
+
+  SEXP first = CADR(expr);
+  if (first != symbols::dot_data)
+    return false;
+
+  SEXP second = CADDR(expr);
+  SEXP fun = CAR(expr);
+
+  // .data$x or .data$"x"
+  if (fun == R_DollarSymbol && (TYPEOF(second) == SYMSXP || TYPEOF(second) == STRSXP))
+    return true;
+
+  // .data[["x"]]
+  if (fun == R_Bracket2Symbol && TYPEOF(second) == STRSXP)
+    return true;
+
+  return false;
 }
 
-SEXP f_env(SEXP x) {
-  return Rf_getAttrib(x, Rf_install(".Environment"));
+// [[Rcpp::export]]
+bool is_variable_reference(SEXP expr) {
+  // x
+  if (TYPEOF(expr) == SYMSXP)
+    return true;
+
+  return is_data_pronoun(expr);
 }
 
-bool is_quosure(SEXP x) {
-  return TYPEOF(x) == LANGSXP
-         && Rf_length(x) == 2
-         && Rf_inherits(x, "quosure")
-         && TYPEOF(f_env(x)) == ENVSXP;
+// [[Rcpp::export]]
+bool quo_is_variable_reference(SEXP quo) {
+  return is_variable_reference(CADR(quo));
 }
 
-SEXP maybe_rhs(SEXP x) {
-  if (is_quosure(x))
-    return CADR(x);
-  else
-    return x;
+// [[Rcpp::export]]
+bool quo_is_data_pronoun(SEXP quo) {
+  return is_data_pronoun(CADR(quo));
 }
+
+int get_size(SEXP x) {
+  if (Rf_isMatrix(x)) {
+    return INTEGER(Rf_getAttrib(x, R_DimSymbol))[0];
+  } else if (Rf_inherits(x, "data.frame")) {
+    return DataFrame(x).nrows();
+  } else {
+    return Rf_length(x);
+  }
+}
+
+namespace dplyr {
+namespace lifecycle {
+
+void warn_deprecated(const std::string& s) {
+  static Rcpp::Environment ns_dplyr(Environment::namespace_env("dplyr"));
+
+  Rcpp::CharacterVector msg(Rcpp::CharacterVector::create(s));
+  Shield<SEXP> call(Rf_lang2(symbols::warn_deprecated, msg));
+
+  Rcpp::Rcpp_eval(call, ns_dplyr);
+}
+
+void signal_soft_deprecated(const std::string& s, SEXP caller_env) {
+  static Rcpp::Environment ns_dplyr(Environment::namespace_env("dplyr"));
+
+  Rcpp::CharacterVector msg(Rcpp::CharacterVector::create(s));
+  Shield<SEXP> call(Rf_lang4(symbols::signal_soft_deprecated, msg, msg, caller_env));
+
+  Rcpp::Rcpp_eval(call, ns_dplyr);
+}
+
+
+}
+}
+
+

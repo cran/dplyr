@@ -4,7 +4,7 @@
 \alias{filter}
 \title{Return rows with matching conditions}
 \usage{
-filter(.data, ...)
+filter(.data, ..., .preserve = FALSE)
 }
 \arguments{
 \item{.data}{A tbl. All main verbs are S3 generics and provide methods
@@ -14,17 +14,20 @@ for \code{\link[=tbl_df]{tbl_df()}}, \code{\link[dtplyr:tbl_dt]{dtplyr::tbl_dt()
 Multiple conditions are combined with \code{&}. Only rows where the
 condition evaluates to \code{TRUE} are kept.
 
-These arguments are automatically \link[rlang:quo]{quoted} and
+The arguments in \code{...} are automatically \link[rlang:quo]{quoted} and
 \link[rlang:eval_tidy]{evaluated} in the context of the data
 frame. They support \link[rlang:quasiquotation]{unquoting} and
 splicing. See \code{vignette("programming")} for an introduction to
 these concepts.}
+
+\item{.preserve}{when \code{FALSE} (the default), the grouping structure
+is recalculated based on the resulting data, otherwise it is kept as is.}
 }
 \value{
 An object of the same class as \code{.data}.
 }
 \description{
-Use \code{filter()} find rows/cases where conditions are true. Unlike
+Use \code{filter()} to choose rows/cases where conditions are true. Unlike
 base subsetting with \code{[}, rows where the condition evaluates to \code{NA} are
 dropped.
 }
@@ -41,6 +44,28 @@ filtering is often considerably faster on \code{\link[=ungroup]{ungroup()}}ed da
 \item \code{\link[=is.na]{is.na()}}
 \item \code{\link[=between]{between()}}, \code{\link[=near]{near()}}
 }
+}
+
+\section{Grouped tibbles}{
+
+
+Because filtering expressions are computed within groups, they may
+yield different results on grouped tibbles. This will be the case
+as soon as an aggregating, lagging, or ranking function is
+involved. Compare this ungrouped filtering:\preformatted{starwars \%>\% filter(mass > mean(mass, na.rm = TRUE))
+}
+
+With the grouped equivalent:\preformatted{starwars \%>\% group_by(gender) \%>\% filter(mass > mean(mass, na.rm = TRUE))
+}
+
+The former keeps rows with \code{mass} greater than the global average
+whereas the latter keeps rows with \code{mass} greater than the gender
+average.
+
+It is valid to use grouping variables in filter expressions.
+
+When applied on a grouped tibble, \code{filter()} automatically \link[=arrange]{rearranges}
+the tibble by groups for performance reasons.
 }
 
 \section{Tidy data}{
@@ -66,6 +91,38 @@ filter(starwars, hair_color == "none" | eye_color == "black")
 
 # Multiple arguments are equivalent to and
 filter(starwars, hair_color == "none", eye_color == "black")
+
+
+# The filtering operation may yield different results on grouped
+# tibbles because the expressions are computed within groups.
+#
+# The following filters rows where `mass` is greater than the
+# global average:
+starwars \%>\% filter(mass > mean(mass, na.rm = TRUE))
+
+# Whereas this keeps rows with `mass` greater than the gender
+# average:
+starwars \%>\% group_by(gender) \%>\% filter(mass > mean(mass, na.rm = TRUE))
+
+
+# Refer to column names stored as strings with the `.data` pronoun:
+vars <- c("mass", "height")
+cond <- c(80, 150)
+starwars \%>\%
+  filter(
+    .data[[vars[[1]]]] > cond[[1]],
+    .data[[vars[[2]]]] > cond[[2]]
+  )
+
+# For more complex cases, knowledge of tidy evaluation and the
+# unquote operator `!!` is required. See https://tidyeval.tidyverse.org/
+#
+# One useful and simple tidy eval technique is to use `!!` to bypass
+# the data frame and its columns. Here is how to filter the columns
+# `mass` and `height` relative to objects of the same names:
+mass <- 80
+height <- 150
+filter(starwars, mass > !!mass, height > !!height)
 }
 \seealso{
 \code{\link[=filter_all]{filter_all()}}, \code{\link[=filter_if]{filter_if()}} and \code{\link[=filter_at]{filter_at()}}.

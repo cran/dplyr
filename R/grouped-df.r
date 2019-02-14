@@ -7,23 +7,93 @@
 #' @keywords internal
 #' @param data a tbl or data frame.
 #' @param vars a character vector or a list of [name()]
-#' @param drop if `TRUE` preserve all factor levels, even those without
-#'   data.
+#' @param drop When `.drop = TRUE`, empty groups are dropped.
 #' @export
-grouped_df <- function(data, vars, drop = TRUE) {
-  if (length(vars) == 0) {
-    return(tbl_df(data))
-  }
+grouped_df <- function(data, vars, drop = FALSE) {
   assert_that(
     is.data.frame(data),
-    (is.list(vars) && all(sapply(vars, is.name))) || is.character(vars),
-    is.flag(drop)
+    (is.list(vars) && all(sapply(vars, is.name))) || is.character(vars)
   )
   if (is.list(vars)) {
     vars <- deparse_names(vars)
   }
   grouped_df_impl(data, unname(vars), drop)
 }
+
+#' Low-level construction and validation for the grouped_df class
+#'
+#' `new_grouped_df()` is a constructor designed to be high-performance so only
+#' check types, not values. This means it is the caller's responsibility
+#' to create valid values, and hence this is for expert use only.
+#'
+#' @param x A data frame
+#' @param groups The grouped structure, `groups` should be a data frame.
+#' Its last column should be called `.rows` and be
+#' a list of 1 based integer vectors that all are between 1 and the number of rows of `.data`.
+#' @param class additional class, will be prepended to canonical classes of a grouped data frame.
+#' @param ... additional attributes
+#'
+#' @examples
+#' # 5 bootstrap samples
+#' tbl <- new_grouped_df(
+#'   tibble(x = rnorm(10)),
+#'   groups = tibble(".rows" := replicate(5, sample(1:10, replace = TRUE), simplify = FALSE))
+#' )
+#' # mean of each bootstrap sample
+#' summarise(tbl, x = mean(x))
+#'
+#' @importFrom tibble new_tibble
+#' @keywords internal
+#' @export
+new_grouped_df <- function(x, groups, ..., class = character()) {
+  stopifnot(
+    is.data.frame(x),
+    is.data.frame(groups),
+    tail(names(groups), 1L) == ".rows"
+  )
+  new_tibble(
+    x,
+    groups = groups,
+    ...,
+    nrow = NROW(x),
+    class = c(class, "grouped_df")
+  )
+}
+
+#' @description
+#' `validate_grouped_df()` validates the attributes of a `grouped_df`.
+#'
+#' @rdname new_grouped_df
+#' @export
+validate_grouped_df <- function(x) {
+  assert_that(is_grouped_df(x))
+
+  groups <- attr(x, "groups")
+  assert_that(
+    is.data.frame(groups),
+    ncol(groups) > 0,
+    names(groups)[ncol(groups)] == ".rows",
+    is.list(groups[[ncol(groups)]]),
+    msg  = "The `groups` attribute is not a data frame with its last column called `.rows`"
+  )
+
+  n <- nrow(x)
+  rows <- groups[[ncol(groups)]]
+  for (i in seq_along(rows)) {
+    indices <- rows[[i]]
+    assert_that(
+      is.integer(indices),
+      msg = "`.rows` column is not a list of one-based integer vectors"
+    )
+    assert_that(
+      all(indices >= 1 & indices <= n),
+      msg = glue("indices of group {i} are out of bounds")
+    )
+  }
+
+  x
+}
+
 
 setOldClass(c("grouped_df", "tbl_df", "tbl", "data.frame"))
 
@@ -34,12 +104,16 @@ is.grouped_df <- function(x) inherits(x, "grouped_df")
 #' @export
 is_grouped_df <- is.grouped_df
 
+group_sum <- function(x) {
+  grps <- n_groups(x)
+  paste0(commas(group_vars(x)), " [", big_mark(grps), "]")
+}
+
 #' @export
 tbl_sum.grouped_df <- function(x) {
-  grps <- if (is.null(attr(x, "indices"))) "?" else length(attr(x, "indices"))
   c(
     NextMethod(),
-    c("Groups" = paste0(commas(group_vars(x)), " [", big_mark(grps), "]"))
+    c("Groups" = group_sum(x))
   )
 }
 
@@ -50,7 +124,7 @@ group_size.grouped_df <- function(x) {
 
 #' @export
 n_groups.grouped_df <- function(x) {
-  length(attr(x, "indices"))
+  nrow(group_data(x))
 }
 
 #' @export
@@ -60,10 +134,18 @@ groups.grouped_df <- function(x) {
 
 #' @export
 group_vars.grouped_df <- function(x) {
-  vars <- attr(x, "vars")
-  # Need this for compatibility with existing packages that might
-  if (is.list(vars)) vars <- map_chr(vars, as_string)
-  vars
+  groups <- group_data(x)
+  if (is.character(groups)) {
+    # lazy grouped
+    groups
+  } else if (is.data.frame(groups)) {
+    # resolved, extract from the names of the data frame
+    head(names(groups), -1L)
+  } else if (is.list(groups)) {
+    # Need this for compatibility with existing packages that might
+    # use the old list of symbols format
+    map_chr(groups, as_string)
+  }
 }
 
 #' @export
@@ -86,16 +168,20 @@ ungroup.grouped_df <- function(x, ...) {
   ungroup_grouped_df(x)
 }
 
+#' @importFrom tibble is_tibble
 #' @export
-`[.grouped_df` <- function(x, i, j, ...) {
+`[.grouped_df` <- function(x, i, j, drop = FALSE) {
   y <- NextMethod()
 
-  group_names <- group_vars(x)
+  if (isTRUE(drop) && !is_tibble(y)) {
+    return(y)
+  }
 
+  group_names <- group_vars(x)
   if (!all(group_names %in% names(y))) {
     tbl_df(y)
   } else {
-    grouped_df(y, group_names)
+    grouped_df(y, group_names, group_drops(x))
   }
 }
 
@@ -111,13 +197,43 @@ cbind.grouped_df <- function(...) {
   bind_cols(...)
 }
 
+#' Select grouping variables
+#'
+#' This selection helpers matches grouping variables. It can be used
+#' in [select()] or [vars()][scoped] selections.
+#'
+#' @inheritParams tidyselect::select_helpers
+#' @seealso [groups()] and [group_vars()] for retrieving the grouping
+#'   variables outside selection contexts.
+#'
+#' @examples
+#' gdf <- iris %>% group_by(Species)
+#'
+#' # Select the grouping variables:
+#' gdf %>% select(group_cols())
+#'
+#' # Remove the grouping variables from mutate selections:
+#' gdf %>% mutate_at(vars(-group_cols()), `/`, 100)
+#' @export
+group_cols <- function(vars = peek_vars()) {
+  if (is_sel_vars(vars)) {
+    matches <- match(vars %@% groups, vars)
+    if (anyNA(matches)) {
+      abort("Can't find the grouping variables")
+    }
+    matches
+  } else {
+    int()
+  }
+}
+
 # One-table verbs --------------------------------------------------------------
 
 # see arrange.r for arrange.grouped_df
 
 .select_grouped_df <- function(.data, ..., notify = TRUE) {
   # Pass via splicing to avoid matching vars_select() arguments
-  vars <- tidyselect::vars_select(names(.data), !!!quos(...))
+  vars <- tidyselect::vars_select(sel_vars(.data), !!!quos(...))
   vars <- ensure_group_vars(vars, .data, notify = notify)
   select_impl(.data, vars)
 }
@@ -165,15 +281,9 @@ rename_.grouped_df <- function(.data, ..., .dots = list()) {
 
 #' @export
 do.grouped_df <- function(.data, ...) {
-  # Force computation of indices
-  if (is_null(attr(.data, "indices"))) {
-    .data <- grouped_df_impl(
-      .data, group_vars(.data),
-      group_drop(.data)
-    )
-  }
-  index <- attr(.data, "indices")
-  labels <- attr(.data, "labels")
+  index <- group_rows(.data)
+  labels <- select(group_data(.data), -last_col())
+  attr(labels, ".drop") <- NULL
 
   # Create ungroup version of data frame suitable for subsetting
   group_data <- ungroup(.data)
@@ -195,7 +305,7 @@ do.grouped_df <- function(.data, ...) {
       env_bind_do_pronouns(mask, group_data)
       out <- eval_tidy(args[[1]], mask)
       out <- out[0, , drop = FALSE]
-      out <- label_output_dataframe(labels, list(list(out)), groups(.data))
+      out <- label_output_dataframe(labels, list(list(out)), groups(.data), group_drops(.data))
     }
     return(out)
   }
@@ -205,9 +315,9 @@ do.grouped_df <- function(.data, ...) {
   # usual scoping rules.
   group_slice <- function(value) {
     if (missing(value)) {
-      group_data[index[[`_i`]] + 1L, , drop = FALSE]
+      group_data[index[[`_i`]], , drop = FALSE]
     } else {
-      group_data[index[[`_i`]] + 1L, ] <<- value
+      group_data[index[[`_i`]], ] <<- value
     }
   }
   env_bind_do_pronouns(mask, group_slice)
@@ -224,7 +334,7 @@ do.grouped_df <- function(.data, ...) {
   }
 
   if (!named) {
-    label_output_dataframe(labels, out, groups(.data))
+    label_output_dataframe(labels, out, groups(.data), group_drops(.data))
   } else {
     label_output_list(labels, out, groups(.data))
   }
@@ -239,7 +349,7 @@ do_.grouped_df <- function(.data, ..., env = caller_env(), .dots = list()) {
 
 #' @export
 distinct.grouped_df <- function(.data, ..., .keep_all = FALSE) {
-  dist <- distinct_vars(
+  dist <- distinct_prepare(
     .data,
     vars = quos(...),
     group_vars = group_vars(.data),
@@ -247,88 +357,11 @@ distinct.grouped_df <- function(.data, ..., .keep_all = FALSE) {
   )
   vars <- match_vars(dist$vars, dist$data)
   keep <- match_vars(dist$keep, dist$data)
-  out <- distinct_impl(dist$data, vars, keep)
-  grouped_df(out, groups(.data))
+  out <- distinct_impl(dist$data, vars, keep, environment())
+  grouped_df(out, groups(.data), group_drops(.data))
 }
 #' @export
 distinct_.grouped_df <- function(.data, ..., .dots = list(), .keep_all = FALSE) {
   dots <- compat_lazy_dots(.dots, caller_env(), ...)
   distinct(.data, !!!dots, .keep_all = .keep_all)
-}
-
-
-# Random sampling --------------------------------------------------------------
-
-
-#' @export
-sample_n.grouped_df <- function(tbl, size, replace = FALSE,
-                                weight = NULL, .env = NULL) {
-
-  assert_that(is_scalar_integerish(size), size >= 0)
-  if (!is_null(.env)) {
-    inform("`.env` is deprecated and no longer has any effect")
-  }
-  weight <- enquo(weight)
-  weight <- eval_tidy(weight, tbl)
-
-  index <- attr(tbl, "indices")
-  sampled <- lapply(index, sample_group,
-    frac = FALSE,
-    size = size,
-    replace = replace,
-    weight = weight
-  )
-  idx <- unlist(sampled)
-
-  grouped_df(tbl[idx, , drop = FALSE], vars = groups(tbl))
-}
-
-#' @export
-sample_frac.grouped_df <- function(tbl, size = 1, replace = FALSE,
-                                   weight = NULL, .env = NULL) {
-  assert_that(is.numeric(size), length(size) == 1, size >= 0)
-  if (!is_null(.env)) {
-    inform("`.env` is deprecated and no longer has any effect")
-  }
-  if (size > 1 && !replace) {
-    bad_args("size", "of sampled fraction must be less or equal to one, ",
-      "set `replace` = TRUE to use sampling with replacement"
-    )
-  }
-  weight <- enquo(weight)
-  weight <- eval_tidy(weight, tbl)
-
-  index <- attr(tbl, "indices")
-  sampled <- lapply(index, sample_group,
-    frac = TRUE,
-    size = size,
-    replace = replace,
-    weight = weight
-  )
-  idx <- unlist(sampled)
-
-  grouped_df(tbl[idx, , drop = FALSE], vars = groups(tbl))
-}
-
-sample_group <- function(i, frac, size, replace, weight) {
-  # i: zero-based on input, return-value is one-based
-  i <- i + 1L
-
-  n <- length(i)
-  if (frac) {
-    check_frac(size, replace)
-    size <- round(size * n)
-  } else {
-    check_size(size, n, replace)
-  }
-
-  if (!is_null(weight)) {
-    weight <- check_weight(weight[i], n)
-  }
-
-  i[sample.int(n, size, replace = replace, prob = weight)]
-}
-
-group_drop <- function(x) {
-  attr(.data, "drop") %||% TRUE
 }

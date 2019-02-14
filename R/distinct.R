@@ -63,13 +63,22 @@ distinct.default <- function(.data, ..., .keep_all = FALSE) {
 #' @rdname se-deprecated
 #' @inheritParams distinct
 distinct_ <- function(.data, ..., .dots, .keep_all = FALSE) {
+  signal_soft_deprecated(paste_line(
+    "distinct_() is deprecated. ",
+    "Please use distinct() instead",
+    "",
+    "The 'programming' vignette or the tidyeval book can help you",
+    "to program with distinct() : https://tidyeval.tidyverse.org"
+  ))
+
   UseMethod("distinct_")
 }
 
-#' Same basic philosophy as group_by: lazy_dots comes in, list of data and
+#' Same basic philosophy as group_by_prepare(): lazy_dots comes in, list of data and
 #' vars (character vector) comes out.
-#' @noRd
-distinct_vars <- function(.data, vars, group_vars = character(), .keep_all = FALSE) {
+#' @rdname group_by_prepare
+#' @export
+distinct_prepare <- function(.data, vars, group_vars = character(), .keep_all = FALSE) {
   stopifnot(is_quosures(vars), is.character(group_vars))
 
   # If no input, keep all variables
@@ -84,10 +93,7 @@ distinct_vars <- function(.data, vars, group_vars = character(), .keep_all = FAL
 
   # If any calls, use mutate to add new columns, then distinct on those
   .data <- add_computed_columns(.data, vars)
-  with_options(
-    lifecycle_disable_verbose_retirement = TRUE,
-    vars <- exprs_auto_name(vars, printer = tidy_text)
-  )
+  vars <- exprs_auto_name(vars)
 
   # Once we've done the mutate, we no longer need lazy objects, and
   # can instead just use their names
@@ -113,7 +119,7 @@ distinct_vars <- function(.data, vars, group_vars = character(), .keep_all = FAL
   new_vars <- unique(c(names(vars), group_vars))
 
   # Keep the order of the variables
-  out_vars <- intersect(names(.data), new_vars)
+  out_vars <- intersect(new_vars, names(.data))
 
   if (.keep_all) {
     keep <- seq_along(.data)

@@ -13,13 +13,6 @@ deparse_trunc <- function(x, width = getOption("width")) {
   paste0(substr(text[1], 1, width - 3), "...")
 }
 
-all_apply <- function(xs, f) {
-  for (x in xs) {
-    if (!f(x)) return(FALSE)
-  }
-  TRUE
-}
-
 any_apply <- function(xs, f) {
   for (x in xs) {
     if (f(x)) return(TRUE)
@@ -27,23 +20,8 @@ any_apply <- function(xs, f) {
   FALSE
 }
 
-drop_last <- function(x) {
-  if (length(x) <= 1L) return(NULL)
-  x[-length(x)]
-}
-
-is.wholenumber <- function(x) {
-  trunc(x) == x
-}
-
-deparse_all <- function(x) {
-  x <- map_if(x, is_quosure, quo_squash)
-  x <- map_if(x, is_formula, f_rhs)
-  map_chr(x, expr_text, width = 500L)
-}
-
 deparse_names <- function(x) {
-  x <- map_if(x, is_quosure, quo_squash)
+  x <- map_if(x, is_quosure, quo_expr)
   x <- map_if(x, is_formula, f_rhs)
   map_chr(x, deparse)
 }
@@ -90,18 +68,6 @@ is_1d <- function(x) {
   (is_atomic(x) || is.list(x)) && length(dim(x)) <= 1
 }
 
-is_negated <- function(x) {
-  is_call(x, "-", n = 1)
-}
-
-inc_seq <- function(from, to) {
-  if (from > to) {
-    integer()
-  } else {
-    seq.int(from, to)
-  }
-}
-
 random_table_name <- function(n = 10) {
   paste0(sample(letters, n, replace = TRUE), collapse = "")
 }
@@ -120,6 +86,15 @@ attr_equal <- function(x, y) {
   isTRUE(all.equal(attr_x, attr_y))
 }
 
-env_wipe <- function(env) {
-  rm(list = env_names(env), envir = env)
+unstructure <- function(x) {
+  attributes(x) <- NULL
+  x
+}
+
+compact_null <- function(x) {
+  Filter(function(elt) !is.null(elt), x)
+}
+
+paste_line <- function(...) {
+  paste(chr(...), collapse = "\n")
 }

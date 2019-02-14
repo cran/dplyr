@@ -11,14 +11,18 @@ case_when(...)
 determines which values match this case. The right hand side (RHS)
 provides the replacement value.
 
-The LHS must evaluate to a logical vector. The RHS does need to be
+The LHS must evaluate to a logical vector. The RHS does not need to be
 logical, but all RHSs must evaluate to the same type of vector.
 
 Both LHS and RHS may have the same length of either 1 or \code{n}. The
 value of \code{n} must be consistent across all cases. The case of
 \code{n == 0} is treated as a variant of \code{n != 1}.
 
-These dots support \link[rlang:tidy-dots]{tidy dots} features.}
+\code{NULL} inputs are ignored.
+
+These dots support \link[rlang:list2]{tidy dots} features. In
+particular, if your patterns are stored in a list, you can
+splice that in with \code{!!!}.}
 }
 \value{
 A vector of length 1 or \code{n}, matching the length of the logical
@@ -26,8 +30,9 @@ input or output vectors, with the type (and attributes) of the first
 RHS. Inconsistent lengths or types will generate an error.
 }
 \description{
-This function allows you to vectorise multiple \code{if} and \code{else if}
+This function allows you to vectorise multiple \code{\link[=if_else]{if_else()}}
 statements. It is an R equivalent of the SQL \code{CASE WHEN} statement.
+If no cases match, \code{NA} is returned.
 }
 \examples{
 x <- 1:50
@@ -45,6 +50,24 @@ case_when(
   x \%\%  5 == 0 ~ "fizz",
   x \%\%  7 == 0 ~ "buzz",
   x \%\% 35 == 0 ~ "fizz buzz"
+)
+
+# If none of the cases match, NA is used:
+case_when(
+  x \%\%  5 == 0 ~ "fizz",
+  x \%\%  7 == 0 ~ "buzz",
+  x \%\% 35 == 0 ~ "fizz buzz"
+)
+
+# Note that NA values in the vector x do not get special treatment. If you want
+# to explicitly handle NA values you can use the `is.na` function:
+x[2:4] <- NA_real_
+case_when(
+  x \%\% 35 == 0 ~ "fizz buzz",
+  x \%\% 5 == 0 ~ "fizz",
+  x \%\% 7 == 0 ~ "buzz",
+  is.na(x) ~ "nope",
+  TRUE ~ as.character(x)
 )
 
 # All RHS values need to be of the same type. Inconsistent types will throw an error.
@@ -81,16 +104,43 @@ starwars \%>\%
     type = case_when(
       height > 200 | mass > 200 ~ "large",
       species == "Droid"        ~ "robot",
-      TRUE                      ~  "other"
+      TRUE                      ~ "other"
     )
   )
 
-# Dots support splicing:
-patterns <- list(
-  x \%\% 35 == 0 ~ "fizz buzz",
-  x \%\% 5 == 0 ~ "fizz",
-  x \%\% 7 == 0 ~ "buzz",
-  TRUE ~ as.character(x)
-)
-case_when(!!!patterns)
+
+# `case_when()` is not a tidy eval function. If you'd like to reuse
+# the same patterns, extract the `case_when()` call in a normal
+# function:
+case_character_type <- function(height, mass, species) {
+  case_when(
+    height > 200 | mass > 200 ~ "large",
+    species == "Droid"        ~ "robot",
+    TRUE                      ~ "other"
+  )
+}
+
+case_character_type(150, 250, "Droid")
+case_character_type(150, 150, "Droid")
+
+# Such functions can be used inside `mutate()` as well:
+starwars \%>\%
+  mutate(type = case_character_type(height, mass, species)) \%>\%
+  pull(type)
+
+# `case_when()` ignores `NULL` inputs. This is useful when you'd
+# like to use a pattern only under certain conditions. Here we'll
+# take advantage of the fact that `if` returns `NULL` when there is
+# no `else` clause:
+case_character_type <- function(height, mass, species, robots = TRUE) {
+  case_when(
+    height > 200 | mass > 200      ~ "large",
+    if (robots) species == "Droid" ~ "robot",
+    TRUE                           ~ "other"
+  )
+}
+
+starwars \%>\%
+  mutate(type = case_character_type(height, mass, species, robots = FALSE)) \%>\%
+  pull(type)
 }

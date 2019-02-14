@@ -25,6 +25,7 @@
 #' [group_by_at()]) make it easy to group a dataset by a selection of
 #' variables.
 #'
+#' @family grouping functions
 #' @param .data a tbl
 #' @param ... Variables to group by. All tbls accept variable names.
 #'   Some tbls will accept functions of variables. Duplicated groups
@@ -32,7 +33,13 @@
 #' @param add When `add = FALSE`, the default, `group_by()` will
 #'   override existing groups. To add to the existing groups, use
 #'   `add = TRUE`.
+#' @param .drop When `.drop = TRUE`, empty groups are dropped.
 #' @inheritParams filter
+#'
+#' @return A [grouped data frame][grouped_df()], unless the combination of `...` and `add`
+#'   yields a non empty set of grouping columns, a regular (ungrouped) data frame
+#'   otherwise.
+#'
 #' @export
 #' @examples
 #' by_cyl <- mtcars %>% group_by(cyl)
@@ -72,17 +79,35 @@
 #' by_cyl %>%
 #'   group_by(vs, am, add = TRUE) %>%
 #'   group_vars()
-group_by <- function(.data, ..., add = FALSE) {
+#'
+#' # when factors are involved, groups can be empty
+#' tbl <- tibble(
+#'   x = 1:10,
+#'   y = factor(rep(c("a", "c"), each  = 5), levels = c("a", "b", "c"))
+#' )
+#' tbl %>%
+#'   group_by(y) %>%
+#'   group_rows()
+#'
+group_by <- function(.data, ..., add = FALSE, .drop = FALSE) {
   UseMethod("group_by")
 }
 #' @export
-group_by.default <- function(.data, ..., add = FALSE) {
+group_by.default <- function(.data, ..., add = FALSE, .drop = FALSE) {
   group_by_(.data, .dots = compat_as_lazy_dots(...), add = add)
 }
 #' @export
 #' @rdname se-deprecated
 #' @inheritParams group_by
 group_by_ <- function(.data, ..., .dots = list(), add = FALSE) {
+  signal_soft_deprecated(paste_line(
+    "group_by_() is deprecated. ",
+    "Please use group_by() instead",
+    "",
+    "The 'programming' vignette or the tidyeval book can help you",
+    "to program with group_by() : https://tidyeval.tidyverse.org"
+  ))
+
   UseMethod("group_by_")
 }
 
@@ -95,9 +120,9 @@ ungroup <- function(x, ...) {
 
 #' Prepare for grouping.
 #'
-#' Performs standard operations that should happen before individual methods
-#' process the data. This includes mutating the tbl to add new grouping columns
-#' and updating the groups (based on add)
+#' `*_prepare()` performs standard manipulation that is needed prior
+#' to actual data processing. They are only be needed by packages
+#' that implement dplyr backends.
 #'
 #' @return A list
 #'   \item{data}{Modified tbl}
@@ -106,15 +131,13 @@ ungroup <- function(x, ...) {
 #' @keywords internal
 group_by_prepare <- function(.data, ..., .dots = list(), add = FALSE) {
   new_groups <- c(quos(...), compat_lazy_dots(.dots, caller_env()))
+  new_groups <- new_groups[!map_lgl(new_groups, quo_is_missing)]
 
   # If any calls, use mutate to add new columns, then group by those
   .data <- add_computed_columns(.data, new_groups)
 
   # Once we've done the mutate, we need to name all objects
-  with_options(
-    lifecycle_disable_verbose_retirement = TRUE,
-    new_groups <- exprs_auto_name(new_groups, printer = tidy_text)
-  )
+  new_groups <- exprs_auto_name(new_groups)
 
   group_names <- names(new_groups)
   if (add) {
@@ -130,7 +153,7 @@ group_by_prepare <- function(.data, ..., .dots = list(), add = FALSE) {
 }
 
 add_computed_columns <- function(.data, vars) {
-  is_symbol <- map_lgl(vars, quo_is_symbol)
+  is_symbol <- map_lgl(vars, quo_is_variable_reference)
   named <- have_name(vars)
 
   needs_mutate <- named | !is_symbol
@@ -148,7 +171,11 @@ add_computed_columns <- function(.data, vars) {
 #' `group_vars()` returns a character vector; `groups()` returns a list of
 #' symbols.
 #'
+#' @family grouping functions
 #' @param x A [tbl()]
+#'
+#' @seealso [group_cols()] for matching grouping variables in
+#'   [selection contexts][select].
 #' @export
 #' @examples
 #' df <- tibble(x = 1, y = 2) %>% group_by(x, y)
@@ -167,4 +194,11 @@ group_vars <- function(x) {
 #' @export
 group_vars.default <- function(x) {
   deparse_names(groups(x))
+}
+
+# does a grouped data frame drop. TRUE unless the `.drop` attribute is FALSE
+#
+# absence of the .drop attribute -> drop = TRUE for backwards compatibility reasons
+group_drops <- function(x) {
+  !is_grouped_df(x) || is.null(attr(x, "groups")) || !identical(attr(group_data(x), ".drop"), FALSE)
 }

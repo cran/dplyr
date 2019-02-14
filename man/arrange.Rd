@@ -13,8 +13,8 @@ arrange(.data, ...)
 \item{.data}{A tbl. All main verbs are S3 generics and provide methods
 for \code{\link[=tbl_df]{tbl_df()}}, \code{\link[dtplyr:tbl_dt]{dtplyr::tbl_dt()}} and \code{\link[dbplyr:tbl_dbi]{dbplyr::tbl_dbi()}}.}
 
-\item{...}{Comma separated list of unquoted variable names. Use
-\code{\link[=desc]{desc()}} to sort a variable in descending order.}
+\item{...}{Comma separated list of unquoted variable names, or expressions
+involving variable names. Use \code{\link[=desc]{desc()}} to sort a variable in descending order.}
 
 \item{.by_group}{If \code{TRUE}, will sort first by grouping variable. Applies to
 grouped data frames only.}
@@ -23,12 +23,21 @@ grouped data frames only.}
 An object of the same class as \code{.data}.
 }
 \description{
-Use \code{\link[=desc]{desc()}} to sort a variable in descending order.
+Order tbl rows by an expression involving its variables.
 }
 \section{Locales}{
 
 The sort order for character vectors will depend on the collating sequence
 of the locale in use: see \code{\link[=locales]{locales()}}.
+}
+
+\section{Missing values}{
+
+Unlike base sorting with \code{sort()}, \code{NA} are:
+\itemize{
+\item always sorted to the end for local data, even when wrapped with \code{desc()}.
+\item treated differently for remote data, depending on the backend.
+}
 }
 
 \section{Tidy data}{

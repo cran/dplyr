@@ -42,7 +42,7 @@ test_that("funs() gives a clear error message (#3368)", {
 
 test_that("funs() can be merged with new arguments", {
   fns <- funs(foo(.))
-  expect_identical(as_fun_list(fns, ~ NULL, get_env(), foo = 1L), funs(foo(., foo = 1L)))
+  expect_identical(as_fun_list(fns, ~ NULL, current_env(), foo = 1L), funs(foo(., foo = 1L)))
 })
 
 
@@ -74,4 +74,30 @@ test_that("can enfun() quosures", {
 test_that("can enfun() purrr-style lambdas", {
   my_mean <- as_function(~ mean(.x))
   expect_identical(enfun(~ mean(.x)), funs(!!my_mean))
+})
+
+test_that("as_fun_list() uses rlang auto-naming", {
+  nms <- names(as_fun_list(list(min, max), quo(), env()))
+
+  # Just check they are labellised as literals enclosed in brackets to
+  # insulate from upstream changes
+  expect_true(all(grepl("^<", nms)))
+})
+
+test_that("funs_ works", {
+  scoped_lifecycle_silence()
+  expect_equal(
+    funs(mean),
+    funs_(list(~ mean))
+  )
+
+  expect_equal(
+    funs_(list("mean")),
+    funs_(list(`environment<-`(~ mean, baseenv())))
+  )
+
+  expect_equal(
+    funs(mean(.)),
+    funs_(list(~ mean(.)))
+  )
 })
