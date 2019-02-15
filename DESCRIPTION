@@ -1,7 +1,7 @@
 Type: Package
 Package: dplyr
 Title: A Grammar of Data Manipulation
-Version: 0.8.0
+Version: 0.8.0.1
 Authors@R: c(
     person("Hadley", "Wickham", , "hadley@rstudio.com", c("aut", "cre"), comment = c(ORCID = "0000-0003-4757-117X")),
     person("Romain", "Fran\u00e7ois", role = "aut", comment = c(ORCID = "0000-0002-2444-4226")),
@@ -33,7 +33,7 @@ Encoding: UTF-8
 LazyData: yes
 RoxygenNote: 6.1.1
 NeedsCompilation: yes
-Packaged: 2019-02-12 16:18:43 UTC; romain
+Packaged: 2019-02-15 15:12:47 UTC; ripley
 Author: Hadley Wickham [aut, cre] (<https://orcid.org/0000-0003-4757-117X>),
   Romain François [aut] (<https://orcid.org/0000-0002-2444-4226>),
   Lionel Henry [aut],
@@ -41,4 +41,4 @@ Author: Hadley Wickham [aut, cre] (<https://orcid.org/0000-0003-4757-117X>),
   RStudio [cph, fnd]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 Repository: CRAN
-Date/Publication: 2019-02-14 22:22:14 UTC
+Date/Publication: 2019-02-15 15:30:53 UTC

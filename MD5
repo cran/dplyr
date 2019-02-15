@@ -1,4 +1,4 @@
-f0632e50b2e4d6fa21db08455b79056c *DESCRIPTION
+ba5d03865dd38f7d6f0c299c81bfe87b *DESCRIPTION
 c7180788a8ec3035d54fc733f8939ade *LICENSE
 e884ab3192f1a0a21b9b4a7f45b9817d *NAMESPACE
 caf1e85bd53dfc528c0fe22d5194dbec *NEWS.md
@@ -92,7 +92,7 @@ e871a60aa0c5e04a0307c9115fd56797 *R/utils-replace-with.R
 a6ef87f8c5708a4520a12b39b476d305 *R/utils.r
 973f9efc20f25b9de77e443d0f719b01 *R/zzz.r
 59010a3f0a57ff225587d2806d30123e *README.md
-9f196f4b8ce8d6d8cf35d6505f8506c7 *build/dplyr.pdf
+78b54a88dce3364116d21d0639f758ae *build/dplyr.pdf
 0dfd519a637d10cfedd01663de4e4426 *build/vignette.rds
 a79561c8013e7a7f3c23d509f4918bf8 *data/band_instruments.rda
 3aa4b1478fc31219480e88c876c3aeed *data/band_instruments2.rda
@@ -144,7 +144,7 @@ d768501400c66ae6611565854cda10d1 *inst/include/dplyr/hybrid/scalar_result/n_dist
 30e32be598dee61ef4bae411ae1b645b *inst/include/dplyr/hybrid/vector_result/echo.h
 8141a536f9bc5c54f8b74a3fa87ff023 *inst/include/dplyr/hybrid/vector_result/in.h
 335c15eb7e606c73b08ea41276e98e91 *inst/include/dplyr/hybrid/vector_result/lead_lag.h
-262b4dbc9534aef91c6ff5466afb6537 *inst/include/dplyr/hybrid/vector_result/ntile.h
+da32daf1253f3aed69f7d5cf75bae66e *inst/include/dplyr/hybrid/vector_result/ntile.h
 cc815655c464a003c6768128ab3eeffd *inst/include/dplyr/hybrid/vector_result/rank.h
 7fd2f18affcbe2a1ae058293013ac8fe *inst/include/dplyr/hybrid/vector_result/row_number.h
 72a7cdbb9c26702093ce5f027e27e59f *inst/include/dplyr/lifecycle.h
