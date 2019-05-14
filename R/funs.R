@@ -23,8 +23,10 @@
 #'  - An anonymous function, `function(x) mean(x, na.rm = TRUE)`
 #'  - An anonymous function in \pkg{purrr} notation, `~mean(., na.rm = TRUE)`
 #'
-#' @param .args,args A named list of additional arguments to be added
-#'   to all function calls.
+#' @param .args,args A named list of additional arguments to be added to all
+#'   function calls. As `funs()` is being deprecated, use other methods to
+#'   supply arguments: `...` argument in [scoped verbs][summarise_at()] or make
+#'   own functions with [purrr::partial()].
 #' @export
 #' @examples
 #' funs(mean, "mean", mean(., na.rm = TRUE))
@@ -45,11 +47,11 @@ funs <- function(..., .args = list()) {
     "funs() is soft deprecated as of dplyr 0.8.0",
     "please use list() instead",
     "",
-    "# Before:",
-    "funs(name = f(.)",
+    "  # Before:",
+    "  funs(name = f(.))",
     "",
-    "# After: ",
-    "list(name = ~f(.))"
+    "  # After: ",
+    "  list(name = ~ f(.))"
   ))
   dots <- quos(...)
   default_env <- caller_env()
@@ -69,33 +71,54 @@ new_funs <- function(funs) {
   funs
 }
 
-as_fun_list <- function(.x, .quo, .env, ...) {
-  # Capture quosure before evaluating .x
-  force(.quo)
-
-  # If a fun_list, update args
+as_fun_list <- function(.funs, .env, ...) {
   args <- list2(...)
-  if (is_fun_list(.x)) {
+
+  if (is_fun_list(.funs)) {
     if (!is_empty(args)) {
-      .x[] <- map(.x, call_modify, !!!args)
+      .funs[] <- map(.funs, call_modify, !!!args)
     }
-    return(.x)
+    return(.funs)
   }
 
-  # Take functions by expression if they are supplied by name. This
-  # way we can evaluate it hybridly.
-  if (is_function(.x) && quo_is_symbol(.quo)) {
-    .x <- list(.quo)
-  } else if (is_character(.x)) {
-    .x <- as.list(.x)
-  } else if (is_bare_formula(.x, lhs = FALSE)) {
-    .x <- list(as_function(.x))
-  } else if (!is_list(.x)) {
-    .x <- list(.x)
+  if (is_list(.funs) && length(.funs) > 1) {
+    .funs <- auto_name_formulas(.funs)
   }
 
-  funs <- map(.x, as_fun, .env = fun_env(.quo, .env), args)
-  new_funs(funs)
+  if (!is_character(.funs) && !is_list(.funs)) {
+    .funs <- list(.funs)
+  }
+
+  if(is_character(.funs) && is_null(names(.funs)) && length(.funs) != 1L) {
+    names(.funs) <- .funs
+  }
+
+  funs <- map(.funs, function(.x){
+    if (is_formula(.x)) {
+      .x <- as_inlined_function(.x, env = .env)
+    } else {
+      if (is_character(.x)) {
+        .x <- get(.x, .env, mode = "function")
+      } else if (!is_function(.x)) {
+        abort("not expecting this")
+      }
+      if (length(args)) {
+        .x <- new_quosure(
+          call2(.x, quote(.), !!!args),
+          env = .env
+        )
+      }
+    }
+    .x
+  })
+  attr(funs, "have_name") <- any(names2(funs) != "")
+  funs
+}
+
+auto_name_formulas <- function(funs) {
+  where <- !have_name(funs) & map_lgl(funs, function(x) is_bare_formula(x) && is_call(f_rhs(x)))
+  names(funs)[where] <- map_chr(funs[where], function(x) as_label(f_rhs(x)[[1]]))
+  funs
 }
 
 as_fun <- function(.x, .env, .args) {

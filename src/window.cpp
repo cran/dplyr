@@ -39,10 +39,10 @@
 //' df %>% filter(cumany(balance < 0))
 //' # all rows until first overdraft
 //' df %>% filter(cumall(!(balance < 0)))
-// [[Rcpp::export]]
-LogicalVector cumall(LogicalVector x) {
+// [[Rcpp::export(rng = false)]]
+Rcpp::LogicalVector cumall(Rcpp::LogicalVector x) {
   int n = x.length();
-  LogicalVector out(n, TRUE);
+  Rcpp::LogicalVector out(n, TRUE);
   int* p_x = x.begin();
   int* p_out = out.begin();
 
@@ -78,10 +78,10 @@ LogicalVector cumall(LogicalVector x) {
 
 //' @export
 //' @rdname cumall
-// [[Rcpp::export]]
-LogicalVector cumany(LogicalVector x) {
+// [[Rcpp::export(rng = false)]]
+Rcpp::LogicalVector cumany(Rcpp::LogicalVector x) {
   int n = x.length();
-  LogicalVector out(n, FALSE);
+  Rcpp::LogicalVector out(n, FALSE);
   int* p_x = x.begin();
   int* p_out = out.begin();
 
@@ -118,10 +118,10 @@ LogicalVector cumany(LogicalVector x) {
 
 //' @export
 //' @rdname cumall
-// [[Rcpp::export]]
-NumericVector cummean(NumericVector x) {
+// [[Rcpp::export(rng = false)]]
+Rcpp::NumericVector cummean(Rcpp::NumericVector x) {
   int n = x.length();
-  NumericVector out(no_init(n));
+  Rcpp::NumericVector out(Rcpp::no_init(n));
 
   double sum = out[0] = x[0];
   for (int i = 1; i < n; i++) {

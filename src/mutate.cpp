@@ -17,20 +17,6 @@
 #include <dplyr/hybrid/hybrid.h>
 #include <dplyr/Collecter.h>
 
-using namespace Rcpp;
-using namespace dplyr;
-
-void check_not_groups(const QuosureList&, const RowwiseDataFrame&) {}
-void check_not_groups(const QuosureList&, const NaturalDataFrame&) {}
-
-void check_not_groups(const QuosureList& quosures, const GroupedDataFrame& gdf) {
-  int n = quosures.size();
-  for (int i = 0; i < n; i++) {
-    if (gdf.has_group(quosures[i].name()))
-      bad_col(quosures[i].name(), "can't be modified because it's a grouping variable");
-  }
-}
-
 namespace dplyr {
 
 template <typename SlicedTibble>
@@ -87,7 +73,7 @@ inline SEXP constant_recycle(SEXP x, int n, const SymbolString& name) {
   default:
     break;
   }
-  bad_col(name, "is of unsupported type {type}", _["type"] = Rf_type2char(TYPEOF(x)));
+  bad_col(name, "is of unsupported type {type}", Rcpp::_["type"] = Rf_type2char(TYPEOF(x)));
 }
 
 template <typename SlicedTibble>
@@ -154,7 +140,7 @@ private:
     if (is_vector(expr))
       check_length(Rf_length(expr), nrows, check_length_message<SlicedTibble>(), name);
     else
-      bad_col(name, "is of unsupported type {type}", _["type"] = Rf_type2char(TYPEOF(expr)));
+      bad_col(name, "is of unsupported type {type}", Rcpp::_["type"] = Rf_type2char(TYPEOF(expr)));
     return expr;
   }
 
@@ -171,7 +157,7 @@ private:
     }
 
     typename SlicedTibble::slicing_index indices = *git;
-    RObject first(get(indices));
+    Rcpp::RObject first(get(indices));
 
     if (Rf_inherits(first, "POSIXlt")) {
       bad_col(name, "is of unsupported class POSIXlt");
@@ -203,12 +189,17 @@ private:
       }
     }
 
+    SEXP res;
     if (TYPEOF(first) == VECSXP) {
-      return ListGatherer<SlicedTibble> (List(first), indices, const_cast<MutateCallProxy&>(*this), data, i, name).collect();
+      Rcpp::List list_first(first);
+      ListGatherer<SlicedTibble> gatherer(list_first, indices, const_cast<MutateCallProxy&>(*this), data, i, name);
+      res = PROTECT(gatherer.collect());
     } else {
-      return Gatherer<SlicedTibble> (first, indices, const_cast<MutateCallProxy&>(*this), data, i, name).collect();
+      Gatherer<SlicedTibble> gatherer(first, indices, const_cast<MutateCallProxy&>(*this), data, i, name);
+      res = PROTECT(gatherer.collect());
     }
-
+    UNPROTECT(1);
+    return res;
   }
 
 
@@ -225,7 +216,7 @@ SEXP MutateCallProxy<NaturalDataFrame>::evaluate() {
   NaturalDataFrame::group_iterator git = data.group_begin();
   NaturalDataFrame::slicing_index indices = *git;
 
-  RObject first(get(indices));
+  Rcpp::RObject first(get(indices));
   if (Rf_isNull(first)) return R_NilValue;
 
   if (Rf_inherits(first, "POSIXlt")) {
@@ -251,7 +242,14 @@ class Gatherer {
 public:
   typedef typename SlicedTibble::slicing_index Index;
 
-  Gatherer(const RObject& first, const Index& indices, MutateCallProxy<SlicedTibble>& proxy_, const SlicedTibble& gdf_, int first_non_na_, const SymbolString& name_) :
+  Gatherer(
+    const Rcpp::RObject& first,
+    const Index& indices,
+    MutateCallProxy<SlicedTibble>& proxy_,
+    const SlicedTibble& gdf_,
+    int first_non_na_,
+    const SymbolString& name_
+  ) :
     gdf(gdf_), proxy(proxy_), first_non_na(first_non_na_), name(name_)
   {
     coll = collecter(first, gdf.nrows());
@@ -276,7 +274,7 @@ public:
     for (; i < ngroups; i++, ++git) {
       const Index& indices = *git;
       if (indices.size()) {
-        Shield<SEXP> subset(proxy.get(indices));
+        Rcpp::Shield<SEXP> subset(proxy.get(indices));
         grab(subset, indices);
       }
     }
@@ -292,7 +290,7 @@ private:
     } else if (n == 1) {
       grab_rep(subset, indices);
     } else if (Rf_isNull(subset)) {
-      stop("incompatible types (NULL), expecting %s", coll->describe());
+      Rcpp::stop("incompatible types (NULL), expecting %s", coll->describe());
     } else {
       check_length(n, indices.size(), check_length_message<SlicedTibble>(), name);
     }
@@ -323,7 +321,7 @@ private:
       coll = new_collecter;
     } else {
       bad_col(name, "can't be converted from {source_type} to {target_type}",
-              _["source_type"] = coll->describe(), _["target_type"] = get_single_class(subset));
+              Rcpp::_["source_type"] = coll->describe(), Rcpp::_["target_type"] = get_single_class(subset));
     }
   }
 
@@ -350,7 +348,7 @@ class ListGatherer {
 public:
   typedef typename SlicedTibble::slicing_index Index;
 
-  ListGatherer(List first, const Index& indices, MutateCallProxy<SlicedTibble>& proxy_, const SlicedTibble& gdf_, int first_non_na_, const SymbolString& name_) :
+  ListGatherer(Rcpp::List first, const Index& indices, MutateCallProxy<SlicedTibble>& proxy_, const SlicedTibble& gdf_, int first_non_na_, const SymbolString& name_) :
     gdf(gdf_), proxy(proxy_), data(gdf.nrows()), first_non_na(first_non_na_), name(name_)
   {
     if (first_non_na < gdf.ngroups()) {
@@ -371,7 +369,8 @@ public:
     for (; i < ngroups; i++, ++git) {
       const Index& indices = *git;
       if (indices.size()) {
-        List subset(proxy.get(indices));
+        Rcpp::Shield<SEXP> res(proxy.get(indices));
+        Rcpp::List subset(res);
         grab(subset, indices);
       }
     }
@@ -380,7 +379,7 @@ public:
 
 private:
 
-  inline void grab(const List& subset, const Index& indices) {
+  inline void grab(const Rcpp::List& subset, const Index& indices) {
     int n = subset.size();
 
     if (n == indices.size()) {
@@ -392,7 +391,7 @@ private:
     }
   }
 
-  void grab_along(const List& subset, const Index& indices) {
+  void grab_along(const Rcpp::List& subset, const Index& indices) {
     int n = indices.size();
     for (int j = 0; j < n; j++) {
       data[ indices[j] ] = subset[j];
@@ -408,7 +407,7 @@ private:
 
   const SlicedTibble& gdf;
   MutateCallProxy<SlicedTibble>& proxy;
-  List data;
+  Rcpp::List data;
   int first_non_na;
   const SymbolString name;
 
@@ -419,35 +418,35 @@ private:
 }
 
 template <typename SlicedTibble>
-DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots, SEXP caller_env) {
+Rcpp::DataFrame mutate_grouped(const Rcpp::DataFrame& df, const dplyr::QuosureList& dots, SEXP caller_env) {
   LOG_DEBUG << "initializing proxy";
 
   SlicedTibble gdf(df);
   int nexpr = dots.size();
-  check_not_groups(dots, gdf);
+  gdf.check_not_groups(dots);
 
   LOG_DEBUG << "copying data to accumulator";
 
-  NamedListAccumulator<SlicedTibble> accumulator;
+  dplyr::NamedListAccumulator<SlicedTibble> accumulator;
   int ncolumns = df.size();
-  CharacterVector column_names = df.names();
+  Rcpp::Shield<SEXP> column_names(Rf_getAttrib(df, dplyr::symbols::names));
   for (int i = 0; i < ncolumns; i++) {
-    accumulator.set(column_names[i], df[i]);
+    accumulator.set(STRING_ELT(column_names, i), df[i]);
   }
 
   LOG_VERBOSE << "processing " << nexpr << " variables";
 
-  DataMask<SlicedTibble> mask(gdf) ;
+  dplyr::DataMask<SlicedTibble> mask(gdf) ;
 
   for (int i = 0; i < nexpr; i++) {
 
     Rcpp::checkUserInterrupt();
-    const NamedQuosure& quosure = dots[i];
-    SymbolString name = quosure.name();
+    const dplyr::NamedQuosure& quosure = dots[i];
+    dplyr::SymbolString name = quosure.name();
 
     LOG_VERBOSE << "Variable " << name.get_utf8_cstring();
 
-    RObject variable = hybrid::window(quosure.expr(), gdf, mask, quosure.env(), caller_env) ;
+    Rcpp::RObject variable = dplyr::hybrid::window(quosure.expr(), gdf, mask, quosure.env(), caller_env) ;
 
     LOG_VERBOSE << "Checking result";
 
@@ -456,7 +455,7 @@ DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots, SEXP call
 
       // NULL columns are not removed if `setup()` is not called here
       mask.setup();
-      variable = MutateCallProxy<SlicedTibble>(gdf, mask, quosure).get();
+      variable = dplyr::MutateCallProxy<SlicedTibble>(gdf, mask, quosure).get();
     }
 
     if (Rf_isNull(variable)) {
@@ -467,7 +466,7 @@ DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots, SEXP call
 
     LOG_VERBOSE << "Finalizing";
 
-    if (!Rcpp::traits::same_type<SlicedTibble, NaturalDataFrame>::value) {
+    if (!Rcpp::traits::same_type<SlicedTibble, dplyr::NaturalDataFrame>::value) {
       Rf_setAttrib(variable, R_NamesSymbol, R_NilValue);
     }
 
@@ -476,34 +475,37 @@ DataFrame mutate_grouped(const DataFrame& df, const QuosureList& dots, SEXP call
   }
 
   // basic structure of the data frame
-  List res = accumulator;
-  set_class(res, get_class(df));
-  set_rownames(res, df.nrows());
+  Rcpp::List res = accumulator;
+  dplyr::set_class(res, dplyr::get_class(df));
+  dplyr::set_rownames(res, df.nrows());
 
   // let the grouping class deal with the rest, e.g. the
   // groups attribute
   return SlicedTibble(res, gdf).data();
 }
 
+template <typename SlicedTibble>
+SEXP mutate_zero(const Rcpp::DataFrame& df, const dplyr::QuosureList& dots, SEXP caller_env, bool set_groups) {
+  SlicedTibble tbl(df);
+  if (tbl.ngroups() == 0 || tbl.nrows() == 0) {
+    Rcpp::DataFrame res = mutate_grouped<dplyr::NaturalDataFrame>(df, dots, caller_env);
+    if (set_groups) {
+      dplyr::GroupedDataFrame::copy_groups(res, df);
+    }
+    return res;
+  }
+  return mutate_grouped<SlicedTibble>(df, dots, caller_env);
+}
 
-// [[Rcpp::export]]
-SEXP mutate_impl(DataFrame df, QuosureList dots, SEXP caller_env) {
+// [[Rcpp::export(rng = false)]]
+SEXP mutate_impl(Rcpp::DataFrame df, dplyr::QuosureList dots, SEXP caller_env) {
   if (dots.size() == 0) return df;
   check_valid_colnames(df);
-  if (is<RowwiseDataFrame>(df)) {
-    return mutate_grouped<RowwiseDataFrame>(df, dots, caller_env);
-  } else if (is<GroupedDataFrame>(df)) {
-
-    GroupedDataFrame gdf(df);
-    // special case when there are no groups or only empty groups
-    if (gdf.ngroups() == 0 || gdf.nrows() == 0) {
-      DataFrame res = mutate_grouped<NaturalDataFrame>(df, dots, caller_env);
-      res.attr("groups") = df.attr("groups");
-      return res;
-    }
-
-    return mutate_grouped<GroupedDataFrame>(df, dots, caller_env);
+  if (Rcpp::is<dplyr::RowwiseDataFrame>(df)) {
+    return mutate_zero<dplyr::RowwiseDataFrame>(df, dots, caller_env, false);
+  } else if (Rcpp::is<dplyr::GroupedDataFrame>(df)) {
+    return mutate_zero<dplyr::GroupedDataFrame>(df, dots, caller_env, true);
   } else {
-    return mutate_grouped<NaturalDataFrame>(df, dots, caller_env);
+    return mutate_grouped<dplyr::NaturalDataFrame>(df, dots, caller_env);
   }
 }

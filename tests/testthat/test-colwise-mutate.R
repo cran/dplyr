@@ -333,3 +333,75 @@ test_that("mutate_at with multiple columns AND unnamed functions works (#4119)",
     c(names(storms), c("wind_fn1", "pressure_fn1", "wind_fn2", "pressure_fn2"))
   )
 })
+
+test_that("colwise mutate have .data in scope of rlang lambdas (#4183)", {
+  results <- list(
+    iris %>% mutate_if(is.numeric, ~ . / iris$Petal.Width),
+    iris %>% mutate_if(is.numeric, ~ . / Petal.Width),
+    iris %>% mutate_if(is.numeric, ~ . / .data$Petal.Width),
+
+    iris %>% mutate_if(is.numeric, list(~ . / iris$Petal.Width )),
+    iris %>% mutate_if(is.numeric, list(~ . / Petal.Width      )),
+    iris %>% mutate_if(is.numeric, list(~ . / .data$Petal.Width)),
+
+    iris %>% mutate_if(is.numeric, ~ .x / iris$Petal.Width),
+    iris %>% mutate_if(is.numeric, ~ .x / Petal.Width),
+    iris %>% mutate_if(is.numeric, ~ .x / .data$Petal.Width),
+
+    iris %>% mutate_if(is.numeric, list(~ .x / iris$Petal.Width )),
+    iris %>% mutate_if(is.numeric, list(~ .x / Petal.Width      )),
+    iris %>% mutate_if(is.numeric, list(~ .x / .data$Petal.Width))
+  )
+
+  for(i in 2:12) {
+    expect_equal(results[[1]], results[[i]])
+  }
+
+})
+
+test_that("can choose the name of vars with multiple funs (#4180)", {
+  expect_identical(
+    mtcars %>%
+      group_by(cyl) %>%
+      summarise_at(vars(DISP = disp), list(mean = mean, median = median)),
+    mtcars %>%
+      group_by(cyl) %>%
+      summarise(DISP_mean = mean(disp), DISP_median = median(disp))
+  )
+})
+
+test_that("summarise_at() unquotes in lambda (#4287)", {
+  df <- tibble::tibble(year = seq(2015, 2050, 5), P = 5.0 + 2.5 * year)
+  year <- 2037
+
+  expect_equal(
+    summarise_at(df, vars(-year), ~approx(x = year, y = ., xout = !!year)$y),
+    summarise(df, P = approx(x = year, y = P, xout = !!year)$y)
+  )
+})
+
+test_that("mutate_at() unquotes in lambdas (#4199)", {
+  df <- tibble(a = 1:10, b = runif(1:10), c = letters[1:10])
+  varname <- "a"
+  symname <- rlang::sym(varname)
+  quoname <- enquo(symname)
+
+  expect_identical(
+    df %>% mutate(b = mean(!!quoname)),
+    df %>% mutate_at(vars(matches("b")), list(~mean(!!quoname)))
+  )
+})
+
+test_that("summarise_at() can refer to local variables and columns (#4304)", {
+
+  # using local here in case someone wants to run the content of the test
+  # as opposed to the test_that() call
+  res <- local({
+    value <- 10
+    expect_identical(
+      iris %>% summarise_at("Sepal.Length", ~ sum(. / value)),
+      iris %>% summarise(Sepal.Length = sum(Sepal.Length / value))
+    )
+  })
+
+})

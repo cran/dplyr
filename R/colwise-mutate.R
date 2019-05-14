@@ -278,17 +278,17 @@ manip_all <- function(.tbl, .funs, .quo, .env, ..., .include_group_vars = FALSE)
   } else {
     syms <- syms(tbl_nongroup_vars(.tbl))
   }
-  funs <- as_fun_list(.funs, .quo, .env, ...)
+  funs <- as_fun_list(.funs, .env, ...)
   manip_apply_syms(funs, syms, .tbl)
 }
 manip_if <- function(.tbl, .predicate, .funs, .quo, .env, ..., .include_group_vars = FALSE) {
   vars <- tbl_if_syms(.tbl, .predicate, .env, .include_group_vars = .include_group_vars)
-  funs <- as_fun_list(.funs, .quo, .env, ...)
+  funs <- as_fun_list(.funs, .env, ...)
   manip_apply_syms(funs, vars, .tbl)
 }
 manip_at <- function(.tbl, .vars, .funs, .quo, .env, ..., .include_group_vars = FALSE) {
   syms <- tbl_at_syms(.tbl, .vars, .include_group_vars = .include_group_vars)
-  funs <- as_fun_list(.funs, .quo, .env, ...)
+  funs <- as_fun_list(.funs, .env, ...)
   manip_apply_syms(funs, syms, .tbl)
 }
 
@@ -317,16 +317,24 @@ check_dot_cols <- function(vars, cols) {
 }
 
 manip_apply_syms <- function(funs, syms, tbl) {
-  stopifnot(is_fun_list(funs))
-
   out <- vector("list", length(syms) * length(funs))
   dim(out) <- c(length(syms), length(funs))
+  syms_position <- match(as.character(syms), tbl_vars(tbl))
+
+
   for (i in seq_along(syms)) {
+    pos <- syms_position[i]
     for (j in seq_along(funs)) {
-      var_sym <- sym(syms[[i]])
-      out[[i, j]] <- expr_substitute(funs[[j]], quote(.), var_sym)
+      fun <- funs[[j]]
+      if (is_quosure(fun)) {
+        out[[i, j]] <- expr_substitute(funs[[j]], quote(.), syms[[i]])
+      } else {
+        out[[i, j]] <- call2(funs[[j]], syms[[i]])
+      }
+      attr(out[[i, j]], "position") <- pos
     }
   }
+
   dim(out) <- NULL
 
   # Use symbols as default names
@@ -336,8 +344,8 @@ manip_apply_syms <- function(funs, syms, tbl) {
   if (length(funs) == 1 && !attr(funs, "have_name")) {
     names(out) <- names(syms)
   } else {
-    nms <- names(funs)
-    is_fun <- nms == "<fn>"
+    nms <- names(funs) %||% rep("<fn>", length(funs))
+    is_fun <- nms == "<fn>" | nms == ""
     nms[is_fun] <- paste0("fn", seq_len(sum(is_fun)))
 
     nms <- unique_names(nms, quiet = TRUE)
@@ -346,7 +354,7 @@ manip_apply_syms <- function(funs, syms, tbl) {
     if (length(syms) == 1 && all(unnamed)) {
       names(out) <- names(funs)
     } else {
-      syms_names <- map_chr(syms, as_string)
+      syms_names <- ifelse(unnamed, map_chr(syms, as_string), names(syms))
       grid <- expand.grid(var = syms_names, call = names(funs))
       names(out) <- paste(grid$var, grid$call, sep = "_")
     }
