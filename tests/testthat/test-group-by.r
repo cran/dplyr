@@ -11,6 +11,7 @@ test_that("group_by with add = TRUE adds groups", {
 })
 
 test_that("group_by_ backwards compatibility with add = TRUE adds groups", {
+  scoped_lifecycle_silence()
   add_groups_extendedclass <- function(tbl) {
     grouped <- group_by(tbl, x)
     group_by.default(grouped, y, add = TRUE)
@@ -444,6 +445,17 @@ test_that("grouped data frames remember their .drop (#4061)", {
   expect_equal(nrow(group_data(res4)), 1L)
 })
 
+test_that("grouped data frames remember their .drop = FALSE (#4337)", {
+  res <- iris %>%
+    filter(Species == "setosa") %>%
+    group_by(Species, .drop = FALSE)
+  expect_false(group_by_drop_default(res))
+
+  res2 <- res %>%
+    group_by(Species)
+  expect_false(group_by_drop_default(res2))
+})
+
 test_that("summarise maintains the .drop attribute (#4061)", {
   df <- tibble(
     f1 = factor("a", levels = c("a", "b", "c")),
@@ -508,3 +520,10 @@ test_that("group_by_drop_default() is forgiving about corrupt grouped df (#4306)
   expect_true(group_by_drop_default(df))
 })
 
+test_that("group_by() puts NA groups last in STRSXP (#4227)", {
+  res <- tibble(x = c("apple", NA, "banana"), y = 1:3) %>%
+    group_by(x) %>%
+    group_data()
+  expect_identical(res$x, c("apple", "banana", NA_character_))
+  expect_identical(res$.rows, list(1L, 3L, 2L))
+})

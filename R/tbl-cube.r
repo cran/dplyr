@@ -302,7 +302,7 @@ select_.tbl_cube <- function(.data, ..., .dots = list()) {
 
 #' @export
 rename.tbl_cube <- function(.data, ...) {
-  vars <- tidyselect::vars_rename(names(.data$mets), !!!quos(...))
+  vars <- tidyselect::vars_rename(names(.data$mets), !!!enquos(...))
   .data$mets <- .data$mets[vars]
   .data
 }
@@ -315,7 +315,7 @@ rename_.tbl_cube <- function(.data, ..., .dots = list()) {
 
 #' @export
 filter.tbl_cube <- function(.data, ...) {
-  dots <- quos(...)
+  dots <- enquos(...)
 
   idx <- map2_int(
     seq_along(dots), dots,
@@ -390,7 +390,7 @@ group_vars.tbl_cube <- function(x) {
 
 #' @export
 summarise.tbl_cube <- function(.data, ...) {
-  dots <- quos(..., .named = TRUE)
+  dots <- enquos(..., .named = TRUE)
 
   out_dims <- .data$dims[.data$groups]
   n <- lengths(out_dims)
@@ -404,7 +404,7 @@ summarise.tbl_cube <- function(.data, ...) {
 
   # Loop over each group
   for (i in seq_len(nrow(slices))) {
-    index <- as_list(slices[i, , drop = FALSE])
+    index <- as.list(slices[i, , drop = FALSE])
     mets <- map(
       .data$mets, subs_index,
       i = .data$groups, val = index,

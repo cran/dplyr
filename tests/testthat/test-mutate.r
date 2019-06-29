@@ -210,7 +210,7 @@ test_that("mutate fails on unsupported column type", {
   df <- data.frame(created = c("2014/1/1", "2014/1/2", "2014/1/2"))
   expect_error(
     mutate(df, date = strptime(created, "%Y/%m/%d")),
-    "Column `date` is of unsupported class POSIXlt",
+    "Column `date` is of unsupported class POSIXlt; please use POSIXct instead",
     fixed = TRUE
   )
 
@@ -220,7 +220,7 @@ test_that("mutate fails on unsupported column type", {
   )
   expect_error(
     mutate(group_by(df, g), date = strptime(created, "%Y/%m/%d")),
-    "Column `date` is of unsupported class POSIXlt",
+    "Column `date` is of unsupported class POSIXlt; please use POSIXct instead",
     fixed = TRUE
   )
 })
@@ -442,7 +442,7 @@ test_that("mutate forbids POSIXlt results (#670)", {
   expect_error(
     data.frame(time = "2014/01/01 10:10:10") %>%
       mutate(time = as.POSIXlt(time)),
-    "Column `time` is of unsupported class POSIXlt",
+    "Column `time` is of unsupported class POSIXlt; please use POSIXct instead",
     fixed = TRUE
   )
 
@@ -450,7 +450,7 @@ test_that("mutate forbids POSIXlt results (#670)", {
     data.frame(time = "2014/01/01 10:10:10", a = 2) %>%
       group_by(a) %>%
       mutate(time = as.POSIXlt(time)),
-    "Column `time` is of unsupported class POSIXlt",
+    "Column `time` is of unsupported class POSIXlt; please use POSIXct instead",
     fixed = TRUE
   )
 })
@@ -477,6 +477,22 @@ test_that("row_number handles empty data frames (#762)", {
     c("a", "row_number_0", "row_number_a", "ntile", "min_rank", "percent_rank", "dense_rank", "cume_dist")
   )
   expect_equal(nrow(res), 0L)
+})
+
+test_that("hybrid rank functions handle NA (#4427)", {
+  df <- tibble(a = runif(1000, -1, 1), b = runif(1000, -1, 1))
+  df[df < 0] <- NA
+  df <- df %>%
+    mutate(
+      gain = b - a,
+      cume_dist_hybrid = cume_dist(gain),
+      cume_dist_std = cume_dist(b - a),
+      pct_rank_hybrid = percent_rank(gain),
+      pct_rank_std = percent_rank(b-a)
+    )
+
+  expect_equal(df$cume_dist_hybrid, df$cume_dist_std)
+  expect_equal(df$pct_rank_hybrid, df$pct_rank_std)
 })
 
 test_that("no utf8 invasion (#722)", {

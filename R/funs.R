@@ -45,15 +45,18 @@
 funs <- function(..., .args = list()) {
   signal_soft_deprecated(paste_line(
     "funs() is soft deprecated as of dplyr 0.8.0",
-    "please use list() instead",
+    "Please use a list of either functions or lambdas: ",
     "",
-    "  # Before:",
-    "  funs(name = f(.))",
+    "  # Simple named list: ",
+    "  list(mean = mean, median = median)",
     "",
-    "  # After: ",
-    "  list(name = ~ f(.))"
+    "  # Auto named with `tibble::lst()`: ",
+    "  tibble::lst(mean, median)",
+    "",
+    "  # Using lambdas",
+    "  list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))"
   ))
-  dots <- quos(...)
+  dots <- enquos(...)
   default_env <- caller_env()
 
   funs <- map(dots, function(quo) as_fun(quo, default_env, .args))
@@ -95,12 +98,19 @@ as_fun_list <- function(.funs, .env, ...) {
 
   funs <- map(.funs, function(.x){
     if (is_formula(.x)) {
+      if (is_quosure(.x)) {
+        signal_soft_deprecated(paste_line(
+          "Using quosures is deprecated",
+          "Please use a one-sided formula, a function, or a function name"
+        ), env = .env)
+        .x <- new_formula(NULL, quo_squash(.x), quo_get_env(.x))
+      }
       .x <- as_inlined_function(.x, env = .env)
     } else {
       if (is_character(.x)) {
         .x <- get(.x, .env, mode = "function")
       } else if (!is_function(.x)) {
-        abort("not expecting this")
+        abort("expecting a one sided formula, a function, or a function name.")
       }
       if (length(args)) {
         .x <- new_quosure(

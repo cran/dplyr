@@ -17,7 +17,9 @@ as.tbl.data.frame <- function(x, ...) {
 }
 
 #' @export
-tbl_vars.data.frame <- function(x) names(x)
+tbl_vars.data.frame <- function(x) {
+  names(x)
+}
 
 #' @export
 same_src.data.frame <- function(x, y) {
@@ -33,7 +35,7 @@ auto_copy.tbl_df <- function(x, y, copy = FALSE, ...) {
 
 #' @export
 arrange.tbl_df <- function(.data, ..., .by_group = FALSE) {
-  dots <- quos(...)
+  dots <- enquos(...)
   arrange_impl(.data, dots, environment())
 }
 #' @export
@@ -44,7 +46,7 @@ arrange_.tbl_df <- function(.data, ..., .dots = list(), .by_group = FALSE) {
 
 #' @export
 filter.tbl_df <- function(.data, ..., .preserve = FALSE) {
-  dots <- quos(...)
+  dots <- enquos(...)
   if (any(have_name(dots))) {
     bad <- dots[have_name(dots)]
     bad_eq_ops(bad, "must not be named, do you need `==`?")
@@ -67,7 +69,7 @@ filter_.tbl_df <- function(.data, ..., .dots = list()) {
 
 #' @export
 slice.tbl_df <- function(.data, ..., .preserve = FALSE) {
-  dots <- quos(...)
+  dots <- enquos(...)
   if (is_empty(dots)) {
     return(.data)
   }
@@ -87,7 +89,7 @@ slice_.tbl_df <- function(.data, ..., .dots = list()) {
 
 #' @export
 mutate.tbl_df <- function(.data, ...) {
-  dots <- quos(..., .named = TRUE)
+  dots <- enquos(..., .named = TRUE)
   mutate_impl(.data, dots, caller_env())
 }
 #' @export
@@ -98,7 +100,7 @@ mutate_.tbl_df <- function(.data, ..., .dots = list()) {
 
 #' @export
 summarise.tbl_df <- function(.data, ...) {
-  dots <- quos(..., .named = TRUE)
+  dots <- enquos(..., .named = TRUE)
   summarise_impl(.data, dots, environment(), caller_env())
 }
 #' @export
