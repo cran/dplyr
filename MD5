@@ -1,7 +1,7 @@
-922b7f09475e30ef8376af96e485372b *DESCRIPTION
+6d6d51d503fc827b6d9a533a83997da2 *DESCRIPTION
 c7180788a8ec3035d54fc733f8939ade *LICENSE
 a092fa9ba553fd69cd17269bf6e806da *NAMESPACE
-995a85957f614b5f624909e9bebc2d8d *NEWS.md
+4ff7c9f753b934f4bab1c14218987d50 *NEWS.md
 ae53055e23b26545fe4807bfed356246 *R/RcppExports.R
 385c938e7ddaf4321adf4ee195f23f64 *R/all-equal.r
 40d48bf1090b5a00ef4164c093a439ad *R/bench-compare.r
@@ -82,7 +82,7 @@ ee54aeb7ac8f03e4776b46bd18dd32e9 *R/src_dbi.R
 c65aacaeee2c5b2c0d86770f25d4231a *R/tbl-cube.r
 25956292f75defbe001aee87400d90e4 *R/tbl-df.r
 bf4e2442cb0f9f0d799a9c84c10756c4 *R/tbl.r
-eded65694f32423ebab7cd419629fdd1 *R/top-n.R
+227955a7bdc0bd1be2f001a0e27a420e *R/top-n.R
 76d10c70d94a48bb5cf644707dee557a *R/ts.R
 4172520627229c482862cce661e7d892 *R/utils-bindings.R
 b1a4e9f9be53c7141bcc0a28be2d58ae *R/utils-expr.R
@@ -92,7 +92,7 @@ e871a60aa0c5e04a0307c9115fd56797 *R/utils-replace-with.R
 042cb4810af703d3bdc9c7ebb14deb4b *R/utils.r
 973f9efc20f25b9de77e443d0f719b01 *R/zzz.r
 8756ff2dd938dea3a2774637028a1263 *README.md
-c1622cbc2e97c76a07e167fe696ed7bf *build/dplyr.pdf
+960207fbc74c43f13d810e1a674321c0 *build/dplyr.pdf
 5945f0b7600bac7110347d7d20ed445f *build/vignette.rds
 a79561c8013e7a7f3c23d509f4918bf8 *data/band_instruments.rda
 3aa4b1478fc31219480e88c876c3aeed *data/band_instruments2.rda
@@ -105,10 +105,10 @@ b6ef692a53b1730f572fc4bb24bcebdf *inst/doc/compatibility.Rmd
 b10050a7010ee6ffeec45928c00de201 *inst/doc/compatibility.html
 517cadf4db98fab1155e5ee7d9f6b5da *inst/doc/dplyr.R
 9b47681a9d447e5d1953702b91e0071d *inst/doc/dplyr.Rmd
-af84b3995c8fdac9aabc4257712c5fb3 *inst/doc/dplyr.html
+19fe946c5583f095531547c6cac3aff0 *inst/doc/dplyr.html
 4bd86cb23a0b15708c63789a0c488da4 *inst/doc/programming.R
 4c4c847727bf145d7fecbd0628cdb4c0 *inst/doc/programming.Rmd
-bd87346a8611874f4d86b40cdc93d7a7 *inst/doc/programming.html
+5e2c4a24aa16df88236d877df5ab0fcd *inst/doc/programming.html
 770dd016e1e928d4a7db5f04ea6da15d *inst/doc/two-table.R
 88f2cd45baee6686ddcc8d42e11e87d2 *inst/doc/two-table.Rmd
 93889bd0c7066fc7649ad655e8d42388 *inst/doc/two-table.html
@@ -121,7 +121,7 @@ d29bc330bd10ca2769ea6168dca26ede *inst/include/dplyr.h
 8dd33a54b3436c5fc5bbd066a601db26 *inst/include/dplyr/allow_list.h
 bc2d1d5017f6aa294157a229d0f8e3db *inst/include/dplyr/checks.h
 968c72563fe150a4903095b32b3321ab *inst/include/dplyr/config.h
-6fe6c8c34478e14a95a72a6420fc29db *inst/include/dplyr/data/DataMask.h
+4ffac3fbd643157a33b3d734a7d91b3d *inst/include/dplyr/data/DataMask.h
 cfb0813cff1f3090c8f795db2141b545 *inst/include/dplyr/data/GroupedDataFrame.h
 74d0bf3fcde5a511d909ac62f832d2e5 *inst/include/dplyr/data/NaturalDataFrame.h
 906b304ae959ee4f3bfe94ed89364bc7 *inst/include/dplyr/data/RowwiseDataFrame.h
