@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -94,7 +95,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -329,7 +330,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb1-13" title="13"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA      American Airlines I…</span></a>
 <a class="sourceLine" id="cb1-14" title="14"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6      JetBlue Airways     </span></a>
 <a class="sourceLine" id="cb1-15" title="15"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL      Delta Air Lines Inc.</span></a>
-<a class="sourceLine" id="cb1-16" title="16"><span class="co">#&gt; # … with 3.368e+05 more rows</span></a></code></pre></div>
+<a class="sourceLine" id="cb1-16" title="16"><span class="co">#&gt; # … with 336,771 more rows</span></a></code></pre></div>
 <div id="controlling-how-the-tables-are-matched" class="section level3">
 <h3>Controlling how the tables are matched</h3>
 <p>As well as <code>x</code> and <code>y</code>, each mutating join takes an argument <code>by</code> that controls which variables are used to match observations in the two tables. There are a few ways to specify it, as I illustrate below with various tables from nycflights13:</p>
@@ -345,7 +346,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb2-8" title="8"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA       39.0  27.0  61.6</span></a>
 <a class="sourceLine" id="cb2-9" title="9"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6       39.0  27.0  61.6</span></a>
 <a class="sourceLine" id="cb2-10" title="10"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL       39.9  25.0  54.8</span></a>
-<a class="sourceLine" id="cb2-11" title="11"><span class="co">#&gt; # … with 3.368e+05 more rows, and 7 more variables: wind_dir &lt;dbl&gt;,</span></a>
+<a class="sourceLine" id="cb2-11" title="11"><span class="co">#&gt; # … with 336,771 more rows, and 7 more variables: wind_dir &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb2-12" title="12"><span class="co">#&gt; #   wind_speed &lt;dbl&gt;, wind_gust &lt;dbl&gt;, precip &lt;dbl&gt;, pressure &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb2-13" title="13"><span class="co">#&gt; #   visib &lt;dbl&gt;, time_hour &lt;dttm&gt;</span></a></code></pre></div></li>
 <li><p>A character vector, <code>by = &quot;x&quot;</code>. Like a natural join, but uses only some of the common variables. For example, <code>flights</code> and <code>planes</code> have <code>year</code> columns, but they mean different things so we only want to join by <code>tailnum</code>.</p>
@@ -358,7 +359,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb3-7" title="7"><span class="co">#&gt; 3   2013     1     1     5 JFK    MIA   N619AA  AA        1990 Fixe…</span></a>
 <a class="sourceLine" id="cb3-8" title="8"><span class="co">#&gt; 4   2013     1     1     5 JFK    BQN   N804JB  B6        2012 Fixe…</span></a>
 <a class="sourceLine" id="cb3-9" title="9"><span class="co">#&gt; 5   2013     1     1     6 LGA    ATL   N668DN  DL        1991 Fixe…</span></a>
-<a class="sourceLine" id="cb3-10" title="10"><span class="co">#&gt; # … with 3.368e+05 more rows, and 6 more variables: manufacturer &lt;chr&gt;,</span></a>
+<a class="sourceLine" id="cb3-10" title="10"><span class="co">#&gt; # … with 336,771 more rows, and 6 more variables: manufacturer &lt;chr&gt;,</span></a>
 <a class="sourceLine" id="cb3-11" title="11"><span class="co">#&gt; #   model &lt;chr&gt;, engines &lt;int&gt;, seats &lt;int&gt;, speed &lt;int&gt;, engine &lt;chr&gt;</span></a></code></pre></div>
 <p>Note that the year columns in the output are disambiguated with a suffix.</p></li>
 <li><p>A named character vector: <code>by = c(&quot;x&quot; = &quot;a&quot;)</code>. This will match variable <code>x</code> in table <code>x</code> to variable <code>a</code> in table <code>y</code>. The variables from use will be used in the output.</p>
@@ -372,7 +373,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb4-7" title="7"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA      Miam…  25.8 -80.3</span></a>
 <a class="sourceLine" id="cb4-8" title="8"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6      &lt;NA&gt;   NA    NA  </span></a>
 <a class="sourceLine" id="cb4-9" title="9"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL      Hart…  33.6 -84.4</span></a>
-<a class="sourceLine" id="cb4-10" title="10"><span class="co">#&gt; # … with 3.368e+05 more rows, and 4 more variables: alt &lt;int&gt;, tz &lt;dbl&gt;,</span></a>
+<a class="sourceLine" id="cb4-10" title="10"><span class="co">#&gt; # … with 336,771 more rows, and 4 more variables: alt &lt;int&gt;, tz &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb4-11" title="11"><span class="co">#&gt; #   dst &lt;chr&gt;, tzone &lt;chr&gt;</span></a>
 <a class="sourceLine" id="cb4-12" title="12">flights2 <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">left_join</span>(airports, <span class="kw">c</span>(<span class="st">&quot;origin&quot;</span> =<span class="st"> &quot;faa&quot;</span>))</a>
 <a class="sourceLine" id="cb4-13" title="13"><span class="co">#&gt; # A tibble: 336,776 x 15</span></a>
@@ -383,7 +384,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb4-18" title="18"><span class="co">#&gt; 3  2013     1     1     5 JFK    MIA   N619AA  AA      John…  40.6 -73.8</span></a>
 <a class="sourceLine" id="cb4-19" title="19"><span class="co">#&gt; 4  2013     1     1     5 JFK    BQN   N804JB  B6      John…  40.6 -73.8</span></a>
 <a class="sourceLine" id="cb4-20" title="20"><span class="co">#&gt; 5  2013     1     1     6 LGA    ATL   N668DN  DL      La G…  40.8 -73.9</span></a>
-<a class="sourceLine" id="cb4-21" title="21"><span class="co">#&gt; # … with 3.368e+05 more rows, and 4 more variables: alt &lt;int&gt;, tz &lt;dbl&gt;,</span></a>
+<a class="sourceLine" id="cb4-21" title="21"><span class="co">#&gt; # … with 336,771 more rows, and 4 more variables: alt &lt;int&gt;, tz &lt;dbl&gt;,</span></a>
 <a class="sourceLine" id="cb4-22" title="22"><span class="co">#&gt; #   dst &lt;chr&gt;, tzone &lt;chr&gt;</span></a></code></pre></div></li>
 </ul>
 </div>
@@ -559,9 +560,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb15-4" title="4"><span class="co">#&gt; Joining, by = c(&quot;x&quot;, &quot;y&quot;)</span></a>
 <a class="sourceLine" id="cb15-5" title="5"><span class="co">#&gt; Warning: Column `y` joining factors with different levels, coercing to</span></a>
 <a class="sourceLine" id="cb15-6" title="6"><span class="co">#&gt; character vector</span></a>
-<a class="sourceLine" id="cb15-7" title="7"><span class="co">#&gt; Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    2 obs. of  2 variables:</span></a>
-<a class="sourceLine" id="cb15-8" title="8"><span class="co">#&gt;  $ x: num  1 2</span></a>
-<a class="sourceLine" id="cb15-9" title="9"><span class="co">#&gt;  $ y: chr  &quot;a&quot; &quot;b&quot;</span></a></code></pre></div></li>
+<a class="sourceLine" id="cb15-7" title="7"><span class="co">#&gt; tibble [2 × 2] (S3: tbl_df/tbl/data.frame)</span></a>
+<a class="sourceLine" id="cb15-8" title="8"><span class="co">#&gt;  $ x: num [1:2] 1 2</span></a>
+<a class="sourceLine" id="cb15-9" title="9"><span class="co">#&gt;  $ y: chr [1:2] &quot;a&quot; &quot;b&quot;</span></a></code></pre></div></li>
 <li><p>Factors with the same levels in a different order are coerced to character with a warning:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb16-1" title="1">df1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">y =</span> <span class="kw">factor</span>(<span class="st">&quot;a&quot;</span>, <span class="dt">levels =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>)))</a>
 <a class="sourceLine" id="cb16-2" title="2">df2 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">2</span>, <span class="dt">y =</span> <span class="kw">factor</span>(<span class="st">&quot;b&quot;</span>, <span class="dt">levels =</span> <span class="kw">c</span>(<span class="st">&quot;b&quot;</span>, <span class="st">&quot;a&quot;</span>)))</a>
@@ -569,16 +570,16 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb16-4" title="4"><span class="co">#&gt; Joining, by = c(&quot;x&quot;, &quot;y&quot;)</span></a>
 <a class="sourceLine" id="cb16-5" title="5"><span class="co">#&gt; Warning: Column `y` joining factors with different levels, coercing to</span></a>
 <a class="sourceLine" id="cb16-6" title="6"><span class="co">#&gt; character vector</span></a>
-<a class="sourceLine" id="cb16-7" title="7"><span class="co">#&gt; Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    2 obs. of  2 variables:</span></a>
-<a class="sourceLine" id="cb16-8" title="8"><span class="co">#&gt;  $ x: num  1 2</span></a>
-<a class="sourceLine" id="cb16-9" title="9"><span class="co">#&gt;  $ y: chr  &quot;a&quot; &quot;b&quot;</span></a></code></pre></div></li>
+<a class="sourceLine" id="cb16-7" title="7"><span class="co">#&gt; tibble [2 × 2] (S3: tbl_df/tbl/data.frame)</span></a>
+<a class="sourceLine" id="cb16-8" title="8"><span class="co">#&gt;  $ x: num [1:2] 1 2</span></a>
+<a class="sourceLine" id="cb16-9" title="9"><span class="co">#&gt;  $ y: chr [1:2] &quot;a&quot; &quot;b&quot;</span></a></code></pre></div></li>
 <li><p>Factors are preserved only if the levels match exactly:</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb17-1" title="1">df1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">y =</span> <span class="kw">factor</span>(<span class="st">&quot;a&quot;</span>, <span class="dt">levels =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>)))</a>
 <a class="sourceLine" id="cb17-2" title="2">df2 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">2</span>, <span class="dt">y =</span> <span class="kw">factor</span>(<span class="st">&quot;b&quot;</span>, <span class="dt">levels =</span> <span class="kw">c</span>(<span class="st">&quot;a&quot;</span>, <span class="st">&quot;b&quot;</span>)))</a>
 <a class="sourceLine" id="cb17-3" title="3"><span class="kw">full_join</span>(df1, df2) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">str</span>()</a>
 <a class="sourceLine" id="cb17-4" title="4"><span class="co">#&gt; Joining, by = c(&quot;x&quot;, &quot;y&quot;)</span></a>
-<a class="sourceLine" id="cb17-5" title="5"><span class="co">#&gt; Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    2 obs. of  2 variables:</span></a>
-<a class="sourceLine" id="cb17-6" title="6"><span class="co">#&gt;  $ x: num  1 2</span></a>
+<a class="sourceLine" id="cb17-5" title="5"><span class="co">#&gt; tibble [2 × 2] (S3: tbl_df/tbl/data.frame)</span></a>
+<a class="sourceLine" id="cb17-6" title="6"><span class="co">#&gt;  $ x: num [1:2] 1 2</span></a>
 <a class="sourceLine" id="cb17-7" title="7"><span class="co">#&gt;  $ y: Factor w/ 2 levels &quot;a&quot;,&quot;b&quot;: 1 2</span></a></code></pre></div></li>
 <li><p>A factor and a character are coerced to character with a warning:</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb18-1" title="1">df1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">y =</span> <span class="st">&quot;a&quot;</span>)</a>
@@ -587,18 +588,18 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb18-4" title="4"><span class="co">#&gt; Joining, by = c(&quot;x&quot;, &quot;y&quot;)</span></a>
 <a class="sourceLine" id="cb18-5" title="5"><span class="co">#&gt; Warning: Column `y` joining character vector and factor, coercing into</span></a>
 <a class="sourceLine" id="cb18-6" title="6"><span class="co">#&gt; character vector</span></a>
-<a class="sourceLine" id="cb18-7" title="7"><span class="co">#&gt; Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    2 obs. of  2 variables:</span></a>
-<a class="sourceLine" id="cb18-8" title="8"><span class="co">#&gt;  $ x: num  1 2</span></a>
-<a class="sourceLine" id="cb18-9" title="9"><span class="co">#&gt;  $ y: chr  &quot;a&quot; &quot;a&quot;</span></a></code></pre></div></li>
+<a class="sourceLine" id="cb18-7" title="7"><span class="co">#&gt; tibble [2 × 2] (S3: tbl_df/tbl/data.frame)</span></a>
+<a class="sourceLine" id="cb18-8" title="8"><span class="co">#&gt;  $ x: num [1:2] 1 2</span></a>
+<a class="sourceLine" id="cb18-9" title="9"><span class="co">#&gt;  $ y: chr [1:2] &quot;a&quot; &quot;a&quot;</span></a></code></pre></div></li>
 </ul>
 <p>Otherwise logicals will be silently upcast to integer, and integer to numeric, but coercing to character will raise an error:</p>
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb19-1" title="1">df1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">y =</span> 1L)</a>
 <a class="sourceLine" id="cb19-2" title="2">df2 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">2</span>, <span class="dt">y =</span> <span class="fl">1.5</span>)</a>
 <a class="sourceLine" id="cb19-3" title="3"><span class="kw">full_join</span>(df1, df2) <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">str</span>()</a>
 <a class="sourceLine" id="cb19-4" title="4"><span class="co">#&gt; Joining, by = c(&quot;x&quot;, &quot;y&quot;)</span></a>
-<a class="sourceLine" id="cb19-5" title="5"><span class="co">#&gt; Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    2 obs. of  2 variables:</span></a>
-<a class="sourceLine" id="cb19-6" title="6"><span class="co">#&gt;  $ x: num  1 2</span></a>
-<a class="sourceLine" id="cb19-7" title="7"><span class="co">#&gt;  $ y: num  1 1.5</span></a>
+<a class="sourceLine" id="cb19-5" title="5"><span class="co">#&gt; tibble [2 × 2] (S3: tbl_df/tbl/data.frame)</span></a>
+<a class="sourceLine" id="cb19-6" title="6"><span class="co">#&gt;  $ x: num [1:2] 1 2</span></a>
+<a class="sourceLine" id="cb19-7" title="7"><span class="co">#&gt;  $ y: num [1:2] 1 1.5</span></a>
 <a class="sourceLine" id="cb19-8" title="8"></a>
 <a class="sourceLine" id="cb19-9" title="9">df1 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">1</span>, <span class="dt">y =</span> 1L)</a>
 <a class="sourceLine" id="cb19-10" title="10">df2 &lt;-<span class="st"> </span><span class="kw">tibble</span>(<span class="dt">x =</span> <span class="dv">2</span>, <span class="dt">y =</span> <span class="st">&quot;a&quot;</span>)</a>
@@ -611,6 +612,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <p>dplyr does not provide any functions for working with three or more tables. Instead use <code>purrr::reduce()</code> or <code>Reduce()</code>, as described in <a href="http://adv-r.had.co.nz/Functionals.html#functionals-fp">Advanced R</a>, to iteratively combine the two-table verbs to handle as many tables as you need.</p>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->

@@ -7,6 +7,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -94,7 +95,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
       if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
       var style = rule.style.cssText;
       // check if color or background-color is set
-      if (rule.style.color === '' || rule.style.backgroundColor === '') continue;
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
       // replace div.sourceCode by a pre.sourceCode rule
       sheets[i].deleteRule(j);
       sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
@@ -686,14 +687,18 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <p>For a long time, <code>select()</code> used to only understand column positions. Counting from dplyr 0.6, it now understands column names as well. This makes it a bit easier to program with <code>select()</code>:</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb21-1" title="1">vars &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;year&quot;</span>, <span class="st">&quot;month&quot;</span>)</a>
 <a class="sourceLine" id="cb21-2" title="2"><span class="kw">select</span>(flights, vars, <span class="st">&quot;day&quot;</span>)</a>
-<a class="sourceLine" id="cb21-3" title="3"><span class="co">#&gt; # A tibble: 336,776 x 3</span></a>
-<a class="sourceLine" id="cb21-4" title="4"><span class="co">#&gt;    year month   day</span></a>
-<a class="sourceLine" id="cb21-5" title="5"><span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></a>
-<a class="sourceLine" id="cb21-6" title="6"><span class="co">#&gt; 1  2013     1     1</span></a>
-<a class="sourceLine" id="cb21-7" title="7"><span class="co">#&gt; 2  2013     1     1</span></a>
-<a class="sourceLine" id="cb21-8" title="8"><span class="co">#&gt; 3  2013     1     1</span></a>
-<a class="sourceLine" id="cb21-9" title="9"><span class="co">#&gt; 4  2013     1     1</span></a>
-<a class="sourceLine" id="cb21-10" title="10"><span class="co">#&gt; # … with 336,772 more rows</span></a></code></pre></div>
+<a class="sourceLine" id="cb21-3" title="3"><span class="co">#&gt; Note: Using an external vector in selections is ambiguous.</span></a>
+<a class="sourceLine" id="cb21-4" title="4"><span class="co">#&gt; ℹ Use `all_of(vars)` instead of `vars` to silence this message.</span></a>
+<a class="sourceLine" id="cb21-5" title="5"><span class="co">#&gt; ℹ See &lt;https://tidyselect.r-lib.org/reference/faq-external-vector.html&gt;.</span></a>
+<a class="sourceLine" id="cb21-6" title="6"><span class="co">#&gt; This message is displayed once per session.</span></a>
+<a class="sourceLine" id="cb21-7" title="7"><span class="co">#&gt; # A tibble: 336,776 x 3</span></a>
+<a class="sourceLine" id="cb21-8" title="8"><span class="co">#&gt;    year month   day</span></a>
+<a class="sourceLine" id="cb21-9" title="9"><span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></a>
+<a class="sourceLine" id="cb21-10" title="10"><span class="co">#&gt; 1  2013     1     1</span></a>
+<a class="sourceLine" id="cb21-11" title="11"><span class="co">#&gt; 2  2013     1     1</span></a>
+<a class="sourceLine" id="cb21-12" title="12"><span class="co">#&gt; 3  2013     1     1</span></a>
+<a class="sourceLine" id="cb21-13" title="13"><span class="co">#&gt; 4  2013     1     1</span></a>
+<a class="sourceLine" id="cb21-14" title="14"><span class="co">#&gt; # … with 336,772 more rows</span></a></code></pre></div>
 <p>Note that the code above is somewhat unsafe because you might have added a column named <code>vars</code> to the tibble, or you might apply the code to another data frame containing such a column. To avoid this issue, you can wrap the variable in an <code>identity()</code> call as we mentioned above, as this will bypass column names. However, a more explicit and general method that works in all dplyr verbs is to unquote the variable with the <code>!!</code> operator. This tells dplyr to bypass the data frame and to directly look in the context:</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb22-1" title="1"><span class="co"># Let&#39;s create a new `vars` column:</span></a>
 <a class="sourceLine" id="cb22-2" title="2">flights<span class="op">$</span>vars &lt;-<span class="st"> </span>flights<span class="op">$</span>year</a>
@@ -891,6 +896,9 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 </ul>
 </div>
 
+
+
+<!-- code folding -->
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->
