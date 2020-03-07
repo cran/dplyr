@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+
+<title>Introduction to tidyeval</title>
+
+
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+</style>
+
+
+
+<link href="data:text/css,body%20%7B%0A%20%20background%2Dcolor%3A%20%23fff%3B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20max%2Dwidth%3A%20700px%3B%0A%20%20overflow%3A%20visible%3B%0A%20%20padding%2Dleft%3A%202em%3B%0A%20%20padding%2Dright%3A%202em%3B%0A%20%20font%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0A%20%20font%2Dsize%3A%2014px%3B%0A%20%20line%2Dheight%3A%201%2E35%3B%0A%7D%0A%0A%23header%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0A%0A%23TOC%20%7B%0A%20%20clear%3A%20both%3B%0A%20%20margin%3A%200%200%2010px%2010px%3B%0A%20%20padding%3A%204px%3B%0A%20%20width%3A%20400px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20border%2Dradius%3A%205px%3B%0A%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20font%2Dsize%3A%2013px%3B%0A%20%20line%2Dheight%3A%201%2E3%3B%0A%7D%0A%20%20%23TOC%20%2Etoctitle%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%20%20font%2Dsize%3A%2015px%3B%0A%20%20%20%20margin%2Dleft%3A%205px%3B%0A%20%20%7D%0A%0A%20%20%23TOC%20ul%20%7B%0A%20%20%20%20padding%2Dleft%3A%2040px%3B%0A%20%20%20%20margin%2Dleft%3A%20%2D1%2E5em%3B%0A%20%20%20%20margin%2Dtop%3A%205px%3B%0A%20%20%20%20margin%2Dbottom%3A%205px%3B%0A%20%20%7D%0A%20%20%23TOC%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dleft%3A%20%2D2em%3B%0A%20%20%7D%0A%20%20%23TOC%20li%20%7B%0A%20%20%20%20line%2Dheight%3A%2016px%3B%0A%20%20%7D%0A%0Atable%20%7B%0A%20%20margin%3A%201em%20auto%3B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dcolor%3A%20%23DDDDDD%3B%0A%20%20border%2Dstyle%3A%20outset%3B%0A%20%20border%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0A%20%20border%2Dwidth%3A%202px%3B%0A%20%20padding%3A%205px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0A%20%20border%2Dwidth%3A%201px%3B%0A%20%20border%2Dstyle%3A%20inset%3B%0A%20%20line%2Dheight%3A%2018px%3B%0A%20%20padding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0A%20%20border%2Dleft%2Dstyle%3A%20none%3B%0A%20%20border%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Ap%20%7B%0A%20%20margin%3A%200%2E5em%200%3B%0A%7D%0A%0Ablockquote%20%7B%0A%20%20background%2Dcolor%3A%20%23f6f6f6%3B%0A%20%20padding%3A%200%2E25em%200%2E75em%3B%0A%7D%0A%0Ahr%20%7B%0A%20%20border%2Dstyle%3A%20solid%3B%0A%20%20border%3A%20none%3B%0A%20%20border%2Dtop%3A%201px%20solid%20%23777%3B%0A%20%20margin%3A%2028px%200%3B%0A%7D%0A%0Adl%20%7B%0A%20%20margin%2Dleft%3A%200%3B%0A%7D%0A%20%20dl%20dd%20%7B%0A%20%20%20%20margin%2Dbottom%3A%2013px%3B%0A%20%20%20%20margin%2Dleft%3A%2013px%3B%0A%20%20%7D%0A%20%20dl%20dt%20%7B%0A%20%20%20%20font%2Dweight%3A%20bold%3B%0A%20%20%7D%0A%0Aul%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%7D%0A%20%20ul%20li%20%7B%0A%20%20%20%20list%2Dstyle%3A%20circle%20outside%3B%0A%20%20%7D%0A%20%20ul%20ul%20%7B%0A%20%20%20%20margin%2Dbottom%3A%200%3B%0A%20%20%7D%0A%0Apre%2C%20code%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20color%3A%20%23333%3B%0A%20%20white%2Dspace%3A%20pre%2Dwrap%3B%20%20%20%20%2F%2A%20Wrap%20long%20lines%20%2A%2F%0A%7D%0Apre%20%7B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20margin%3A%205px%200px%2010px%200px%3B%0A%20%20padding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0A%20%20background%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0A%0Acode%20%7B%0A%20%20font%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0A%20%20font%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0A%20%20padding%3A%202px%200px%3B%0A%7D%0A%0Adiv%2Efigure%20%7B%0A%20%20text%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0A%20%20background%2Dcolor%3A%20%23FFFFFF%3B%0A%20%20padding%3A%202px%3B%0A%20%20border%3A%201px%20solid%20%23DDDDDD%3B%0A%20%20border%2Dradius%3A%203px%3B%0A%20%20border%3A%201px%20solid%20%23CCCCCC%3B%0A%20%20margin%3A%200%205px%3B%0A%7D%0A%0Ah1%20%7B%0A%20%20margin%2Dtop%3A%200%3B%0A%20%20font%2Dsize%3A%2035px%3B%0A%20%20line%2Dheight%3A%2040px%3B%0A%7D%0A%0Ah2%20%7B%0A%20%20border%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20padding%2Dbottom%3A%202px%3B%0A%20%20font%2Dsize%3A%20145%25%3B%0A%7D%0A%0Ah3%20%7B%0A%20%20border%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0A%20%20padding%2Dtop%3A%2010px%3B%0A%20%20font%2Dsize%3A%20120%25%3B%0A%7D%0A%0Ah4%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0A%20%20margin%2Dleft%3A%208px%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Ah5%2C%20h6%20%7B%0A%20%20border%2Dbottom%3A%201px%20solid%20%23ccc%3B%0A%20%20font%2Dsize%3A%20105%25%3B%0A%7D%0A%0Aa%20%7B%0A%20%20color%3A%20%230033dd%3B%0A%20%20text%2Ddecoration%3A%20none%3B%0A%7D%0A%20%20a%3Ahover%20%7B%0A%20%20%20%20color%3A%20%236666ff%3B%20%7D%0A%20%20a%3Avisited%20%7B%0A%20%20%20%20color%3A%20%23800080%3B%20%7D%0A%20%20a%3Avisited%3Ahover%20%7B%0A%20%20%20%20color%3A%20%23BB00BB%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%20%20a%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0A%20%20%20%20text%2Ddecoration%3A%20underline%3B%20%7D%0A%0A%2F%2A%20Class%20described%20in%20https%3A%2F%2Fbenjeffrey%2Ecom%2Fposts%2Fpandoc%2Dsyntax%2Dhighlighting%2Dcss%0A%20%20%20Colours%20from%20https%3A%2F%2Fgist%2Egithub%2Ecom%2Frobsimmons%2F1172277%20%2A%2F%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Keyword%20%2A%2F%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%2F%2A%20DataType%20%2A%2F%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%2F%2A%20DecVal%20%28decimal%20values%29%20%2A%2F%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20BaseN%20%2A%2F%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Float%20%2A%2F%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20Char%20%2A%2F%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%2F%2A%20String%20%2A%2F%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%2F%2A%20Comment%20%2A%2F%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%2F%2A%20OtherToken%20%2A%2F%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20AlertToken%20%2A%2F%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%2F%2A%20Function%20calls%20%2A%2F%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%2F%2A%20ErrorTok%20%2A%2F%0A%0A" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Introduction to tidyeval</h1>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a><ul>
+<li><a href="#writing-functions-with-tidy-eval">Writing functions with tidy eval</a></li>
+<li><a href="#evaluating-functions-versus-quoting-functions">Evaluating functions versus quoting functions</a></li>
+<li><a href="#unquoting">Unquoting</a></li>
+<li><a href="#understanding-with-qq_show">Understanding <code>!!</code> with <code>qq_show()</code></a></li>
+</ul></li>
+<li><a href="#quoting-and-unquoting-arguments">Quoting and unquoting arguments</a><ul>
+<li><a href="#the-abstraction-step">The abstraction step</a></li>
+<li><a href="#the-quoting-step">The quoting step</a></li>
+<li><a href="#the-unquoting-step">The unquoting step</a></li>
+<li><a href="#result">Result</a></li>
+</ul></li>
+<li><a href="#calling-quoting-functions-with-strings">Calling quoting functions with strings</a></li>
+</ul>
+</div>
+
+<p>Tidyverse grammars such as dplyr were originally designed for interactive use and analysis scripts. Part of it is that these grammars attempt to model how data analysts think about data problems. Another reason is that they make your data first class and let you refer to data frame columns as if they were distinct objects. While it contributes to make dplyr code look concise and to the point, this last aspect unfortunately has a dark side. It makes it harder to reduce duplication by wrapping tidyverse code in functions and loops. Writing functions around dplyr pipelines and other tidyeval APIs requires a bit of special knowledge because these APIs use a special type of functions called <strong>quoting functions</strong> in order to make data first class.</p>
+<p>If one-off code is often reasonable for common data analysis tasks, it is good practice to write reusable functions to reduce code duplication. In this vignette you will learn about quoting functions, what challenges they pose for programming, and the solutions that <strong>tidy evaluation</strong> provides to solve those problems.</p>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<div id="writing-functions-with-tidy-eval" class="section level3">
+<h3>Writing functions with tidy eval</h3>
+<p>Writing functions is essential for the clarity and robustness of your code. Functions have several advantages:</p>
+<ol style="list-style-type: decimal">
+<li><p>They prevents inconsistencies because it enforces multiple computations to follow a single recipe.</p></li>
+<li><p>They emphasise what varies (the arguments) and what is constant (every other component of the computation).</p></li>
+<li><p>They make change easier because you only need to modify one place.</p></li>
+<li><p>They make your code clearer if you give the function and its arguments informative names.</p></li>
+</ol>
+<p>The process for creating a function is straightforward. First recognise duplication in your code. A good rule of thumb is to create a function when you have copy-pasted a piece of code three times. Can you spot the copy-paste mistake in this code duplication?</p>
+<pre class="sourceCode r"><code class="sourceCode r">(df$a -<span class="st"> </span><span class="kw">min</span>(df$a)) /<span class="st"> </span>(<span class="kw">max</span>(df$a) -<span class="st"> </span><span class="kw">min</span>(df$a))
+(df$b -<span class="st"> </span><span class="kw">min</span>(df$b)) /<span class="st"> </span>(<span class="kw">max</span>(df$b) -<span class="st"> </span><span class="kw">min</span>(df$b))
+(df$c -<span class="st"> </span><span class="kw">min</span>(df$c)) /<span class="st"> </span>(<span class="kw">max</span>(df$c) -<span class="st"> </span><span class="kw">min</span>(df$c))
+(df$d -<span class="st"> </span><span class="kw">min</span>(df$d)) /<span class="st"> </span>(<span class="kw">max</span>(df$d) -<span class="st"> </span><span class="kw">min</span>(df$c))</code></pre>
+<p>Now identify the variying parts of the expression and give them a name. <code>x</code> is an easy choice but it is often a good idea to reflect the type of argument expected in the name. In our case we expect a numeric vector:</p>
+<pre class="sourceCode r"><code class="sourceCode r">(num -<span class="st"> </span><span class="kw">min</span>(num)) /<span class="st"> </span>(<span class="kw">max</span>(num) -<span class="st"> </span><span class="kw">min</span>(num))
+(num -<span class="st"> </span><span class="kw">min</span>(num)) /<span class="st"> </span>(<span class="kw">max</span>(num) -<span class="st"> </span><span class="kw">min</span>(num))
+(num -<span class="st"> </span><span class="kw">min</span>(num)) /<span class="st"> </span>(<span class="kw">max</span>(num) -<span class="st"> </span><span class="kw">min</span>(num))
+(num -<span class="st"> </span><span class="kw">min</span>(num)) /<span class="st"> </span>(<span class="kw">max</span>(num) -<span class="st"> </span><span class="kw">min</span>(num))</code></pre>
+<p>We can now create a function with a relevant name:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rescale01 &lt;-<span class="st"> </span>function(num) {
+
+}</code></pre>
+<p>Fill it with our deduplicated code:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rescale01 &lt;-<span class="st"> </span>function(num) {
+  (num -<span class="st"> </span><span class="kw">min</span>(num)) /<span class="st"> </span>(<span class="kw">max</span>(num) -<span class="st"> </span><span class="kw">min</span>(num))
+}</code></pre>
+<p>And refactor a little to reduce duplication further and handle more cases:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rescale01 &lt;-<span class="st"> </span>function(num) {
+  rng &lt;-<span class="st"> </span><span class="kw">range</span>(num, <span class="dt">na.rm =</span> <span class="ot">TRUE</span>, <span class="dt">finite =</span> <span class="ot">TRUE</span>)
+  (num -<span class="st"> </span>rng[[<span class="dv">1</span>]]) /<span class="st"> </span>(rng[[<span class="dv">2</span>]] -<span class="st"> </span>rng[[<span class="dv">1</span>]])
+}</code></pre>
+<p>Now you can reuse your function any place you need it:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">rescale01</span>(df$a)
+<span class="kw">rescale01</span>(df$b)
+<span class="kw">rescale01</span>(df$c)
+<span class="kw">rescale01</span>(df$d)</code></pre>
+<p>Reducing code duplication is as much needed with tidyverse grammars as with ordinary computations. Unfortunately, the straighforward process to create functions breaks down with grammars like dplyr. To see why, let’s try to reproduce the process with a duplicated pipeline:</p>
+<pre class="sourceCode r"><code class="sourceCode r">df1 %&gt;%<span class="st"> </span><span class="kw">group_by</span>(x1) %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(y1))
+df2 %&gt;%<span class="st"> </span><span class="kw">group_by</span>(x2) %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(y2))
+df3 %&gt;%<span class="st"> </span><span class="kw">group_by</span>(x3) %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(y3))
+df4 %&gt;%<span class="st"> </span><span class="kw">group_by</span>(x4) %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(y4))</code></pre>
+<p>We first abtract out the varying parts by giving them informative names:</p>
+<pre class="sourceCode r"><code class="sourceCode r">data %&gt;%<span class="st"> </span><span class="kw">group_by</span>(group_var) %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(summary_var))</code></pre>
+<p>And wrap the pipeline with a function taking these argument names:</p>
+<pre class="sourceCode r"><code class="sourceCode r">grouped_mean &lt;-<span class="st"> </span>function(data, group_var, summary_var) {
+  data %&gt;%
+<span class="st">    </span><span class="kw">group_by</span>(group_var) %&gt;%
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(summary_var))
+}</code></pre>
+<p>Unfortunately this function doesn’t actually work. When you call it dplyr complains that the variable <code>group_var</code> is unknown:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">grouped_mean</span>(mtcars, cyl, mpg)
+<span class="co">#&gt; Error in grouped_df_impl(data, unname(vars), drop): Column `group_var` is unknown</span></code></pre>
+<p>Here is the proper way of defining this function:</p>
+<pre class="sourceCode r"><code class="sourceCode r">grouped_mean &lt;-<span class="st"> </span>function(data, group_var, summary_var) {
+  group_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(group_var)
+  summary_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(summary_var)
+
+  data %&gt;%
+<span class="st">    </span><span class="kw">group_by</span>(!!group_var) %&gt;%
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!summary_var))
+}</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">grouped_mean</span>(mtcars, cyl, mpg)
+<span class="co">#&gt; # A tibble: 3 x 2</span>
+<span class="co">#&gt;     cyl  mean</span>
+<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     4  26.7</span>
+<span class="co">#&gt; 2     6  19.7</span>
+<span class="co">#&gt; 3     8  15.1</span></code></pre>
+<p>To understand how that works, we need to learn about quoting functions and what special steps are needed to be effective at programming with them. Really we only need two new concepts forming together a single pattern: quoting and unquoting. This vignette will get you up to speed with this pattern.</p>
+</div>
+<div id="evaluating-functions-versus-quoting-functions" class="section level3">
+<h3>Evaluating functions versus quoting functions</h3>
+<p>R functions can be categorised in two broad categories: evaluating functions and quoting functions <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. These functions differ in the way they get their arguments. Evaluating functions take arguments as <strong>values</strong>. It does not matter what the expression supplied as argument is or which objects it contains. R computes the argument value following the standard rules of evaluation which the function receives passively <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>.</p>
+<p>The simplest regular function is <code>identity()</code>. It evaluates its single argument and returns the value. Because only the final value of the argument matters, all of these statements are completely equivalent:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">identity</span>(<span class="dv">6</span>)
+<span class="co">#&gt; [1] 6</span>
+
+<span class="kw">identity</span>(<span class="dv">2</span> *<span class="st"> </span><span class="dv">3</span>)
+<span class="co">#&gt; [1] 6</span>
+
+a &lt;-<span class="st"> </span><span class="dv">2</span>
+b &lt;-<span class="st"> </span><span class="dv">3</span>
+<span class="kw">identity</span>(a *<span class="st"> </span>b)
+<span class="co">#&gt; [1] 6</span></code></pre>
+<p>On the other hand, a quoting function is not passed the value of an expression, it is passed the <em>expression itself</em>. We say the argument has been automatically quoted. The quoted expression might be evaluated a bit later or might not be evaluated at all. The simplest quoting function is <code>quote()</code>. It automatically quotes its argument and returns the quoted expression without any evaluation. Because only the expression passed as argument matters, none of these statements are equivalent:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">quote</span>(<span class="dv">6</span>)
+<span class="co">#&gt; [1] 6</span>
+
+<span class="kw">quote</span>(<span class="dv">2</span> *<span class="st"> </span><span class="dv">3</span>)
+<span class="co">#&gt; 2 * 3</span>
+
+<span class="kw">quote</span>(a *<span class="st"> </span>b)
+<span class="co">#&gt; a * b</span></code></pre>
+<p>Other familiar quoting operators are <code>&quot;&quot;</code> and <code>~</code>. The <code>&quot;&quot;</code> operator quotes a piece of text at parsing time and returns a string. This prevents the text from being interpreted as some R code to evaluate. The tilde operator is similar to the <code>quote()</code> function in that it prevents R code from being automatically evaluated and returns a quoted expression in the form of a formula. The expression is then used to define a statistical model in modelling functions. The three following expressions are doing something similar, they are quoting their input:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="st">&quot;a * b&quot;</span>
+<span class="co">#&gt; [1] &quot;a * b&quot;</span>
+
+~a *<span class="st"> </span>b
+<span class="co">#&gt; ~a * b</span>
+
+<span class="kw">quote</span>(a *<span class="st"> </span>b)
+<span class="co">#&gt; a * b</span></code></pre>
+<p>The first statement returns a quoted string and the other two return quoted code in a formula or as a bare expression.</p>
+<div id="quoting-and-evaluating-in-mundane-r-code" class="section level4">
+<h4>Quoting and evaluating in mundane R code</h4>
+<p>As an R programmer, you are probably already familiar with the distinction between quoting and evaluating functions. Take the case of subsetting a data frame column by name. The <code>[[</code> and <code>$</code> operators are both standard for this task but they are used in very different situations. The former supports indirect references like variables or expressions that represent a column name while the latter takes a column name directly:</p>
+<pre class="sourceCode r"><code class="sourceCode r">df &lt;-<span class="st"> </span><span class="kw">data.frame</span>(
+  <span class="dt">y =</span> <span class="dv">1</span>,
+  <span class="dt">var =</span> <span class="dv">2</span>
+)
+
+df$y
+<span class="co">#&gt; [1] 1</span>
+
+var &lt;-<span class="st"> &quot;y&quot;</span>
+df[[var]]
+<span class="co">#&gt; [1] 1</span></code></pre>
+<p>Technically, <code>[[</code> is an evaluating function while <code>$</code> is a quoting function. You can indirectly refer to columns with <code>[[</code> because the subsetting index is evaluated, allowing indirect references. The following expressions are completely equivalent:</p>
+<pre class="sourceCode r"><code class="sourceCode r">df[[var]] <span class="co"># Indirect</span>
+<span class="co">#&gt; [1] 1</span>
+
+df[[<span class="st">&quot;y&quot;</span>]] <span class="co"># Direct</span>
+<span class="co">#&gt; [1] 1</span></code></pre>
+<p>But these are not:</p>
+<pre class="sourceCode r"><code class="sourceCode r">df$var    <span class="co"># Direct</span>
+<span class="co">#&gt; [1] 2</span>
+
+df$y      <span class="co"># Direct</span>
+<span class="co">#&gt; [1] 1</span></code></pre>
+<p>The following table summarises the fundamental asymmetry between the two subsetting methods:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="center">Quoted</th>
+<th align="center">Evaluated</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Direct</td>
+<td align="center"><code>df$y</code></td>
+<td align="center"><code>df[[&quot;y&quot;]]</code></td>
+</tr>
+<tr class="even">
+<td align="left">Indirect</td>
+<td align="center">???</td>
+<td align="center"><code>df[[var]]</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="detecting-quoting-functions" class="section level4">
+<h4>Detecting quoting functions</h4>
+<p>Because they work so differently to standard R code, it is important to recognise auto-quoted arguments. The documentation of the quoting function should normally tell you if an argument is quoted and evaluated in a special way. You can also detect quoted arguments by yourself with some experimentation. Let’s take the following expressions involving a mix of quoting and evaluating functions:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(MASS)
+<span class="co">#&gt; </span>
+<span class="co">#&gt; Attaching package: 'MASS'</span>
+<span class="co">#&gt; The following object is masked from 'package:dplyr':</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt;     select</span>
+
+mtcars2 &lt;-<span class="st"> </span><span class="kw">subset</span>(mtcars, cyl ==<span class="st"> </span><span class="dv">4</span>)
+
+<span class="kw">sum</span>(mtcars2$am)
+<span class="co">#&gt; [1] 8</span>
+
+<span class="kw">rm</span>(mtcars2)</code></pre>
+<p>A good indication that an argument is auto-quoted and evaluated in a special way is that the argument will not work correctly outside of its original context. Let’s try to break down each of these expressions in two steps by storing the arguments in an intermediary variable:</p>
+<ol style="list-style-type: decimal">
+<li><pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> </span>MASS
+<span class="co">#&gt; Error in eval(expr, envir, enclos): object 'MASS' not found</span>
+
+temp &lt;-<span class="st"> &quot;MASS&quot;</span>
+<span class="kw">library</span>(temp)
+<span class="co">#&gt; Error in library(temp): there is no package called 'temp'</span></code></pre>
+<p>We get these errors because there is no <code>MASS</code> object for R to find, and <code>temp</code> is interpreted by <code>library()</code> directly as a package name rather than as an indirect reference. Let’s try to break down the <code>subset()</code> expression:</p></li>
+<li><pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> </span>cyl ==<span class="st"> </span><span class="dv">4</span>
+<span class="co">#&gt; Error in eval(expr, envir, enclos): object 'cyl' not found</span></code></pre>
+<p>R cannot find <code>cyl</code> because we haven’t specified where to find it. This object exists only inside the <code>mtcars</code> data frame.</p></li>
+<li><pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> </span>mtcars$am
+<span class="kw">sum</span>(temp)
+<span class="co">#&gt; [1] 13</span></code></pre>
+<p>It worked! <code>sum()</code> is an evaluating function and the indirect reference was resolved in the ordinary way.</p></li>
+<li><pre class="sourceCode r"><code class="sourceCode r">mtcars2 &lt;-<span class="st"> </span>mtcars
+temp &lt;-<span class="st"> &quot;mtcars2&quot;</span>
+<span class="kw">rm</span>(temp)
+
+<span class="kw">exists</span>(<span class="st">&quot;mtcars2&quot;</span>)
+<span class="co">#&gt; [1] TRUE</span>
+<span class="kw">exists</span>(<span class="st">&quot;temp&quot;</span>)
+<span class="co">#&gt; [1] FALSE</span></code></pre>
+<p>This time there was no error, but we have accidentally removed the variable <code>temp</code> instead of the variable it was referring to. This is because <code>rm()</code> auto-quotes its arguments.</p></li>
+</ol>
+</div>
+</div>
+<div id="unquoting" class="section level3">
+<h3>Unquoting</h3>
+<p>In practice, functions that evaluate their arguments are easier to program with because they support both direct and indirect references. For quoting functions, a piece of syntax is missing. We need the ability of <strong>unquoting</strong> arguments.</p>
+<div id="unquoting-in-base-r" class="section level4">
+<h4>Unquoting in base R</h4>
+<p>Base R provides three different ways of allowing direct references:</p>
+<ul>
+<li><p>An extra function that evaluates its arguments. For instance the evaluating variant of the <code>$</code> operator is <code>[[</code>.</p></li>
+<li><p>An extra parameter that switches off auto-quoting. For instance <code>library()</code> evaluates its first argument if you set <code>character.only</code> to <code>TRUE</code>:</p>
+<pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> &quot;MASS&quot;</span>
+<span class="kw">library</span>(temp, <span class="dt">character.only =</span> <span class="ot">TRUE</span>)</code></pre></li>
+<li><p>An extra parameter that evaluates its argument. If you have a list of object names to pass to <code>rm()</code>, use the <code>list</code> argument:</p>
+<pre class="sourceCode r"><code class="sourceCode r">temp &lt;-<span class="st"> &quot;mtcars2&quot;</span>
+<span class="kw">rm</span>(<span class="dt">list =</span> temp)
+
+<span class="kw">exists</span>(<span class="st">&quot;mtcars2&quot;</span>)
+<span class="co">#&gt; [1] FALSE</span></code></pre></li>
+</ul>
+<p>There is no general unquoting convention in base R so you have to read the documentation to figure out how to unquote an argument. Many functions like <code>subset()</code> or <code>transform()</code> do not provide any unquoting option at all.</p>
+</div>
+<div id="unquoting-in-the-tidyverse" class="section level4">
+<h4>Unquoting in the tidyverse!!</h4>
+<p>All quoting functions in the tidyverse support a single unquotation mechanism, the <code>!!</code> operator (pronounced <strong>bang-bang</strong>). You can use <code>!!</code> to cancel the automatic quotation and supply indirect references everywhere an argument is automatically quoted.</p>
+<p>First let’s create a couple of variables that hold references to columns from the <code>mtcars</code> data frame. A simple way of creating these references is to use the fundamental quoting function <code>quote()</code>:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co"># Variables referring to columns `cyl` and `mpg`</span>
+x_var &lt;-<span class="st"> </span><span class="kw">quote</span>(cyl)
+y_var &lt;-<span class="st"> </span><span class="kw">quote</span>(mpg)
+
+x_var
+<span class="co">#&gt; cyl</span>
+
+y_var
+<span class="co">#&gt; mpg</span></code></pre>
+<p>Here are a few examples of how <code>!!</code> is used throughout the tidyverse to unquote such references.</p>
+<ul>
+<li><p>In dplyr most verbs quote their arguments:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;dplyr&quot;</span>)
+
+by_cyl &lt;-<span class="st"> </span>mtcars %&gt;%
+<span class="st">  </span><span class="kw">group_by</span>(!!x_var) %&gt;%<span class="st">            </span><span class="co"># Refer to x_var</span>
+<span class="st">  </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!y_var))  <span class="co"># Refer to y_var</span></code></pre></li>
+<li><p>In ggplot2 <code>aes()</code> is the main quoting function:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(<span class="st">&quot;ggplot2&quot;</span>)
+
+<span class="kw">ggplot</span>(mtcars, <span class="kw">aes</span>(!!x_var, !!y_var)) +<span class="st">  </span><span class="co"># Refer to x_var and y_var</span>
+<span class="st">  </span><span class="kw">geom_point</span>()</code></pre>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASAAAAEgCAYAAAAUg66AAAAEGWlDQ1BrQ0dDb2xvclNwYWNlR2VuZXJpY1JHQgAAOI2NVV1oHFUUPrtzZyMkzlNsNIV0qD8NJQ2TVjShtLp/3d02bpZJNtoi6GT27s6Yyc44M7v9oU9FUHwx6psUxL+3gCAo9Q/bPrQvlQol2tQgKD60+INQ6Ium65k7M5lpurHeZe58853vnnvuuWfvBei5qliWkRQBFpquLRcy4nOHj4g9K5CEh6AXBqFXUR0rXalMAjZPC3e1W99Dwntf2dXd/p+tt0YdFSBxH2Kz5qgLiI8B8KdVy3YBevqRHz/qWh72Yui3MUDEL3q44WPXw3M+fo1pZuQs4tOIBVVTaoiXEI/MxfhGDPsxsNZfoE1q66ro5aJim3XdoLFw72H+n23BaIXzbcOnz5mfPoTvYVz7KzUl5+FRxEuqkp9G/Ajia219thzg25abkRE/BpDc3pqvphHvRFys2weqvp+krbWKIX7nhDbzLOItiM8358pTwdirqpPFnMF2xLc1WvLyOwTAibpbmvHHcvttU57y5+XqNZrLe3lE/Pq8eUj2fXKfOe3pfOjzhJYtB/yll5SDFcSDiH+hRkH25+L+sdxKEAMZahrlSX8ukqMOWy/jXW2m6M9LDBc31B9LFuv6gVKg/0Szi3KAr1kGq1GMjU/aLbnq6/lRxc4XfJ98hTargX++DbMJBSiYMIe9Ck1YAxFkKEAG3xbYaKmDDgYyFK0UGYpfoWYXG+fAPPI6tJnNwb7ClP7IyF+D+bjOtCpkhz6CFrIa/I6sFtNl8auFXGMTP34sNwI/JhkgEtmDz14ySfaRcTIBInmKPE32kxyyE2Tv+thKbEVePDfW/byMM1Kmm0XdObS7oGD/MypMXFPXrCwOtoYjyyn7BV29/MZfsVzpLDdRtuIZnbpXzvlf+ev8MvYr/Gqk4H/kV/G3csdazLuyTMPsbFhzd1UabQbjFvDRmcWJxR3zcfHkVw9GfpbJmeev9F08WW8uDkaslwX6avlWGU6NRKz0g/SHtCy9J30o/ca9zX3Kfc19zn3BXQKRO8ud477hLnAfc1/G9mrzGlrfexZ5GLdn6ZZrrEohI2wVHhZywjbhUWEy8icMCGNCUdiBlq3r+xafL549HQ5jH+an+1y+LlYBifuxAvRN/lVVVOlwlCkdVm9NOL5BE4wkQ2SMlDZU97hX86EilU/lUmkQUztTE6mx1EEPh7OmdqBtAvv8HdWpbrJS6tJj3n0CWdM6busNzRV3S9KTYhqvNiqWmuroiKgYhshMjmhTh9ptWhsF7970j/SbMrsPE1suR5z7DMC+P/Hs+y7ijrQAlhyAgccjbhjPygfeBTjzhNqy28EdkUh8C+DU9+z2v/oyeH791OncxHOs5y2AtTc7nb/f73TWPkD/qwBnjX8BoJ98VQNcC+8AAC4iSURBVHgB7Z0LvE1l+sef5tKVHDrILUwI5S50UUJTUUd18JFLxqUQTeSSajolNTFkNNGFSiNjRiqfUdMndMo1QjE4CQ1OueUaim4z/f3e+b971t5n7b3X3muvd6+99u/5fPY56/6+7/d917Pe6/Oc9tMpEQoJkAAJpIHAz9IQJoMkARIgAUWACogFgQRIIG0EqIDShp4BkwAJ/MIUgm+//VY+/PBDOeecc6Rx48byi1/8N+ivv/5aNm3aFBaNVq1ahe1zhwRIIJgETjPRCX3gwAEZOHCgtG3bVj7//HP5z3/+IxMmTFBE33//fZkyZYrUqlUrRHj8+PGhbW6QAAkEl4CRGlBhYaHk5+dL9+7d5d///rfk5eVJcXGxVK9eXbZt26b2e/fuHVzKTBkJkIAtASMKqFu3bqHA161bp5RQ+fLl1TEoIDS5Zs+eLbVr15bmzZvLaaedFroeimrs2LGh/ZtvvlnVpEIHomz87Gc/E/x+/PHHKFek7jDiix9qdl7Lz3/+c8HMCVNh4YNhQtAkR1gmZoWAoYl0BbkMokw4ZXj22WdHLUJGFJAO/eGHH5b33ntPBg0aJDpSUEAQKKGZM2fKnDlzZOLEifoW9R8ZqQUvnnVfH4/8jwKNgmbqRY0M36v9X/7ylypNJhSr7qfzWilAeZ9++uny/fffG8kvpMvrNCH/Uf4QlokyiHfC+uH2qvzhuSiD4OeEYbxyaqQPyApj9+7dMnz4cBkwYIBcc801cvjwYcnJyVFKBQWwU6dOMn36dKlatar1ttD2sWPH5JtvvgntR9soXbq0nHXWWbJ///5ol6Ts+Jlnnqky/+TJkyl7ZrQH5ebmqhcVHLyWMmXKyPHjxz1/gfCiVqhQQZWF7777zutkSdmyZeXIkSOeh4MBF5TDffv2eR4WFDgUg5N3w21kypUrp8rEV199FfdRZ5xxhuD6aPK/qkW0K1JwvKioSA4dOqSeVKVKFWnTpo2sXbtWvUhoYukaDSBWrFjRSIalIFl8BAmQgEsCRhTQmjVr5IUXXlBRxXD8ypUr1agXNPakSZNk1apV6tzmzZuVosIwPYUESCD4BIz0AXXu3FkwtN63b1/VcdW6dWs18oU269ChQ2XatGnqh+H60aNHh+YIBR8/U0gC2U3AiAIqVaqUGsk6ceKEoL9EN7mAvlmzZvL888/L0aNH5dxzzzXWkZbd2c7Uk4A/CBhRQDqpeuRL71v/o8OTQgIkkF0EjPQBmUaK/iZ0dqNTu0WLFoJ+JwoJkID/CAROAb3yyivy+OOPC4apMf8CQ6AY2jcxF8N/2csYkYC/CQROAY0bN06sc0kwEeqLL76Q1atX+zsnGDsSyEICgVNA1g5unZ+YsYlJjhQSIAF/EQicArr11lvDRtmAGyNsWGNGIQES8BeBwCmggoICZW8ImDHlvlq1aoKJkLFG4PyVJYwNCWQPAaPD8CawYl3RW2+9JXv37lWTHrHqHutRKCRAAv4jEDgFpBHXqVPH2GJUHSb/kwAJJEYgcE2wxJLPq0mABNJJgAoonfQZNglkOQEqoCwvAEw+CaSTABVQOukzbBLIcgJUQFleAJh8EkgngcCOgsG4GYxmw8IiTIBQSIAE/EcgcAoIyy5gb3rx4sXKsBns1mIdWDQb0/7LEsaIBLKHQMYpIFhRhLH5aNKnTx9ZtGhR2ILUjh07CtwBwUi4FwLTsqY8EmCtGzwtxGKQqjQiHNQenXg/cBOmXr8H8yl6283z4t2Lyaom+KFcQEyEpT1wmAor3nuo8yDee5FxCggJi/VCwO2PdTU8rseKeNSCYAzfC9Hx0f+9CCPymSbCQhj6Fxl+Kvd1WkyEpeOtw9T7XvzXYej/XoRhfaYpfjo9+r81DoluZ5wCQqJjGRhDLSfSZY2+Xv9PFJKT66HpvXy+jgPM20KhmggLS1igzL22pYSvN+SHH34o8fHQ6U7lf9QSTPDT6TIRlnbLYyIsrKtEmXASVrxlUIEbBRs2bFjY2i9U6QEKjg8pJEAC/iIQOAXUs2dPefDBB1WfDL4K7du3V/7n/YWdsSEBEgCBwCkgJKp///6qGQYvHC+//DJNcQAKhQR8SCCQCsiHnBklEiABGwJUQDZQeIgESMAMASogM5wZCgmQgA0BKiAbKDxEAiRghgAVkBnODIUESMCGABWQDRQeIgESMEOACsgMZ4ZCAiRgQ4AKyAYKD5EACZghQAVkhjNDIQESsCFABWQDhYdIgATMEKACMsOZoZAACdgQCKQCmjp1quTm5goWo1599dU2yeYhEiABPxAInAJ64YUX5PHHHw/Zsdm2bZs0bNjQD6wZBxIggQgCgVNABQUFEUkUOXjwoMyaNavEcR4gARJILwFjCghGwZYsWSJr165VFv2syYaCWLBggWzZssV6OKXbBw4cSOnz+DASIAH3BIwoILz8PXr0kE2bNsncuXPl/vvvD8UcxuJhSH7r1q0yatQomTdvXuhcMhuVKlWyve2mm26yPc6DJEAC6SNgxCZ0YWGh5OfnS/fu3ZWvrry8PCkuLpbq1avL5MmT5bHHHpNGjRpJ165dlTExeLFAB3IysnDhQmnQoEHYrU888YTUqlUr7Bh3SIAE0k/AiALq1q1bKKWo8cBhYPny5VVTbNeuXaFOYjgRhMHr3bt3S82aNdU927dvlwceeCB0f5cuXSRWbea8886TkydPypgxYwQ+wfr27auUW+gBHmxoVzKIu9cCQ+dwlaNdvngZnnb14mUY1meXLl1aYHTfa4G7IZQTr0WXCxNhwSkCfiaccIIfxEm6vv/++5iYjSggHYOHH35Y4DZn0KBBStHs2bNH+eqy+g4qU6aMHD58OKSA8KJVrlxZP0JdDwUWTx599FHlPwt9T06uj/c8J+dNhIPMh2cQE2HhBTIRjs5/eFrw2gMH8hGK1WS6TISFvDKVX9rbh5N0xXPdY1QBoVZy5513yvDhwwV9NfXr1y9REOByxqrFq1WrJpMmTQq9/3C5g5pNPMHXFBni5Np4z4p3HvHFS4Sal9eC+U34qkS6HvIiXHwMjh8/7rlS0LW6b775xohbnrJlyxopF3ARhXJoogxqtzxg6LWUK1dOlQkn6fKFW56ioiI5dOiQ4lKlShVp06aNGg1DFS6y0KH2Y63xeA2TzycBEkgfASOjYGvWrBFMEISgSbRy5UrVKYzmRMuWLWX+/Pnq3NKlSwVfJ/woJEACwSdgpAnWuXNnGT9+vOoQRruxdevWgpEwyF133RUafkeTyW4iYfCzgSkkgewkYEQBYWRj7NixAj9d6C+BotGCofg5c+aodnJOTo4+zP8kQAJZQMCIAtIcYw1TU/loSvxPAtlD4H9VkexJM1NKAiTgEwJUQD7JCEaDBLKRABVQNuY600wCPiFABeSTjGA0SCAbCVABZWOuM80k4BMCVEA+yQhGgwSykQAVUDbmOtNMAj4hQAXkk4xgNEggGwlQAWVjrjPNJOATAlRAPskIRoMEspEAFVA25jrTTAI+IUAF5JOMYDRIIBsJUAFlY64zzSTgEwJUQD7JCEaDBLKRgFFzHKYAw7D5O++8o+wLw0UPPHBQSIAE/Ecg4xQQjL/D2Hc0+eGHH5TNabj7gcBwNjxxNGvWLNotro/DtCziZTW05vqhUR6AMOApJBaDKLcmfBjpgg2neJ4NEn5wxA3aKwYMmCNMrwVG8E3w077tTISFNGlvFSb4oRw6SVe8suN9bntAA0ommnTo0EG5eLZec+utt8rq1asF1vy9ELxA+FnD9CIcPBMZihqeibDwAiGceIXIbVq14oa5XhPpglVOE+FohWAiLJ1HpsJyWgY1g2hlJOMUEEDHcnb2ySef2BYuKKC2bdtG4+DqOF4gKKBY8XIVgOVmpB8vqomwzjrrLMXSa19dupDCJZOJdCE9JsLRziNNhIUiYqoMgp9Thr5wy2N5fzzfPPfcc0uEcfToUeWfqcQJHiABEkgrgcCNgo0bNy6sHwFf19q1a8ull16aVtAMnARIoCSBwCmg9u3by2uvvSY1atQQOEGEJ9bCwsKSKecREiCBtBPIuD4gJ8RatGghGzduFPRh7N+/38ktvIYESCANBAJXA0oDQwZJAiSQJAEqoCTB8TYSIAH3BKiA3DPkE0iABJIkQAWUJDjeRgIk4J5AIDuhMRsU/uYxAaxp06ZywQUXuCfFJ5AACaScQOAU0LfffivXXHONWgOG2ZrHjx+XV199Va688sqUw+MDSYAE3BEIXBOsU6dOsnv3bsHsZygfSL9+/eTgwYPuSPFuEiCBlBMInALauXOnYE2RVTAbesOGDdZD3CYBEvABgcApILsV7zDJkZOT4wPcjAIJkICVQOAU0Pjx48PsoqD2g5nR6IymkAAJ+ItA4BTQVVddpdZ+QeHUq1dPhg8fLvPmzfMXdcaGBEhAEQjcKBhSVadOHVmyZAnXgrGQk4DPCQSuBuRz3oweCZCAhYCxGhAmB3700UeqVtKwYUNlvQ3x+Prrr2XTpk2WKIm0atUqbJ87JEACwSRgRAHt27dPBg8eLFdccYWcOHFC0FE8Y8YMgbnGNWvWyJQpU6RWrVohwlRAIRTcIIFAEzCigObOnSsdO3aUvn37KpgFBQWyaNEiufHGG2Xbtm2Sl5cnvXv3DjRoJo4ESKAkASMKaMCAAaEmF6KAWconT55UsYECQo1n9uzZynRq8+bNw6797LPP5J577gnFvFevXpKfnx/aj7YBQ/H45ebmRrskZce1VwcnbkrcBgq3NQhPu3xx+7xY92MKA8LRHhdiXZuKc7DnbSIspMtkuTARlvbMAiN8Xgv4QZykK55BfiMKyPqywEcXfHbdcMMNKhFQQBAooZkzZ6pFpBMnTlTH8Ad+qaCUtMDJYLxE4Vp4JDDlJUD7soqcga3jnMr/yHynHgnchmvKLQ/yCfkFfvD44bWg6e+kDLmNB8oFGJoIC+UCHyYTbnng1iiedxrNDmU1lpx26kE/xboglefmz58vs2bNkgkTJkj16tXVow8fPqxmKQMeMgpruaZPny5Vq1a1DfrYsWPyzTff2J6zHixdurSxYXhkCF4iXauzxiPV2/jqgBM4eC1lypRR6+niFSK38cDLU6FCBUFZ+O6779w+Lu79ZcuWlSNHjsS9zu0FqBGjHKIP1GuBooMSd/JuuI0LVhugTGCFQTyBsrdbnaDvMzYM/8orr6hV6U8//XRI+eBFKi4uDnkUBcSKFSu6zrCtW7dKt27dpF27dvLXv/5Vp5X/SYAEfEbASBPs7bffVrOTn3322TD/XNDYkyZNUiNkaIJt3rxZDh06JI0bN04aE5p0UDy6Ko8JiViI+sQTTyT9TN5IAiTgDQEjCuill16SL7/8Uo2E6WSgIxmdy0OHDpVp06ap34EDB2T06NFhfr309U7/ww2zVj76ntdff13QeV2/fn19iP9JgAR8QMCIAoKfrmjSrFkzef7559XIGEZB0JfiRuz6K1DTggKkAnJDlveSQOoJGOsDihd1dHi6VT4Io0GDBqE+JR0mOhzhHZVCAiTgLwK+UUCpwjJ16lTVQ4+RKT08/sc//jHqqFqqwuVzSIAEEidgpAmWeLSSv+O8886T7du3y9/+9jc1JwKd26gVUUiABPxHIHAKCIhR+7n77ruNzQPyX7YyRiSQGQQC1wTLDOyMJQmQAAhQAbEckAAJpI2A4ybYJ598UmJ+DWKNJRSlSpWS888/X5nXSFtKGDAJkEDGEXCsgC6//HI1VydaCrEK9+GHH5b77rsv2iU8TgIkQAJhBBw3wcaMGaMm8mHS4M5TvreWL18uDz74oGDUCdvPPfecWmRKA/BhfLlDAiQQg4CjGhBmF6N288Ybb0jbtm3V47CaHRYOi4qKZOHChQIFhXVY7777rtxyyy0xguQpEiABEvgvAUc1IPhbh6mJCy64oAS3ypUry969e9VxnN+/f3+Ja3iABEiABOwIOFJAMAqGPqARI0bIli1bQs/5+OOP5eWXX5Yrr7xS9Q/NmTNHrUQPXZCmDZh+hR0WzISGXSFYYKSQAAn4j4AjBYRow0gYmlh169aVGjVqqNoQLBXedtttaqX5/fffr5QT7DunUwYOHCjvvPNOKApoPjZp0qSEv/jQBdwgARJIGwFHfUCIHbxWwIPFBx98IOvWrVOzjVHzwcsNuffee1UntAm7yCrAKH/efPPNEmfQhIRBtD59+pQ4xwMkQALpI+BYASGKaIq1b99e/SKjbHWrE3nOD/twB0QhARLwF4GEFBBswMKo/D//+U81/I4mGPqG/CSXXHKJbNy4sUSUunfvXuIYD5AACaSXgGMFtH79ejW8jjlA6AfCaBeMiOPFhsVDGJ82IXrmdbSwYIIVo3HwuAr7Qrge0wSqVasW7RbXx9HZjbC0uxLXD4zxAKQHBtYw+9xrQThoUnvtt0DbgcIiYoTptSC/TPFDWkyEhbKHn2bpJUOEE+891OHHKzuOFdBdd90lV199tZp0WKVKFWVzB66WYfx98uTJxmZAo1M5npuTHTt2yMqVK5XnCMxVQgHw0tsCICPjvQxDZyhmnMPkrImwoAwQTrxCpOOW7H8UZghcyphwK4OPpQl+KBOmwoJS1fmVbD44vQ8fCryHThjG+yg7cssDVx+Y8fzFF18I/HJZBfac4Xni/ffftx72bJtueeiWx23holsedwSNu+VBNRwmU1HjiRS4wIErHQoJkAAJJErAcRMM67769+8vPXv2lOuvv145QFuwYIHMmDFDnnzyyVANCM2zOnXqJBoPXk8CJJCFBBw1wcAlJyfH0YziwYMHy5QpUzxDySYYm2BuCxebYO4IprIJ5rgGBLc2Tjoj0RnmB8HatUj/YH6IF+NAAiTwPwKOtYXuzV+9erVgZrFV0AfUsGFD66G0bqNJiFrYjz/+qEan4HE13TO00wrE54Fjkui//vUvNbSLERZK9hBwrICeeuopeeihh+T48eMl6HTp0kX5fS9xIg0H4Hse0wKstR/0WWGUzi+1szRg8W2Q+KChbxHDuphXNnHiRDW3zLcRZsRSSsDRYlQUjgkTJij/6uiDwctt/WEVvF8EvuatygfxwrygVatW+SWKjMf/E8C0jptvvlkOHjyolA8Ow+LCihUryChLCDhSQJj4h0KCwgIzF5g4Zv2ZmH3pND/sJimi7wrNMIq/CMB6pl2tdNasWf6KKGPjGQFHCgjt8h49egg8jPp9UafdtHcooHr16nkGkQ9OjkC0pQN2Sim5EHiX3wk4UkBIREFBgbL7nJubK/A2ikWo+ve73/3ON+kcOnSoqp1FRuiyyy6LPMT9NBPo1KmTrZ2mQYMGpTlmDN4UAced0DA0VqlSJbnuuusE8yisghXofhEUXkwZwBIRjNzBLfPMmTONLBT1C4NMiQdsNNlN7Rg3bpzKs0xJB+OZPAFHCggryzds2CDwDZYJTZlHHnlEHnvsMbU4D/OBKP4kgAXDdgKDd5TsIOCoCYZ+FXjByKSXGavG0WFO8S8BLHC2k8gatt01PBYMAo5qQEgq3O7k5+erYdKaNWsKXnAtFSpUkIsvvljv8j8JOCIwdepUZeo38uK///3vkYe4H1ACjhXQPffco9aCDRkypAQKP01ELBE5HvAtAZj4/fzzz6VDhw5SXFys+hZnz55doo/RtwlgxFwTcKyAYq0Fi2d0yHUs+YDAEsCQe2FhoaAWjZnQToxcBRZGFibMsQLCiBKFBEiABFJJwFEndCoChKlNLIeAQfvIoVfMsoZtIavTw1SEyWeQAAn4m4ARBbRv3z5lOxo+xeC3C7OqdVUbQ67w1wXLiqNGjRJMz6eQAAlkBwEjCmju3LnSsWNH5bwQs6bhQ2zRokWKMFauY87O3XffrSYPwsOG3Xqu7MgOppIEsouA4z4gN1gGDBgQ5i4Evtoxpwj2enbt2hWyJQS7QhgZ2b17t2CoH4Jm2Z133hkKHqYbnPj4wgJZ/NC56bXoxbgm5h1hETA6/U3YzUG6TPT9vfbaa2qx8Pnnny933HGH19mlluqYLBcmwgI05JcJu1fai4mTdEXaDovMXCMK6PTTTw+FC8eGUDo33HCD8i0GYPoFxkUwfo/REK2AYAr2xhtvDN3vdEIkwsQIi4nJk3rxJBSq14L5V05doriNC5QPaqORfXZun2u9HxYWMCMai5zBEbbHt2/f7unSGSjveC+GNY7JbsNNDsqhiTKIjxIUgwm3RiiDKBNOGKKsxhIjCkhHYP78+QJTC7DZg9nVcPcTabsHL7H1645a0ciRI/UjlK8vO6NooQv+fwO1EWSKk2sj7010H/GFEjVR0LRSMJEuFGgsw4lXiBLlpa9HecAQvBbkPcrEE088IZh35pVA0Zngh48rFJCJsBAOFB74eS0IB2XCSbri1aCNKSAsPMRIFywWajc+mIoPYOiQ1hFF7ady5cpeM+TzfUDg008/LRELlIW1a9eWOM4DwSRgpBP67bffVl+6Z599NqR8gBNfopYtWwq+hJClS5eqWbBcC6RwBP4P+hDQ52cVlAm41qZkBwHHbnnc4OjcubMykWHt68G6MlSzMQUfw++6DQu7Q7H8itEtT3Dc8qAaX79+fdWstpavnTt3qqaL9Vgqt+mWJzma6PeBqRSYYEZfEwaEhg0bFvNhaNnAjU80MdIEwyhHNEGnMhL01VdfKd9j0a7j8eARQCcmPihWwYcItqIvvPBC62Fu+4DA7bffHtZnh+4U9NtZ+2gTjaaRJpiTSGG0i5JdBF544YUSNR3UiuBWieIvAlgLah0wQOzwAUG3ihszzb5RQP7CzdiYIICCGzl1AdX8yFqRibgwjNgEoGzs5rkh/9xM06ACis2dZz0k8Otf/9p2iB99hhR/EahataoyyWyNlZ4U62byIxWQlSi3jRJo2rSpjB8/XoUJZwf4wmJJDiYnUvxFAH1zaG5BMJiEH5rLy5YtcxVRI53QrmLImwNNoFevXnLttdeq2e8Ykq9Ro0ag05upicOoV7t27VT0rU0uLLP6xz/+kXSyqICSRscbU0WgSpUq0qRJExokSxVQD56DkUmsXsDMeKvAUQWO2fnjs14XbZtNsGhkeJwESCBEAAomcsAAJzFzHc2zZIUKKFlyvI8EsogAZq3Djpd1nSYmGY4YMSLMQUWiSNgES5QYr08pAQy533///VJUVKQmor788suckJpSwql72NixY5W1ildffVUpnX79+gkmJ7oRKiA39HivKwLo2Kxbt65aE4jqPUZWGjVqpEz3wgsvxX8EUOP5/e9/r0bAsHrBrbAJ5pYg70+awPTp09VMaN23gNEVDO2igFOygwAVUHbksy9TCcuYkeZ3YR/q0KFDvowvI5V6AlRAqWfKJzokEM2bbr169Rw+gZdlOgEqoEzPwQyOP+aWaPvC1mTs37/fusvtABOgAgpw5vo9aejvsVNAJuwa+51NtsSPCihbctqH6YSrJt0BbY0ehncp/iSwZ88etSbsxRdfFPThuRUjFhHdRtJ6f+RUcOs567b2iuHGVon1ebG2MRMUQ8h2L1Os+5I5Z9orhnYgmUxcndyzYsUKuf7665XVPNR8sDgV68O8FNNeMUwYitcr072sPa5fv15at24dMqOLdwuejn/1q19FzS7Ucs8999yo5zNOAWHimhN3IDARgIJmYkQFM0KhgJzEK2pOODwB85YoZE48Ejh8ZNTLsDodCt+6+DDqxS5OQMlhNAz2oKFgvRa4fkrF1ztePJEWLGE4cOBAvEtdn4enCvy8+uDC40sNm4XCcDIKW+7RlmMgTrFsvGfkRMRIVz52uadfGifX2t2fyDFoeSggE2HpuTImw0L6vBQo8GrVqhlbjAqGpviBm4mwoACQT16FBWehdoobx1EpiFbLwUcllrAPKBYdniMBElAEoHwi52zhBGpGqOUkK1RAyZLjfSSQRQTQ9McyDKugnxVGytw0m2PXj6yhcZsESCCrCQwaNEguuugimTFjhurz6du3r1x11VWumFABucLHm0kguwi0bdtWYLMb/U2pWIxKBZRd5YepJQFXBNCBv3XrVjXoAtfqboUKyC1B3k8CWUIAUz+6dOkiu3btCnU+r1u3zlUfEDuhs6TwMJkk4JYA+n82bNigpktg9AsKCUbp3QgVkBt6vJcEsoQAaj2Ro11oji1fvlzVhpLFQAWULDneRwJZRABzfewWDmP2v91xp2iogJyS4nUkkMUEKlasKBgBw9wfLZjBnpeXJ/ifrFABJUuO95FAlhF45plnpHbt2moEDEssoHy0t9RkUVABJUuO95FAlhH4y1/+oryXoO8Hlh/mzp0rCxcudEWBCsgVPt5MAtlBAJMOR48eXSKxw4YNc2UFggqoBFIeIAESiCQABYQFqZEC0zBubBBRAUUS5T4JkEAJAvCMirk/kQJja1ZvqZHn4+1TAcUjxPMkQAJq0qGdOQ6MirmpARlfirFo0SK55pprlPU75Css7m3atCksi1u1ahW2zx0SIIH0EsB8H1gZjTQvCwNo6JROVowqoNdff10mT56slvBrS2lr1qyRKVOmCEw7aqEC0iT4nwT8QaBq1aollA9iBgUExZSsGFFAGLIrKCiwtc+8bds2NZ+gd+/eyaaB95EACXhMAItOo0ksk6zR7tHHjfQBQUuiVjN16lQdbug/FBAMd8+ePVtQG3JTnQs9lBskQAIpJaBbLHYPdbMUw7hXDLj1ePfdd0PTt2+++WY1uxIKavHixer4xIkTQ+ncvHmz9OjRI7Q/ePBg6dOnT2g/2gaMxENMKLQgh2WCH/IJhdhr4/cIB4L8MpWuoISFigJcZttxwxA9PKjYCfqOzj77bLtT6piRJljU0E+deOmllyQnJ0cVwJtuukk6deqk7I2gzQnJzc2VO++8U23jT/369VXHdehAlA2sT8ECOqd+xKI8xtFhbZTbzWiAo4BOXYT2NmqUJlwAYXgVIx9eKwa8pCjAGOZF2rwWrOq2G1JOdbgYIUI5NFEGUUOBErcbqUpFuvBslHO756Ms6o9womGlVQEhMcXFxcopHSKODMOit3379olWQOXLl5eBAweG0oX2ZmRPfOikZQPAkClOrrXcltQmXlRkgIlCjZcHis5EujQ/rxUQXMpAAcE/mNeOEJHBKGcm+CEsKCATYSFNUBBehmWnfOCOBwooWhmJt1DVSB8QMsJOAGzSpEmyatUqdRrNLTgSbNy4sd3lPEYCJJAmAngv7RwMQvHYKSan0UxrDQi1hqFDh8q0adPUDx4ksd4kVoeX04TxOhIggdQRgFseu+Yxmpe6CyKZ0IwroGXLloXFs1mzZvL8888rV7moziXblgx7KHdIgARSSgBNZPiAh394q9x2222hASXrcafbaW2CWSOJhW5UPlYi3CYB/xDYv39/CeWD2M2bN89V36dvFJB/UDMmJEACkQTQuW3n/x2TjO2G5iPvj7ZPBRSNDI+TAAmECFxwwQWCFfFWwUgzWi2x5vlYr7fbpgKyo8JjJEACYQQwVQIWECGYtwenhOgTKioqCrsu0R3jndCJRpDXkwAJ+IMA5ujt2LFDtmzZoiY9wk+YmxEwpIoKyB95y1iQQEYQwMTCNm3apMw3PJtgGZHtjCQJBJMAFVAw85WpIgFPCBQWFsott9wiXbt2lY0bN7oOg00w1wj5ABLIDgKYMDxmzJhQYt966y157rnnlD2v0MEEN1gDShAYLyeBbCRw5MiRMOWjGYwcOZITETUM/icBEvCGQDS3PFgfZrdGzGksWANySorXkUAWE8AQvJ1pjRMnTtAtTxaXCyadBIwQwGznP//5zyosKCLYpcKx5cuXu7JewU5oI9nHQEgg8wk0atRI1q5dK4tPmU7GEox27dqVWJ6RaCqpgBIlxutJIIsJVK5cWYYMGcKJiFlcBph0EggMAXZCByYrmRASyDwCxt3yuEUEE5AwAxBPsEgOpl1NGIrHSmGIm+HIeOnR52EAH+GY8MABQ+du7P3qOMf7j/4EdGrGMm4e7xmJnEcnqgnj9yh/KIcmyiDeCfxgn8drAT/YAHJSNlBWo7nsQTwzrg8IRrCdWP6H+xpkyPHjx73ODzU8ibBMFDQoBSgfE+mCASoofDcGp5zAhwLXrnKcFGonz4x1DcIzwQ+jRFBAJsJCOPhhWNxrgWLFe+gkXYhTLMk4BYTERHMBYpfQRK61u9/JMbygCMdUWDo8J3Fzcw3CMRGWNsVrIizwMBkOwmO5AAV7id+Wsb+PR0mABEjANQEqINcI+QASIIFkCVABJUuO95EACbgmQAXkGiEfQAIkkCwBKqBkyfE+EiAB1wSogFwj5ANIgASSJUAFlCw53kcCJOCaABWQa4R8AAmQQLIEqICSJcf7SIAEXBOgAnKNkA8gARJIlgAVULLkeB8JkIBrAlRArhHyASRAAskSoAJKlhzvIwEScE0gI1fDu041H0ACJJA0AbjogfmZVEhqnpKKmPAZJEACviYA21BNmjSR888/Xxmjr1evnmsDaFRAvs5yRo4E/EMACufLL78MRejo0aPSpk2b0H4yG8YV0KJFi0pozYMHD8qCBQtky5YtyaSB95AACXhM4NNPP7U1Obx9+3ZlSjfZ4I0qoNdff10effTRsISsW7dO+vTpI1u3bpVRo0bJvHnzkk0L7yMBEvCIQCwb2m7sUBvphEYECwoK5NChQyXwTJ48WR577DGB07OuXbtK//79pWPHjgLbxxQSIAF/EMD7CRvhx44dC4sQDNSXKlUq7FgiO0ZqQLCM36pVK5k6dWpY3KCYdu3aJQ0bNlTH4X8ahrx3794ddh13SIAE0k9gxYoVYZEoX768FBUVhR1LdMdIDQhaMi8vr0Tc9u/fL/BeoY2S44IyZcrI4cOHpWbNmur6TZs2SX5+fujeYcOGycCBA0P78TYqVaoU75KUnc/JyUnZs2I9CJ4GwM2E4INgSsqVK2cqKDFZLkyGhVqKV4J0wKD/xx9/rFool1xySdyg4nnpMKKAosUS7lEifWmhVgTfV1rgCvahhx7Su1K3bl1B73s8gdJDM86J65B4z4p3XrseMeGrC9VdMIIPLa9F++pCofNSMKcEvqPgbglp81qgVOO9GKmIA8ofynJksyUVz458BlzlgKMJt0ZosaBMOHkPI+MZuZ9WBXTeeeepQocOLigMCGo/UDpa8FXs2bOn3lWZ6cQvGJSbKT9JKGSoxZnwC4aXBy+piRcI/JAmr93KIK+ggFAOYnV2hgqByw2UNRP8UCZQNkyEBWVnsryjTDhJl36vo2WZkT6gaIFDa7ds2VLmz5+vLlm6dKmULVtW/aLdw+MkQALBIZDWGhAw3nXXXaHhd1QhMVpGIQESyA4CxhXQsmXLwshWr15d5syZI1hfYqoTNywC3CEBEkgbgbQ2wayppvKx0uA2CWQHgdNO9WZ7O8SRYo5YEOeksxcdZBgpMjG0i74sdDiaGAVDTRHhuZn85TRLTI2CYSQUgw/4COkRRadxTOY6U6NgKKcYMMnNzU0mmgndg458/EyMgunV8E6G/NE5jqk1UQUKKIjy5JNP/nTFFVcELmkdOnT46VQ/WaDSVVxc/FOdOnV+WrJkSaDS9eKLL/508cUXBypNSEz37t1/+u1vf5uSdPmmCRZVQ/IECZBAYAlQAQU2a5kwEvA/gZ8/ckr8H83EY4ghfYywNW7cOPGbfXwH2vmYiVqjRg0fxzLxqKFfpkWLFrH7CxJ/bFrvQBmsUqWKNG/ePK3xSHXgKIOnmpZy4YUXun50xnVCu04xH0ACJOAbAmyC+SYrGBESyD4CxicimkSsLSxedNFFJoP1JCxMP4BlAKvAxEkQBCYdYJYFTTAsxcl02bt3r+zcuTMsGZimEYT8wjrENWvWqKZy/fr1w9KYzE5gFRDmKsDC4i233CJBUEDI9ClTpkitWrVC+RyEAv3cc88JrGKin2TatGnywAMPSLNmzUJpzMSNzz77TN56661Q1Pfs2aNWjus1j6ETGbaBuXW9e/eWU9Nb1LwtrIZ/6qmnXKUisAroD3/4g5FJiK7oJ3Dztm3blE0lFICgCF7MwsJCmTFjhppYCcXzySefZLwCat26teAHwer+fv36yX333Zfx2Ya8Qq1n6NChKi233XabsuPu5gMfyD6gN998U1XlL7300ozPdJ0AKCDMfp49e7aqAp+aBaZPZez/jz76SBo0aCAHDhyQd955R2rXrh1meiVjE2aJ+KnJiCqNqDVkusAgGcohPGOglodWhtsmc+AUEPoS3njjDRkyZEim53dY/JHxq1atUnaTZs6cKSNHjgw7n4k7UDzoKxk3bpwy7YnaHdIYFEETBWXxN7/5TSCShBoqakCo+cCRxO233678g7lJXKCaYOgge/zxx2XEiBGCdUxBkpdeekmtlcLckptuukk6deqkOm6rVq2ascmEUSusAYO3FD2/CV5RgtC3hUxBrQ4d67B1HgRBbQ4WRpFHGBRBsxLlTzc3k0ljoBQQvqabN28W2I2GYHEoRh/gdwxKKVMFCwxPrZcK9WlhgR8K9b59+1QByNR0wag5+g+gfCCn1oPJn/70p0xNTol4v/322zJ48OASxzP1AJrMqPVgcSl+1157raxevdqVAgpUEwwjRIsXL5aFCxeqX5cuXRSwTFY+KKxYIT5p0qRQ8wRKFi6OMn2W92WXXaY+GNrbJjo50ScUBEHnMz6ITgy3Z0p60Y8Fg/QQtDbWrl3rurYaqBpQpmRkovFELQ4jDximxg99J6NHj1ZmORJ9lp+ur1ChgrKICauY6GCHmRGMXgZBPv/8c0END0tMgiJo+sO1FvILZkYwyIOPiBvhUgw39NJwLzo2YYcFSikoAntA6FOIaTcmKIkNQDpgZwsfC/zcChWQW4K8nwRIIGkCgeoDSpoCbyQBEkgLASqgtGBnoCRAAiBABcRyQAIkkDYCVEBpQ8+ASYAEqIBYBkiABNJGgAoobegZsBMCmNA3ZswY+eKLL5xczmsyjACH4TMsw7Itupj3BH9hK1askMsvvzzbkh/49LIGFPgsZgJJwL8EqID8mzeBixmsOt57773KsNrTTz+t7MpgFjQWbC5dujQsvTBjMWHChLBj3AkeASqg4OWpL1P04YcfSrt27WT79u3KTC4UTH5+vloJj1X9WGxrlYB6i7ImkdunCLAPiMXACAHYjGnUqJGya40AYSKla9eu8swzzyjrelBGMOZerlw5Wb9+vbIRjY5nLOZkH5CRLEpLIKwBpQV7dgUK87FQKrAfoyU3N1fee+89qVu3rlx//fVK8bz66qvqNCw+XnfddQIToJRgE6ACCnb++iJ1MN2A1e7nnHOObXywqrpXr14ya9YsQZ8Q7F4HxYypbYJ5MESACiiEghteEYCtH9j+0X7aEA7MsXbu3FmWLFmigoXC+eCDDwS1IFiAzMvL8yo6fK6PCFAB+SgzghyVO+64QyZOnKgsVULBYBRs+fLlyqgV0g1j57CfjFGybt26KeP7QebBtP2XgHuLQiRJAg4IPPjgg8qSY4cOHZSJ2aZNmyp/YFaLgfC0MHDgQDa/HPAMyiUcBQtKTmZIOrC0Av6k7DxFTJ8+XdWMNmzYkCGpYTTdEmANyC1B3p8QgTPOOKOE8tmxY4fAhjL8gwXBg2hCQLL8YvYBZXkB8EPy586dK23btpWWLVtK//79/RAlxsEQATbBDIFmMLEJwND5mWeeGfsing0cASqgwGUpE0QCmUOATbDMySvGlAQCR4AKKHBZygSRQOYQoALKnLxiTEkgcASogAKXpUwQCWQOASqgzMkrxpQEAkfg/wCvRq3NN5PB1AAAAABJRU5ErkJggg==" /><!-- --></p>
+<p>ggplot2 also features <code>vars()</code> which is useful for facetting:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">ggplot</span>(mtcars, <span class="kw">aes</span>(disp, drat)) +
+<span class="st">  </span><span class="kw">geom_point</span>() +
+<span class="st">  </span><span class="kw">facet_grid</span>(<span class="kw">vars</span>(!!x_var))  <span class="co"># Refer to x_var</span></code></pre>
+<p><img src="data:image/png;base64,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" /><!-- --></p></li>
+</ul>
+<p>Indirect references in quoting functions are rarely useful in scripts but they are invaluable for writing functions. With <code>!!</code> we can now easily fix our wrapper function. as we’ll see in the following section.</p>
+</div>
+</div>
+<div id="understanding-with-qq_show" class="section level3">
+<h3>Understanding <code>!!</code> with <code>qq_show()</code></h3>
+<p>At this point it is normal if the concept of unquoting still feels nebulous. A good way of practicing this operation is to see for yourself what it is really doing. To that end the <code>qq_show()</code> function from the rlang package performs unquoting and prints the result at the screen. Here is what <code>!!</code> is really doing in the dplyr example (I’ve broken up the pipeline in two steps for readability):</p>
+<pre class="sourceCode r"><code class="sourceCode r">rlang::<span class="kw">qq_show</span>(mtcars %&gt;%<span class="st"> </span><span class="kw">group_by</span>(!!x_var))
+<span class="co">#&gt; mtcars %&gt;% group_by(cyl)</span>
+
+rlang::<span class="kw">qq_show</span>(data %&gt;%<span class="st"> </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!y_var)))
+<span class="co">#&gt; data %&gt;% summarise(mean = mean(mpg))</span></code></pre>
+<p>Similarly for the ggplot2 pipeline:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rlang::<span class="kw">qq_show</span>(<span class="kw">ggplot</span>(mtcars, <span class="kw">aes</span>(!!x_var, !!y_var)))
+<span class="co">#&gt; ggplot(mtcars, aes(cyl, mpg))</span>
+
+rlang::<span class="kw">qq_show</span>(<span class="kw">facet_grid</span>(<span class="kw">vars</span>(!!x_var)))
+<span class="co">#&gt; facet_grid(vars(cyl))</span></code></pre>
+<p>As you can see, unquoting a variable that contains a reference to the column <code>cyl</code> is equivalent to directly supplying <code>cyl</code> to the dplyr function.</p>
+</div>
+</div>
+<div id="quoting-and-unquoting-arguments" class="section level2">
+<h2>Quoting and unquoting arguments</h2>
+<p>The basic process for creating tidyeval functions requires thinking a bit differently but is straightforward: quote and unquote.</p>
+<ol style="list-style-type: decimal">
+<li>Use <code>enquo()</code> to make a function automatically quote its argument.</li>
+<li>Use <code>!!</code> to unquote the argument.</li>
+</ol>
+<p>Apart from these additional two steps, the process is the same.</p>
+<div id="the-abstraction-step" class="section level3">
+<h3>The abstraction step</h3>
+<p>We start as usual by identifying the varying parts of a computation and giving them informative names. These names become the arguments to the function.</p>
+<pre class="sourceCode r"><code class="sourceCode r">grouped_mean &lt;-<span class="st"> </span>function(data, group_var, summary_var) {
+  data %&gt;%
+<span class="st">    </span><span class="kw">group_by</span>(group_var) %&gt;%
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(summary_var))
+}</code></pre>
+<p>As we have seen earlier this function does not quite work yet so let’s fix it by applying the two new steps.</p>
+</div>
+<div id="the-quoting-step" class="section level3">
+<h3>The quoting step</h3>
+<p>The quoting step is about making our ordinary function a quoting function. Not all parameters should be automatically quoted though. For instance the <code>data</code> argument refers to a real data frame that is passed around in the ordinary way. It is crucial to identify which parameters of your function should be automatically quoted: the parameters for which it is allowed to refer to columns in the data frames. In the example, <code>group_var</code> and <code>summary_var</code> are the parameters that refer to the data.</p>
+<p>We know that the fundamental quoting function is <code>quote()</code> but how do we go about creating other quoting functions? This is the job of <code>enquo()</code>. While <code>quote()</code> quotes what <em>you</em> typed, <code>enquo()</code> quotes what <em>your user</em> typed. In other words it makes an argument automatically quote its input. This is exactly how dplyr verbs are created! Here is how to apply <code>enquo()</code> to the <code>group_var</code> and <code>summary_var</code> arguments:</p>
+<pre class="sourceCode r"><code class="sourceCode r">group_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(group_var)
+summary_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(summary_var)</code></pre>
+</div>
+<div id="the-unquoting-step" class="section level3">
+<h3>The unquoting step</h3>
+<p>Finally we identify any place where these variables are passed to other quoting functions. That’s where we need to unquote with <code>!!</code>. In this case we pass <code>group_var</code> to <code>group_by()</code> and <code>summary_var</code> to <code>summarise()</code>:</p>
+<pre class="sourceCode r"><code class="sourceCode r">data %&gt;%
+<span class="st">  </span><span class="kw">group_by</span>(!!group_var) %&gt;%
+<span class="st">  </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!summary_var))</code></pre>
+</div>
+<div id="result" class="section level3">
+<h3>Result</h3>
+<p>The finalised function looks like this:</p>
+<pre class="sourceCode r"><code class="sourceCode r">grouped_mean &lt;-<span class="st"> </span>function(data, group_var, summary_var) {
+  group_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(group_var)
+  summary_var &lt;-<span class="st"> </span><span class="kw">enquo</span>(summary_var)
+
+  data %&gt;%
+<span class="st">    </span><span class="kw">group_by</span>(!!group_var) %&gt;%
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!summary_var))
+}</code></pre>
+<p>And voilà!</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">grouped_mean</span>(mtcars, cyl, mpg)
+<span class="co">#&gt; # A tibble: 3 x 2</span>
+<span class="co">#&gt;     cyl  mean</span>
+<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     4  26.7</span>
+<span class="co">#&gt; 2     6  19.7</span>
+<span class="co">#&gt; 3     8  15.1</span>
+
+<span class="kw">grouped_mean</span>(mtcars, cyl, disp)
+<span class="co">#&gt; # A tibble: 3 x 2</span>
+<span class="co">#&gt;     cyl  mean</span>
+<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     4  105.</span>
+<span class="co">#&gt; 2     6  183.</span>
+<span class="co">#&gt; 3     8  353.</span>
+
+<span class="kw">grouped_mean</span>(mtcars, am, disp)
+<span class="co">#&gt; # A tibble: 2 x 2</span>
+<span class="co">#&gt;      am  mean</span>
+<span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt;</span>
+<span class="co">#&gt; 1     0  290.</span>
+<span class="co">#&gt; 2     1  144.</span></code></pre>
+<p>This simple quote-and-unquote pattern will get you a long way. It makes it possible to abstract complex combinations of quoting functions into a new quoting function. However this gets us in a sort of loop: quoting functions unquote inside other quoting functions and so on. At the start of the loop is the user typing expressions that are automatically quoted. But what if we can’t or don’t want to start with expressions typed by the user? What if we’d like to start with a character vector of column names?</p>
+</div>
+</div>
+<div id="calling-quoting-functions-with-strings" class="section level2">
+<h2>Calling quoting functions with strings</h2>
+<p>So far we have created a quoting function that wraps around other quoting functions. How can we break this chain of quoting? How can we go from the evaluating world to the quoting universe? The most common way this transition occurs is when you start with a character vector of column names and somehow need to pass the corresponding columns to quoting functions like <code>dplyr::mutate()</code>, <code>dplyr::select()</code>, or <code>ggplot2::aes()</code>. We need a way of bridging evaluating and quoting functions.</p>
+<p>First let’s see why simply unquoting strings does not work:</p>
+<pre class="sourceCode r"><code class="sourceCode r">var &lt;-<span class="st"> &quot;height&quot;</span>
+<span class="kw">mutate</span>(starwars, <span class="dt">rescaled =</span> !!var *<span class="st"> </span><span class="dv">100</span>)
+<span class="co">#&gt; Error in mutate_impl(.data, dots): Evaluation error: non-numeric argument to binary operator.</span></code></pre>
+<p>We get a type error. Observing the result of unquoting with <code>qq_show()</code> will shed some light on this:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rlang::<span class="kw">qq_show</span>(<span class="kw">mutate</span>(starwars, <span class="dt">rescaled =</span> !!var *<span class="st"> </span><span class="dv">100</span>))
+<span class="co">#&gt; mutate(starwars, rescaled = &quot;height&quot; * 100)</span></code></pre>
+<p>We have unquoted a string, and now dplyr tried to multiply that string by 100! There is a fundamental difference between these two objects:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="st">&quot;height&quot;</span>
+<span class="co">#&gt; [1] &quot;height&quot;</span>
+
+<span class="kw">quote</span>(height)
+<span class="co">#&gt; height</span></code></pre>
+<p><code>&quot;heiht&quot;</code> is a string and <code>quote(height)</code> is a <strong>symbol</strong>, or variable name. A symbol is much more than a string, it is a reference to an R object. That’s why you have to use symbols to refer to data frame columns. Fortunately transforming strings to symbols is straightforward with the tidy eval <code>sym()</code> function:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">sym</span>(<span class="st">&quot;height&quot;</span>)
+<span class="co">#&gt; height</span></code></pre>
+<p>If you use <code>sym()</code> instead of <code>enquo()</code>, you end up with an evaluating function that transforms its inputs into symbols that can suitably be unquoted:</p>
+<pre class="sourceCode r"><code class="sourceCode r">grouped_mean2 &lt;-<span class="st"> </span>function(data, group_var, summary_var) {
+  group_var &lt;-<span class="st"> </span><span class="kw">sym</span>(group_var)
+  summary_var &lt;-<span class="st"> </span><span class="kw">sym</span>(summary_var)
+
+  data %&gt;%
+<span class="st">    </span><span class="kw">group_by</span>(!!group_var) %&gt;%
+<span class="st">    </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(!!summary_var))
+}</code></pre>
+<p>With this simple change we now have an <em>evaluating</em> wrapper which can be used in the same way as <code>[[</code>. You can call <code>grouped_mean2()</code> with direct references:</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">grouped_mean2</span>(starwars, <span class="st">&quot;gender&quot;</span>, <span class="st">&quot;mass&quot;</span>)
+<span class="co">#&gt; # A tibble: 5 x 2</span>
+<span class="co">#&gt;   gender         mean</span>
+<span class="co">#&gt;   &lt;chr&gt;         &lt;dbl&gt;</span>
+<span class="co">#&gt; 1 female           NA</span>
+<span class="co">#&gt; 2 hermaphrodite  1358</span>
+<span class="co">#&gt; 3 male             NA</span>
+<span class="co">#&gt; 4 none             NA</span>
+<span class="co">#&gt; # ... with 1 more row</span></code></pre>
+<p>Or indirect references:</p>
+<pre class="sourceCode r"><code class="sourceCode r">grp_var &lt;-<span class="st"> &quot;gender&quot;</span>
+sum_var &lt;-<span class="st"> &quot;mass&quot;</span>
+<span class="kw">grouped_mean2</span>(starwars, grp_var, sum_var)
+<span class="co">#&gt; # A tibble: 5 x 2</span>
+<span class="co">#&gt;   gender         mean</span>
+<span class="co">#&gt;   &lt;chr&gt;         &lt;dbl&gt;</span>
+<span class="co">#&gt; 1 female           NA</span>
+<span class="co">#&gt; 2 hermaphrodite  1358</span>
+<span class="co">#&gt; 3 male             NA</span>
+<span class="co">#&gt; 4 none             NA</span>
+<span class="co">#&gt; # ... with 1 more row</span></code></pre>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>In practice this is a bit more complex because most quoting functions evaluate at least one argument, usually the data argument.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>This is why regular functions are said to use standard evaluation unlike quoting functions which use non-standard evaluation (NSE). Note that the function is not entirely passive. Because arguments are lazily evaluated, the function gets to decide when an argument is evaluated, if at all.<a href="#fnref2">↩</a></p></li>
+</ol>
+</div>
+
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
