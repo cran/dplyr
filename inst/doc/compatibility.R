@@ -38,7 +38,7 @@ sym <- quote(cyl)
 select(mtcars, !! sym)
 
 call <- quote(mean(cyl))
-summarise(mtcars, !! call)
+summarise(mtcars, cyl = !! call)
 
 ## -----------------------------------------------------------------------------
 quo(!! sym)

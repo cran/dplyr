@@ -31,7 +31,6 @@ test_that("n_distinct treats NA correctly in the REALSXP case (#384)", {
 test_that("n_distinct recycles length 1 vectors (#3685)", {
   expect_equal(n_distinct(1, 1:4), 4)
   expect_equal(n_distinct(1:4, 1), 4)
-  expect_error(n_distinct(1:2, 1:3))
 
   d <- tibble(x = 1:4)
   res <- d %>%
@@ -52,6 +51,15 @@ test_that("n_distinct recycles length 1 vectors (#3685)", {
   expect_equal(res$n5, c(3,2))
 })
 
+test_that("n_distinct() handles unnamed (#5069)", {
+  x <- iris$Sepal.Length
+  y <- iris$Sepal.Width
+  expect_equal(
+    n_distinct(iris$Sepal.Length, iris$Sepal.Width),
+    n_distinct(x, y)
+  )
+})
+
 test_that("n_distinct handles expressions in na.rm (#3686)", {
   d <- tibble(x = c(1:4,NA))
   yes <- TRUE
@@ -63,4 +71,11 @@ test_that("n_distinct handles expressions in na.rm (#3686)", {
   expect_equal(d %>% summarise(n = n_distinct(x, na.rm = no)) %>% pull(), 5)
 
   expect_equal(d %>% summarise(n = n_distinct(x, na.rm = TRUE || TRUE)) %>% pull(), 4)
+})
+
+test_that("n_distinct() respects .data (#5008)", {
+  expect_identical(
+    data.frame(x = 42) %>% summarise(n = n_distinct(.data$x)),
+    data.frame(n = 1L)
+  )
 })

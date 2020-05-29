@@ -9,15 +9,13 @@ as_group_map_function <- function(.f) {
 
 #' Apply a function to each group
 #'
-#' \Sexpr[results=rd, stage=render]{dplyr:::lifecycle("experimental")}
-#'
 #' @description
+#' \Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
 #'
 #' `group_map()`, `group_modify()` and `group_walk()` are purrr-style functions that can
 #' be used to iterate on grouped tibbles.
 #'
 #' @details
-#'
 #' Use `group_modify()` when `summarize()` is too limited, in terms of what you need
 #'   to do and return for each group. `group_modify()` is good for "data frame in, data frame out".
 #'   If that is too limited, you need to use a [nested][group_nest()] or [split][group_split()] workflow.
@@ -35,7 +33,7 @@ as_group_map_function <- function(.f) {
 #'
 #' @family grouping functions
 #'
-#' @param .tbl A grouped tibble
+#' @param .data A grouped tibble
 #' @param .f A function or formula to apply to each group. It must return a data frame.
 #'
 #'   If a __function__, it is used as is. It should have at least 2 formal arguments.
@@ -51,7 +49,7 @@ as_group_map_function <- function(.f) {
 #'   that identifies the group
 #'
 #' @param ... Additional arguments passed on to `.f`
-#' @param keep are the grouping variables kept in `.x`
+#' @param .keep are the grouping variables kept in `.x`
 #'
 #' @return
 #'  - `group_modify()` returns a grouped tibble. In that case `.f` must return a data frame.
@@ -117,12 +115,25 @@ as_group_map_function <- function(.f) {
 #'   group_modify(~ head(.x, 2L))
 #'
 #' @export
-group_map <- function(.tbl, .f, ..., keep = FALSE) {
+group_map <- function(.data, .f, ..., .keep = FALSE) {
+  UseMethod("group_map")
+}
+
+#' @export
+group_map.data.frame <- function(.data, .f, ..., .keep = FALSE, keep = deprecated()) {
+  if (!missing(keep)) {
+    lifecycle::deprecate_warn("1.0.0", "group_map(keep = )", "group_map(.keep = )")
+    .keep <- keep
+  }
   .f <- as_group_map_function(.f)
 
   # call the function on each group
-  chunks <- group_split(.tbl, keep = isTRUE(keep))
-  keys  <- group_keys(.tbl)
+  chunks <- if (is_grouped_df(.data)) {
+    group_split(.data, .keep = isTRUE(.keep))
+  } else {
+    group_split(.data)
+  }
+  keys  <- group_keys(.data)
   group_keys <- map(seq_len(nrow(keys)), function(i) keys[i, , drop = FALSE])
 
   if (length(chunks)) {
@@ -135,46 +146,53 @@ group_map <- function(.tbl, .f, ..., keep = FALSE) {
 
 #' @rdname group_map
 #' @export
-group_modify <- function(.tbl, .f, ..., keep = FALSE) {
+group_modify <- function(.data, .f, ..., .keep = FALSE) {
   UseMethod("group_modify")
 }
 
 #' @export
-group_modify.data.frame <- function(.tbl, .f, ..., keep = FALSE) {
+group_modify.data.frame <- function(.data, .f, ..., .keep = FALSE, keep = deprecated()) {
+  if (!missing(keep)) {
+    lifecycle::deprecate_warn("1.0.0", "group_modify(keep = )", "group_modify(.keep = )")
+    .keep <- keep
+  }
   .f <- as_group_map_function(.f)
-  .f(.tbl, group_keys(.tbl), ...)
+  .f(.data, group_keys(.data), ...)
 }
 
 #' @export
-group_modify.grouped_df <- function(.tbl, .f, ..., keep = FALSE) {
-  tbl_group_vars <- group_vars(.tbl)
-
+group_modify.grouped_df <- function(.data, .f, ..., .keep = FALSE, keep = deprecated()) {
+  if (!missing(keep)) {
+    lifecycle::deprecate_warn("1.0.0", "group_modify(keep = )", "group_modify(.keep = )")
+    .keep <- keep
+  }
+  tbl_group_vars <- group_vars(.data)
   .f <- as_group_map_function(.f)
   fun <- function(.x, .y){
     res <- .f(.x, .y, ...)
     if (!inherits(res, "data.frame")) {
-      abort("The result of .f should be a data frame")
+      abort("The result of .f should be a data frame.")
     }
     if (any(bad <- names(res) %in% tbl_group_vars)) {
-      abort(sprintf(
-        "The returned data frame cannot contain the original grouping variables : ",
-        paste(names(res)[bad], collapse = ", ")
+      abort(glue(
+        "The returned data frame cannot contain the original grouping variables: {names}.",
+        names = paste(names(res)[bad], collapse = ", ")
       ))
     }
     bind_cols(.y[rep(1L, nrow(res)), , drop = FALSE], res)
   }
-  chunks <- group_map(.tbl, fun, ..., keep = keep)
+  chunks <- group_map(.data, fun, .keep = .keep)
   res <- if (length(chunks) > 0L) {
     bind_rows(!!!chunks)
   } else {
     attr(chunks, "ptype")
   }
-  group_by(res, !!!groups(.tbl), .drop = group_by_drop_default(.tbl))
+  grouped_df(res, group_vars(.data), group_by_drop_default(.data))
 }
 
 #' @export
 #' @rdname group_map
-group_walk <- function(.tbl, .f, ...) {
-  group_map(.tbl, .f, ...)
-  .tbl
+group_walk <- function(.data, .f, ...) {
+  group_map(.data, .f, ...)
+  invisible(.data)
 }

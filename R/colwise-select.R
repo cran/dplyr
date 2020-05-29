@@ -1,52 +1,57 @@
 #' Select and rename a selection of variables
 #'
 #' @description
+#' \Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
 #'
-#' These [scoped] variants of [select()] and [rename()] operate on a
-#' selection of variables. The semantics of these verbs have subtle
-#' but important differences:
+#' `rename_if()`, `rename_at()`, and `rename_all()` have been superseded by
+#' `rename_with()`. The matching select statements have been superseded by the
+#' combination of a `select()` + `rename_with()`.
 #'
-#' * Selection drops variables that are not in the selection while
-#'   renaming retains them.
-#'
-#' * The renaming function is optional for selection but not for
-#'   renaming.
-#'
-#' The `_if` and `_at` variants always retain grouping variables for grouped
-#' data frames.
+#' These functions were superseded because `mutate_if()` and friends were
+#' superseded by `across()`. `select_if()` and `rename_if()` already use tidy
+#' selection so they can't be replaced by `across()` and instead we need a new
+#' function.
 #'
 #' @inheritParams scoped
+#' @keywords internal
 #' @param .funs A function `fun`, a purrr style lambda `~ fun(.)` or a list of either form.
-#'
-#' @section Grouping variables:
-#'
-#' Existing grouping variables are always kept in the data frame, even
-#' if not included in the selection.
-#'
 #' @examples
+#' mtcars <- as_tibble(mtcars) # for nicer printing
 #'
-#' # Supply a renaming function:
-#' select_all(mtcars, toupper)
-#' select_all(mtcars, "toupper")
-#' select_all(mtcars, list(~toupper(.)))
+#' mtcars %>% rename_all(toupper)
+#' # ->
+#' mtcars %>% rename_with(toupper)
+#'
+#' # NB: the transformation comes first in rename_with
+#' is_whole <- function(x) all(floor(x) == x)
+#' mtcars %>% rename_if(is_whole, toupper)
+#' # ->
+#' mtcars %>% rename_with(toupper, where(is_whole))
+#'
+#' mtcars %>% rename_at(vars(mpg:hp), toupper)
+#' # ->
+#' mtcars %>% rename_with(toupper, mpg:hp)
+#'
+#' # You now must select() and then rename
+#'
+#' mtcars %>% select_all(toupper)
+#' # ->
+#' mtcars %>% rename_with(toupper)
 #'
 #' # Selection drops unselected variables:
-#' is_whole <- function(x) all(floor(x) == x)
-#' select_if(mtcars, is_whole, toupper)
-#' select_at(mtcars, vars(-contains("ar"), starts_with("c")), toupper)
+#' mtcars %>% select_if(is_whole, toupper)
+#' # ->
+#' mtcars %>% select(where(is_whole)) %>% rename_with(toupper)
 #'
-#' # But renaming retains them:
-#' rename_if(mtcars, is_whole, toupper)
-#' rename_at(mtcars, vars(-(1:3)), toupper)
-#' rename_all(mtcars, toupper)
-#'
-#' # The renaming function is optional for selection:
-#' select_if(mtcars, is_whole)
-#' select_at(mtcars, vars(-everything()))
-#' select_all(mtcars)
+#' mtcars %>% select_at(vars(-contains("ar"), starts_with("c")), toupper)
+#' # ->
+#' mtcars %>%
+#'   select(!contains("ar") | starts_with("c")) %>%
+#'   rename_with(toupper)
 #' @export
 select_all <- function(.tbl, .funs = list(), ...) {
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  lifecycle::signal_superseded("1.0.0", "select_all()")
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "select_all")
   vars <- tbl_vars(.tbl)
   syms <- vars_select_syms(vars, funs, .tbl)
   select(.tbl, !!!syms)
@@ -54,7 +59,8 @@ select_all <- function(.tbl, .funs = list(), ...) {
 #' @rdname select_all
 #' @export
 rename_all <- function(.tbl, .funs = list(), ...) {
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  lifecycle::signal_superseded("1.0.0", "rename_with()")
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "rename_all")
   vars <- tbl_vars(.tbl)
   syms <- vars_select_syms(vars, funs, .tbl, strict = TRUE)
   rename(.tbl, !!!syms)
@@ -63,9 +69,9 @@ rename_all <- function(.tbl, .funs = list(), ...) {
 #' @rdname select_all
 #' @export
 select_if <- function(.tbl, .predicate, .funs = list(), ...) {
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "select_if")
   if (!is_logical(.predicate)) {
-    .predicate <- as_fun_list(.predicate, caller_env())
+    .predicate <- as_fun_list(.predicate, caller_env(), .caller = "select_if", .caller_arg = ".predicate")
   }
   vars <- tbl_if_vars(.tbl, .predicate, caller_env(), .include_group_vars = TRUE)
   syms <- vars_select_syms(vars, funs, .tbl)
@@ -74,9 +80,9 @@ select_if <- function(.tbl, .predicate, .funs = list(), ...) {
 #' @rdname select_all
 #' @export
 rename_if <- function(.tbl, .predicate, .funs = list(), ...) {
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "rename_if")
   if (!is_logical(.predicate)) {
-    .predicate <- as_fun_list(.predicate, caller_env())
+    .predicate <- as_fun_list(.predicate, caller_env(), .caller = "rename_if", .caller_arg = ".predicate")
   }
   vars <- tbl_if_vars(.tbl, .predicate, caller_env(), .include_group_vars = TRUE)
   syms <- vars_select_syms(vars, funs, .tbl, strict = TRUE)
@@ -87,7 +93,7 @@ rename_if <- function(.tbl, .predicate, .funs = list(), ...) {
 #' @export
 select_at <- function(.tbl, .vars, .funs = list(), ...) {
   vars <- tbl_at_vars(.tbl, .vars, .include_group_vars = TRUE)
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "select_at")
   syms <- vars_select_syms(vars, funs, .tbl)
   select(.tbl, !!!syms)
 }
@@ -95,28 +101,28 @@ select_at <- function(.tbl, .vars, .funs = list(), ...) {
 #' @export
 rename_at <- function(.tbl, .vars, .funs = list(), ...) {
   vars <- tbl_at_vars(.tbl, .vars, .include_group_vars = TRUE)
-  funs <- as_fun_list(.funs, caller_env(), ...)
+  funs <- as_fun_list(.funs, caller_env(), ..., .caller = "rename_at")
   syms <- vars_select_syms(vars, funs, .tbl, strict = TRUE)
   rename(.tbl, !!!syms)
 }
 
 vars_select_syms <- function(vars, funs, tbl, strict = FALSE) {
   if (length(funs) > 1) {
-    bad_args(".funs", "must contain one renaming function, not {length(funs)}")
+    bad_args(".funs", "must contain one renaming function, not {length(funs)}.")
   } else if (length(funs) == 1) {
     fun <- funs[[1]]
     if (is_quosure(fun)) {
       fun <- quo_as_function(fun)
     }
     syms <- if (length(vars)) {
-      set_names(syms(vars), fun(vars))
+      set_names(syms(vars), fun(as.character(vars)))
     } else {
       set_names(syms(vars))
     }
   } else if (!strict) {
     syms <- syms(vars)
   } else {
-    bad_args(".funs", "must specify a renaming function")
+    bad_args(".funs", "must specify a renaming function.")
   }
 
   group_vars <- group_vars(tbl)

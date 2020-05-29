@@ -6,10 +6,15 @@
 \title{Same basic philosophy as group_by_prepare(): lazy_dots comes in, list of data and
 vars (character vector) comes out.}
 \usage{
-distinct_prepare(.data, vars, group_vars = character(),
-  .keep_all = FALSE)
+distinct_prepare(.data, vars, group_vars = character(), .keep_all = FALSE)
 
-group_by_prepare(.data, ..., .dots = list(), add = FALSE)
+group_by_prepare(
+  .data,
+  ...,
+  .add = FALSE,
+  .dots = deprecated(),
+  add = deprecated()
+)
 }
 \value{
 A list
@@ -17,7 +22,7 @@ A list
 \item{groups}{Modified groups}
 }
 \description{
-\code{*_prepare()} performs standard manipulation that is needed prior
+\verb{*_prepare()} performs standard manipulation that is needed prior
 to actual data processing. They are only be needed by packages
 that implement dplyr backends.
 }

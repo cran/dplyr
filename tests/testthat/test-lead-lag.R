@@ -55,26 +55,29 @@ test_that("#937 is fixed", {
   )
 })
 
-test_that("input checks", {
-  expect_error(
-    lead(letters, -1),
-    "`n` must be a nonnegative integer scalar, not a double vector of length 1",
-    fixed = TRUE
-  )
-  expect_error(
-    lead(letters, "1"),
-    "`n` must be a nonnegative integer scalar, not a character vector of length 1",
-    fixed = TRUE
-  )
+test_that("lead() and lag() work for matrices (#5028)", {
+  m <- matrix(1:6, ncol = 2)
+  expect_equal(lag(m, 1), matrix(c(NA_integer_, 1L, 2L, NA_integer_, 4L, 5L), ncol = 2))
+  expect_equal(lag(m, 1, default = NA), matrix(c(NA_integer_, 1L, 2L, NA_integer_, 4L, 5L), ncol= 2))
 
-  expect_error(
-    lag(letters, -1),
-    "`n` must be a nonnegative integer scalar, not a double vector of length 1",
-    fixed = TRUE
-  )
-  expect_error(
-    lag(letters, "1"),
-    "`n` must be a nonnegative integer scalar, not a character vector of length 1",
-    fixed = TRUE
-  )
+  expect_equal(lead(m, 1), matrix(c(2L, 3L, NA_integer_, 5L, 6L, NA_integer_), ncol = 2))
+  expect_equal(lead(m, 1, default = NA), matrix(c(2L, 3L, NA_integer_, 5L, 6L, NA_integer_), ncol = 2))
+})
+
+# Errors ------------------------------------------------------------------
+
+test_that("lead() / lag() give meaningful errors", {
+  verify_output(test_path("test-lead-lag-errors.txt"), {
+    "# complicance of n argument"
+    lead(letters, -1)
+    lead(letters, "1")
+    lag(letters, -1)
+    lag(letters, "1")
+
+    "# ts"
+    lag(ts(1:10))
+
+    "# incompatible default"
+    lag(c("1", "2", "3"), default = FALSE)
+  })
 })

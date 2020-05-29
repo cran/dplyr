@@ -1,92 +1,99 @@
-context("group_data")
 
-test_that("group_rows works for 3 most important subclasses (#3489)", {
-  df <- data.frame(x=c(1,1,2,2))
-  expect_equal(group_rows(df), list(1:4))
-  expect_equal(group_rows(group_by(df,x)), list(1:2, 3:4))
-  expect_equal(group_rows(rowwise(df)), as.list(1:4))
+# group_data --------------------------------------------------------------
+
+test_that("group_data(<data.frame>) returns a data frame", {
+  df <- data.frame(x = 1:3)
+  gd <- group_data(df)
+
+  expect_s3_class(gd, "data.frame", exact = TRUE)
+  expect_equal(gd$.rows, list_of(1:3))
 })
 
-test_that("group_data() returns a tidy tibble (#3489)", {
-  df <- tibble(x = c(1,1,2,2))
+test_that("group_data(<tbl_df>) returns a tibble", {
+  df <- tibble(x = 1:3)
+  gd <- group_data(df)
 
-  expect_identical(
-    group_data(df),
-    tibble(".rows" := list(1:4))
-  )
-
-  expect_identical(
-    group_by(df,x) %>% group_data(),
-    tibble::new_tibble(list(x = c(1,2), .rows = list(1:2, 3:4)), .drop = TRUE, nrow = 2L)
-  )
-
-  expect_identical(
-    rowwise(df) %>% group_data(),
-    tibble(".rows" := as.list(1:4))
-  )
+  expect_s3_class(gd, "tbl_df")
+  expect_equal(gd, tibble(".rows" := list_of(1:3)))
 })
 
-test_that("group_rows and group_data work with 0 rows data frames (#3489)", {
-  df <- tibble(x=integer())
-  expect_identical(group_rows(df), list(integer()))
-  expect_identical(group_rows(rowwise(df)), list())
-  expect_identical(group_rows(group_by(df, x)), list())
+test_that("group_data(<grouped_df>) returns a tibble", {
+  df <- tibble(x = c(1, 1, 2))
+  gf <- group_by(df, x)
+  gd <- group_data(gf)
 
-  expect_identical(group_data(df), tibble(".rows" := list(integer())))
-  expect_identical(group_data(rowwise(df)), tibble(".rows" := list()))
-  expect_identical(
-    group_data(group_by(df, x)),
-    tibble::new_tibble(list(x = integer(), .rows = list()), .drop = TRUE, nrow = 0L)
-  )
+  expect_s3_class(gd, "tbl_df")
+  expect_equivalent(gd, tibble(x = c(1, 2), ".rows" := list_of(1:2, 3L)))
 })
 
-test_that("GroupDataFrame checks the structure of the groups attribute", {
-  df <- group_by(tibble(x = 1:4, g = rep(1:2, each = 2)), g)
-  groups <- attr(df, "groups")
-  groups[[2]] <- 1:2
-  attr(df, "groups") <- groups
-  expect_error(group_data(df), "is a corrupt grouped_df")
+test_that("group_data(<rowwise) returns a tibble", {
+  df <- tibble(x = 1:3)
+  rf <- rowwise(df)
+  gd <- group_data(rf)
 
-  df <- group_by(tibble(x = 1:4, g = rep(1:2, each = 2)), g)
-  groups <- attr(df, "groups")
-  names(groups) <- c("g", "not.rows")
-  attr(df, "groups") <- groups
-  expect_error(group_data(df), "is a corrupt grouped_df")
-
-  attr(df, "groups") <- tibble()
-  expect_error(group_data(df), "is a corrupt grouped_df")
-
-  attr(df, "groups") <- NA
-  expect_error(group_data(df), "is a corrupt grouped_df")
+  expect_s3_class(gd, "tbl_df")
+  expect_equal(gd, tibble(".rows" := list_of(1, 2, 3)))
 })
 
-test_that("GroupedDataFrame is compatible with older style grouped_df (#3604)", {
-  df <- tibble(x = 1:4, g = rep(1:2, each = 2))
-  attr(df, "vars") <- "g"
-  attr(df, "class") <- c("grouped_df", "tbl_df", "tbl", "data.frame")
-  expect_equal(expect_warning(group_rows(df)), list(1:2, 3:4))
+# group_rows() and group_keys() -------------------------------------------
 
-  df <- structure(
-    data.frame(x=1),
-    class = c("grouped_df", "tbl_df", "tbl", "data.frame"),
-    vars = list(sym("x"))
-  )
-  g <- expect_warning(group_data(df))
-  expect_equal(g$x, 1)
-  expect_equal(g$.rows, list(1L))
-  expect_equal(attr(g, ".drop"), TRUE)
-  expect_null(attr(df, "vars"))
+test_that("group_rows() and group_keys() partition group_data()", {
+  df <- data.frame(x = 1:2, y = 1:2)
+  gf <- group_by(df, x, y)
+  gd <- group_data(gf)
+
+  expect_equivalent(group_keys(gf), gd[1:2]) # .drop attribute
+  expect_equal(group_rows(gf), gd[[3]])
 })
 
-test_that("old group format repair does not keep a vars attribute around", {
-  tbl <- tibble(x = 1:10, y = 1:10)
-  attr(tbl, "vars") <- rlang::sym("x")
-  class(tbl) <- c("grouped_df", "tbl_df", "tbl", "data.frame")
+test_that("group_keys(...) is deprecated", {
+  df <- tibble(x = 1, y = 2)
 
-  expect_warning({
-    res <- tbl %>% group_by(y)
-  })
-  expect_equal(group_vars(res), "y")
-  expect_null(attr(res, " vars"))
-  expect_null(attr(tbl, " vars"))
+  expect_warning(out <- df %>% group_keys(x), "deprecated")
+  expect_equal(out, tibble(x = 1))
+})
+
+# group_indices() ---------------------------------------------------------
+
+test_that("no arg group_indices() is deprecated", {
+  df <- tibble(x = 1)
+  expect_warning(out <- summarise(df, id = group_indices()), "deprecated")
+  expect_equal(out, tibble(id = 1))
+})
+
+test_that("group_indices(...) is deprecated", {
+  skip("Non-deterministic failures")
+
+  df <- tibble(x = 1, y = 2)
+  expect_warning(out <- df %>% group_indices(x), "deprecated")
+  expect_equal(out, 1)
+})
+
+test_that("group_indices() returns expected values", {
+  df <- tibble(x = c("b", "a", "b"))
+  gf <- group_by(df, x)
+
+  expect_equal(group_indices(df), c(1, 1, 1))
+  expect_equal(group_indices(gf), c(2, 1, 2))
+})
+
+# group_size --------------------------------------------------------------
+
+test_that("ungrouped data has 1 group, with group size = nrow()", {
+  df <- tibble(x = rep(1:3, each = 10), y = rep(1:6, each = 5))
+
+  expect_equal(n_groups(df), 1L)
+  expect_equal(group_size(df), 30)
+})
+
+test_that("rowwise data has one group for each group", {
+  rw <- rowwise(mtcars)
+  expect_equal(n_groups(rw), 32)
+  expect_equal(group_size(rw), rep(1, 32))
+})
+
+test_that("group_size correct for grouped data", {
+  df <- tibble(x = rep(1:3, each = 10), y = rep(1:6, each = 5)) %>% group_by(x)
+  expect_equal(n_groups(df), 3L)
+  expect_equal(group_size(df), rep(10, 3))
 })

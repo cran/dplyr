@@ -7,10 +7,6 @@
 #' The output of `bind_rows()` will contain a column if that column
 #' appears in any of the inputs.
 #'
-#' @section Deprecated functions:
-#' `rbind_list()` and `rbind_all()` have been deprecated. Instead use
-#' `bind_rows()`.
-#'
 #' @param ... Data frames to combine.
 #'
 #'   Each argument can either be a data frame, a list that could be a data
@@ -21,7 +17,7 @@
 #'
 #'   When column-binding, rows are matched by position, so all data
 #'   frames must have the same number of rows. To match by value, not
-#'   position, see [join].
+#'   position, see [mutate-joins].
 #' @param .id Data frame identifier.
 #'
 #'   When `.id` is supplied, a new column of identifiers is
@@ -32,17 +28,16 @@
 #'   used instead.
 #' @return `bind_rows()` and `bind_cols()` return the same type as
 #'   the first input, either a data frame, `tbl_df`, or `grouped_df`.
-#' @aliases rbind_all rbind_list
 #' @examples
-#' one <- mtcars[1:4, ]
-#' two <- mtcars[11:14, ]
+#' one <- starwars[1:4, ]
+#' two <- starwars[9:12, ]
 #'
 #' # You can supply data frames as arguments:
 #' bind_rows(one, two)
 #'
 #' # The contents of lists are spliced automatically:
 #' bind_rows(list(one, two))
-#' bind_rows(split(mtcars, mtcars$cyl))
+#' bind_rows(split(starwars, starwars$homeworld))
 #' bind_rows(list(one, two), list(two, one))
 #'
 #'
@@ -62,19 +57,6 @@
 #' )
 #'
 #'
-#' # Note that for historical reasons, lists containing vectors are
-#' # always treated as data frames. Thus their vectors are treated as
-#' # columns rather than rows, and their inner names are ignored:
-#' ll <- list(
-#'   a = c(A = 1, B = 2),
-#'   b = c(A = 3, B = 4)
-#' )
-#' bind_rows(ll)
-#'
-#' # You can circumvent that behaviour with explicit splicing:
-#' bind_rows(!!!ll)
-#'
-#'
 #' # When you supply a column name with the `.id` argument, a new
 #' # column is created to link each row to its original data frame
 #' bind_rows(list(one, two), .id = "id")
@@ -82,10 +64,10 @@
 #' bind_rows("group 1" = one, "group 2" = two, .id = "groups")
 #'
 #' # Columns don't need to match when row-binding
-#' bind_rows(data.frame(x = 1:3), data.frame(y = 1:4))
+#' bind_rows(tibble(x = 1:3), tibble(y = 1:4))
 #' \dontrun{
 #' # Rows do need to match when column-binding
-#' bind_cols(data.frame(x = 1), data.frame(y = 1:2))
+#' bind_cols(tibble(x = 1:3), tibble(y = 1:2))
 #' }
 #'
 #' bind_cols(one, two)
@@ -96,73 +78,78 @@ NULL
 #' @export
 #' @rdname bind
 bind_rows <- function(..., .id = NULL) {
-  x <- flatten_bindable(dots_values(...))
+  dots <- list2(...)
 
-  if (!length(x)) {
-    # Handle corner cases gracefully, but always return a tibble
-    if (inherits(x, "data.frame")) {
-      return(x)
-    } else {
-      return(tibble())
+  # bind_rows() has weird legacy squashing behaviour
+  is_flattenable <- function(x) vec_is_list(x) && !is_named(x)
+  if (length(dots) == 1 && is_bare_list(dots[[1]])) {
+    dots <- dots[[1]]
+  }
+  dots <- flatten_if(dots, is_flattenable)
+  dots <- discard(dots, is.null)
+
+  if (is_named(dots) && !all(map_lgl(dots, dataframe_ish))) {
+    # This is hit by map_dfr() so we can't easily deprecate
+    return(as_tibble(dots))
+  }
+
+  for (i in seq_along(dots)) {
+    .x <- dots[[i]]
+    if (!is.data.frame(.x) && !vec_is(.x)) {
+      abort(glue("Argument {i} must be a data frame or a named atomic vector."))
+    }
+
+    if (is.null(names(.x))) {
+      abort(glue("Argument {i} must have names."))
     }
   }
 
   if (!is_null(.id)) {
-    if (!(is_string(.id))) {
+    if (!is_string(.id)) {
       bad_args(".id", "must be a scalar string, ",
-        "not {friendly_type_of(.id)} of length {length(.id)}"
+        "not {friendly_type_of(.id)} of length {length(.id)}."
       )
     }
-    if (!all(have_name(x) | map_lgl(x, is_empty))) {
-      x <- compact(x)
-      names(x) <- seq_along(x)
+    if (!is_named(dots)) {
+      names(dots) <- seq_along(dots)
     }
   }
 
-  bind_rows_(x, .id)
+  dots <- map(dots, function(.x) if (is.data.frame(.x)) .x else tibble(!!!.x))
+  if (is.null(.id)) {
+    names(dots) <- NULL
+  }
+  out <- vec_rbind(!!!dots, .names_to = .id)
+  if (length(dots) && is.data.frame(first <- dots[[1L]])) {
+    out <- dplyr_reconstruct(out, first)
+  }
+  out
 }
 
 #' @export
 #' @rdname bind
 bind_cols <- function(...) {
-  x <- flatten_bindable(dots_values(...))
-  out <- cbind_all(x)
-  tibble::repair_names(out)
+  dots <- list2(...)
+
+  dots <- squash_if(dots, vec_is_list)
+  dots <- discard(dots, is.null)
+
+  # Strip names off of data frame components so that vec_cbind() unpacks them
+  is_data_frame <- map_lgl(dots, is.data.frame)
+  names(dots)[is_data_frame] <- ""
+
+  out <- vec_cbind(!!!dots)
+  if (!any(map_lgl(dots, is.data.frame))) {
+    out <- as_tibble(out)
+  }
+  if (length(dots) && is.data.frame(first <- dots[[1L]])) {
+    out <- dplyr_reconstruct(out, first)
+  }
+  out
 }
 
-#' Combine vectors
-#'
-#' \Sexpr[results=rd, stage=render]{dplyr:::lifecycle("questioning")}
-#'
-#' @description
-#' `combine()` acts like [c()] or
-#' [unlist()] but uses consistent dplyr coercion rules.
-#'
-#' If `combine()` it is called with exactly one list argument, the list is
-#' simplified (similarly to `unlist(recursive = FALSE)`). `NULL` arguments are
-#' ignored. If the result is empty, `logical()` is returned.
-#' Use [vctrs::vec_c()] if you never want to unlist.
-#'
-#' @param ... Vectors to combine.
-#'
-#' @seealso
-#' `bind_rows()` and `bind_cols()` in [bind].
-#'
-#' @export
-#' @examples
-#' # combine applies the same coercion rules as bind_rows()
-#' f1 <- factor("a")
-#' f2 <- factor("b")
-#' c(f1, f2)
-#' unlist(list(f1, f2))
-#'
-#' combine(f1, f2)
-#' combine(list(f1, f2))
-combine <- function(...) {
-  args <- list2(...)
-  if (length(args) == 1 && is.list(args[[1]])) {
-    combine_all(args[[1]])
-  } else {
-    combine_all(args)
-  }
+# helpers -----------------------------------------------------------------
+
+dataframe_ish <- function(.x) {
+  is.data.frame(.x) || (vec_is(.x) && is_named(.x))
 }

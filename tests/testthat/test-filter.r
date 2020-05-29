@@ -1,39 +1,5 @@
 context("Filter")
 
-test_that("filter fails if inputs incorrect length (#156)", {
-  expect_error(
-    filter(tbl_df(mtcars), c(F, T)),
-    "Result must have length 32, not 2",
-    fixed = TRUE
-  )
-  expect_error(
-    filter(group_by(mtcars, am), c(F, T)),
-    "Result must have length 19, not 2",
-    fixed = TRUE
-  )
-})
-
-test_that("filter gives useful error message when given incorrect input", {
-  # error message by rlang
-  expect_error(filter(tbl_df(mtcars), `_x`),
-    "_x",
-    fixed = TRUE
-  )
-})
-
-test_that("filter complains in inputs are named", {
-  expect_error(
-    filter(mtcars, x = 1),
-    "`x` (`x = 1`) must not be named, do you need `==`?",
-    fixed = TRUE
-  )
-  expect_error(
-    filter(mtcars, x = 1 & y > 2),
-    "`x` (`x = 1 & y > 2`) must not be named, do you need `==`?",
-    fixed = TRUE
-  )
-})
-
 test_that("filter handles passing ...", {
   df <- data.frame(x = 1:4)
 
@@ -96,19 +62,6 @@ test_that("filter propagates attributes", {
   expect_equal(test$Date[1:4], test2$Date)
 })
 
-test_that("filter fails on integer indices", {
-  expect_error(
-    filter(mtcars, 1:2),
-    "Argument 2 filter condition does not evaluate to a logical vector",
-    fixed = TRUE
-  )
-  expect_error(
-    filter(group_by(mtcars, cyl), 1:2),
-    "Argument 2 filter condition does not evaluate to a logical vector",
-    fixed = TRUE
-  )
-})
-
 test_that("filter discards NA", {
   temp <- data.frame(
     i = 1:5,
@@ -132,11 +85,10 @@ test_that("date class remains on filter (#273)", {
 })
 
 test_that("filter handles $ correctly (#278)", {
-  d1 <- tbl_df(data.frame(
+  d1 <- tibble(
     num1 = as.character(sample(1:10, 1000, T)),
     var1 = runif(1000),
-    stringsAsFactors = FALSE
-  ))
+  )
   d2 <- data.frame(num1 = as.character(1:3), stringsAsFactors = FALSE)
 
   res1 <- d1 %>% filter(num1 %in% c("1", "2", "3"))
@@ -144,8 +96,9 @@ test_that("filter handles $ correctly (#278)", {
   expect_equal(res1, res2)
 })
 
-test_that("filter returns the input data if no parameters are given", {
-  expect_equivalent(filter(mtcars), mtcars)
+test_that("filter() returns the input data if no parameters are given", {
+  expect_identical(filter(mtcars), mtcars)
+  expect_identical(filter(mtcars, !!!list()), mtcars)
 })
 
 test_that("$ does not end call traversing. #502", {
@@ -154,7 +107,7 @@ test_that("$ does not end call traversing. #502", {
 
   # Generate some dummy data
   d <- expand.grid(Subject = 1:3, TrialNo = 1:2, Time = 1:3) %>%
-    tbl_df() %>%
+    as_tibble() %>%
     arrange(Subject, TrialNo, Time) %>%
     mutate(Outcome = (1:18 %% c(5, 7, 11)) / 10)
 
@@ -169,7 +122,7 @@ test_that("$ does not end call traversing. #502", {
   expect_equal(left, right)
 })
 
-test_that("filter uses the allow list (#566)", {
+test_that("filter handles POSIXlt", {
   datesDF <- read.csv(stringsAsFactors = FALSE, text = "
 X
 2014-03-13 16:08:19
@@ -179,8 +132,10 @@ X
 ")
 
   datesDF$X <- as.POSIXlt(datesDF$X)
-  # error message from tibble
-  expect_error(filter(datesDF, X > as.POSIXlt("2014-03-13")))
+  expect_equal(
+    nrow(filter(datesDF, X > as.POSIXlt("2014-03-13"))),
+    4
+  )
 })
 
 test_that("filter handles complex vectors (#436)", {
@@ -252,29 +207,21 @@ test_that("filter, slice and arrange preserves attributes (#1064)", {
 
   res <- df %>% arrange(x) %>% attr("meta")
   expect_equal(res, "this is important")
-
-  res <- df %>% summarise(n()) %>% attr("meta")
-  expect_equal(res, "this is important")
-
-  res <- df %>% group_by(g1) %>% summarise(n()) %>% attr("meta")
-  expect_equal(res, "this is important")
-
-  res <- df %>% group_by(g1, g2) %>% summarise(n()) %>% attr("meta")
-  expect_equal(res, "this is important")
 })
 
 test_that("filter works with rowwise data (#1099)", {
   df <- tibble(First = c("string1", "string2"), Second = c("Sentence with string1", "something"))
   res <- df %>% rowwise() %>% filter(grepl(First, Second, fixed = TRUE))
   expect_equal(nrow(res), 1L)
-  expect_equal(df[1, ], res)
+  expect_equal(df[1, ], ungroup(res))
 })
 
 test_that("grouped filter handles indices (#880)", {
   res <- iris %>% group_by(Species) %>% filter(Sepal.Length > 5)
   res2 <- mutate(res, Petal = Petal.Width * Petal.Length)
   expect_equal(nrow(res), nrow(res2))
-  expect_identical(group_data(res), group_data(res2))
+  expect_equal(group_rows(res), group_rows(res2))
+  expect_equal(group_keys(res), group_keys(res2))
 })
 
 test_that("filter(FALSE) handles indices", {
@@ -282,13 +229,13 @@ test_that("filter(FALSE) handles indices", {
     group_by(cyl) %>%
     filter(FALSE, .preserve = TRUE) %>%
     group_rows()
-  expect_identical(out, list(integer(), integer(), integer()))
+  expect_identical(out, list_of(integer(), integer(), integer(), .ptype = integer()))
 
   out <- mtcars %>%
     group_by(cyl) %>%
     filter(FALSE, .preserve = FALSE) %>%
     group_rows()
-  expect_identical(out, list())
+  expect_identical(out, list_of(.ptype = integer()))
 })
 
 test_that("filter handles S4 objects (#1366)", {
@@ -357,19 +304,19 @@ test_that("hybrid function row_number does not trigger warning in filter (#3750)
   expect_true(out)
 })
 
-test_that("filter() preserve order accross groups (#3989)", {
-  tb <- tibble(g = c(1, 2, 1, 2, 1), time = 5:1, x = 5:1)
-  res1 <- tb %>%
+test_that("filter() preserve order across groups (#3989)", {
+  df <- tibble(g = c(1, 2, 1, 2, 1), time = 5:1, x = 5:1)
+  res1 <- df %>%
     group_by(g) %>%
     filter(x <= 4) %>%
     arrange(time)
 
-  res2 <- tb %>%
+  res2 <- df %>%
     group_by(g) %>%
     arrange(time) %>%
     filter(x <= 4)
 
-  res3 <- tb %>%
+  res3 <- df %>%
     filter(x <= 4) %>%
     arrange(time) %>%
     group_by(g)
@@ -385,5 +332,168 @@ test_that("filter() with two conditions does not freeze (#4049)", {
   expect_identical(
     iris %>% filter(Sepal.Length > 7, Petal.Length < 6),
     iris %>% filter(Sepal.Length > 7 & Petal.Length < 6)
+  )
+})
+
+test_that("filter() handles matrix and data frame columns (#3630)", {
+  df <- tibble(
+    x = 1:2,
+    y = matrix(1:4, ncol = 2),
+    z = data.frame(A = 1:2, B = 3:4)
+  )
+  expect_equal(filter(df, x == 1), df[1, ])
+  expect_equal(filter(df, y[,1] == 1), df[1, ])
+  expect_equal(filter(df, z$A == 1), df[1, ])
+
+  gdf <- group_by(df, x)
+  expect_equal(filter(gdf, x == 1), gdf[1, ])
+  expect_equal(filter(gdf, y[,1] == 1), gdf[1, ])
+  expect_equal(filter(gdf, z$A == 1), gdf[1, ])
+
+  gdf <- group_by(df, y)
+  expect_equal(filter(gdf, x == 1), gdf[1, ])
+  expect_equal(filter(gdf, y[,1] == 1), gdf[1, ])
+  expect_equal(filter(gdf, z$A == 1), gdf[1, ])
+
+  gdf <- group_by(df, z)
+  expect_equal(filter(gdf, x == 1), gdf[1, ])
+  expect_equal(filter(gdf, y[,1] == 1), gdf[1, ])
+  expect_equal(filter(gdf, z$A == 1), gdf[1, ])
+})
+
+test_that("filter() handles named logical (#4638)", {
+  tbl <- tibble(a = c(a = TRUE))
+  expect_equal(filter(tbl, a), tbl)
+})
+
+test_that("filter() reduce&() data frame results (#4678)", {
+  expect_identical(
+    iris %>% filter(data.frame(Sepal.Length > 3, Sepal.Width > 3)),
+    iris %>% filter(Sepal.Length > 3, Sepal.Width > 3)
+  )
+  expect_identical(
+    iris %>% filter(data.frame(Sepal.Length > 3, Sepal.Width > 3), Petal.Length < 3),
+    iris %>% filter(Sepal.Length > 3, Sepal.Width > 3, Petal.Length < 3)
+  )
+
+
+  expect_identical(
+    iris %>% group_by(Species) %>% filter(data.frame(Sepal.Length > 3, Sepal.Width > 3)),
+    iris %>% group_by(Species) %>% filter(Sepal.Length > 3, Sepal.Width > 3)
+  )
+  expect_identical(
+    iris %>% group_by(Species) %>% filter(data.frame(Sepal.Length > 3, Sepal.Width > 3), Petal.Length < 3),
+    iris %>% group_by(Species) %>% filter(Sepal.Length > 3, Sepal.Width > 3, Petal.Length < 3)
+  )
+})
+
+test_that("filter() allows named constants that resolve to logical vectors (#4612)", {
+  filters <- mtcars %>%
+    transmute(
+      cyl %in% 6:8,
+      hp / drat > 50
+    )
+
+  expect_identical(
+    mtcars %>% filter(!!!filters),
+    mtcars %>% filter(!!!unname(filters))
+  )
+})
+
+test_that("filter() gives useful error messages", {
+  verify_output(test_path("test-filter-errors.txt"), {
+    "# wrong type"
+    iris %>%
+      group_by(Species) %>%
+      filter(1:n())
+    iris %>%
+      filter(1:n())
+
+    "# wrong size"
+    iris %>%
+      group_by(Species) %>%
+      filter(c(TRUE, FALSE))
+    iris %>%
+      rowwise(Species) %>%
+      filter(c(TRUE, FALSE))
+    iris %>%
+      filter(c(TRUE, FALSE))
+
+    "# wrong size in column"
+    iris %>%
+      group_by(Species) %>%
+      filter(data.frame(c(TRUE, FALSE)))
+    iris %>%
+      rowwise() %>%
+      filter(data.frame(c(TRUE, FALSE)))
+    iris %>%
+      filter(data.frame(c(TRUE, FALSE)))
+    tibble(x = 1) %>%
+      filter(c(TRUE, TRUE))
+
+    "# wrong type in column"
+    iris %>%
+      group_by(Species) %>%
+      filter(data.frame(Sepal.Length > 3, 1:n()))
+    iris %>%
+      filter(data.frame(Sepal.Length > 3, 1:n()))
+
+    "# evaluation error"
+    mtcars %>%
+      filter(`_x`)
+    mtcars %>%
+      group_by(cyl) %>%
+      filter(`_x`)
+
+    "# named inputs"
+    filter(mtcars, x = 1)
+    filter(mtcars, y > 2, z = 3)
+    filter(mtcars, TRUE, x = 1)
+
+    "# ts "
+    filter(ts(1:10))
+  })
+})
+
+test_that("filter preserves grouping", {
+  gf <- group_by(tibble(g = c(1, 1, 1, 2, 2), x = 1:5), g)
+
+  i <- count_regroups(out <- filter(gf, x %in% c(3,4)))
+  expect_equal(i, 0L)
+  expect_equal(group_vars(gf), "g")
+  expect_equal(group_rows(out), list_of(1L, 2L))
+
+  i <- count_regroups(out <- filter(gf, x < 3))
+  expect_equal(i, 0L)
+  expect_equal(group_vars(gf), "g")
+  expect_equal(group_rows(out), list_of(c(1L, 2L)))
+})
+
+test_that("filter() with empty dots still calls dplyr_row_slice()", {
+  tbl <- new_tibble(list(x = 1), nrow = 1L)
+  foo <- structure(tbl, class = c("foo_df", class(tbl)))
+
+  local_methods(
+    # `foo_df` always loses class when row slicing
+    dplyr_row_slice.foo_df = function(data, i, ...) {
+      out <- NextMethod()
+      new_tibble(out, nrow = nrow(out))
+    }
+  )
+
+  expect_s3_class(filter(foo), class(tbl), exact = TRUE)
+  expect_s3_class(filter(foo, x == 1), class(tbl), exact = TRUE)
+})
+
+test_that("can filter() with unruly class", {
+  local_methods(
+    `[.dplyr_foobar` = function(x, i, ...) new_dispatched_quux(vec_slice(x, i)),
+    dplyr_row_slice.dplyr_foobar = function(x, i, ...) x[i, ]
+  )
+
+  df <- foobar(data.frame(x = 1:3))
+  expect_identical(
+    filter(df, x <= 2),
+    quux(data.frame(x = 1:2, dispatched = TRUE))
   )
 })

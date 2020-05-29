@@ -1,5 +1,6 @@
 #' Recode values
 #'
+#' @description
 #' This is a vectorised version of [switch()]: you can replace
 #' numeric values based on their position or their name, and character or factor
 #' values only by their name. This is an S3 generic: dplyr provides methods for
@@ -12,8 +13,15 @@
 #' the order of replacements. See the [forcats](http://forcats.tidyverse.org/)
 #' package for more tools for working with factors and their levels.
 #'
+#' \Sexpr[results=rd, stage=render]{lifecycle::badge("questioning")}
+#' `recode()` is questioning because the arguments are in the wrong order.
+#' We have `new <- old`, `mutate(df, new = old)`, and `rename(df, new = old)`
+#' but `recode(x, old = new)`. We don't yet know how to fix this problem, but
+#' it's likely to involve creating a new function then retiring or deprecating
+#' `recode()`.
+#'
 #' @param .x A vector to modify
-#' @param ... Replacements. For character and factor `.x`, these should be named
+#' @param ... <[`dynamic-dots`][rlang::dyn-dots]> Replacements. For character and factor `.x`, these should be named
 #'   and replacement is based only on their name. For numeric `.x`, these can be
 #'   named or not. If not named, the replacement is done based on position i.e.
 #'   `.x` represents positions to look for in replacements. See examples.
@@ -23,8 +31,6 @@
 #'
 #'   All replacements must be the same type, and must have either
 #'   length one or the same length as `.x`.
-#'
-#'   These dots support [tidy dots][rlang::tidy-dots] features.
 #' @param .default If supplied, all values not otherwise matched will
 #'   be given this value. If not supplied and if the replacements are
 #'   the same type as the original values in `.x`, unmatched
@@ -55,8 +61,15 @@
 #' recode(char_vec, a = "Apple")
 #' recode(char_vec, a = "Apple", b = "Banana")
 #'
-#' # Use .default as replacement for unmatched values
+#' # Use .default as replacement for unmatched values. Note that NA and
+#' # replacement values need to be of the same type. For more information, see
+#' # https://adv-r.hadley.nz/vectors-chap.html#missing-values
 #' recode(char_vec, a = "Apple", b = "Banana", .default = NA_character_)
+#'
+#' # Throws an error as NA is logical, not character.
+#' \dontrun{
+#' recode(char_vec, a = "Apple", b = "Banana", .default = NA)
+#' }
 #'
 #' # Use a named character vector for unquote splicing with !!!
 #' level_key <- c(a = "apple", b = "banana", c = "carrot")
@@ -142,7 +155,7 @@ recode.character <- function(.x, ..., .default = NULL, .missing = NULL) {
   values <- list2(...)
   if (!all(have_name(values))) {
     bad <- which(!have_name(values)) + 1
-    bad_pos_args(bad, "must be named, not unnamed")
+    bad_pos_args(bad, "must be named, not unnamed.")
   }
 
   n <- length(.x)
@@ -165,15 +178,15 @@ recode.character <- function(.x, ..., .default = NULL, .missing = NULL) {
 recode.factor <- function(.x, ..., .default = NULL, .missing = NULL) {
   values <- list2(...)
   if (length(values) == 0) {
-    abort("No replacements provided")
+    abort("No replacements provided.")
   }
 
   if (!all(have_name(values))) {
     bad <- which(!have_name(values)) + 1
-    bad_pos_args(bad, "must be named, not unnamed")
+    bad_pos_args(bad, "must be named, not unnamed.")
   }
   if (!is.null(.missing)) {
-    bad_args(".missing", "is not supported for factors")
+    bad_args(".missing", "is not supported for factors.")
   }
 
   n <- length(levels(.x))
@@ -205,7 +218,7 @@ find_template <- function(values, .default = NULL, .missing = NULL) {
   x <- compact(c(values, .default, .missing))
 
   if (length(x) == 0) {
-    abort("No replacements provided")
+    abort("No replacements provided.")
   }
 
   x[[1]]

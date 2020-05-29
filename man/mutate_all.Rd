@@ -48,6 +48,11 @@ names needed to uniquely identify the output. To force inclusion of a name,
 even when not needed, name the input (see examples for details).
 }
 \description{
+\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+
+Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
+\code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
+
 The \link{scoped} variants of \code{\link[=mutate]{mutate()}} and \code{\link[=transmute]{transmute()}} make it easy to apply
 the same transformation to multiple variables. There are three variants:
 \itemize{
@@ -81,22 +86,35 @@ data \%>\% mutate_at(vars, myoperation)
 \section{Naming}{
 
 
-The names of the created columns is derived from the names of the
+The names of the new columns are derived from the names of the
 input variables and the names of the functions.
 \itemize{
-\item if there is only one unnamed function, the names of the input variables
-are used to name the created columns
-\item if there is only one unnamed variable, the names of the functions
-are used to name the created columns.
-\item otherwise in the most general case, the created names are created by
-concatenating the names of the input variables and the names of the functions.
+\item if there is only one unnamed function (i.e. if \code{.funs} is an unnamed list
+of length one),
+the names of the input variables are used to name the new columns;
+\item for \verb{_at} functions, if there is only one unnamed variable (i.e.,
+if \code{.vars} is of the form \code{vars(a_single_column)}) and \code{.funs} has length
+greater than one,
+the names of the functions are used to name the new columns;
+\item otherwise, the new names are created by
+concatenating the names of the input variables and the names of the
+functions, separated with an underscore \code{"_"}.
 }
 
-The names of the functions here means the names of the list of functions
-that is supplied. When needed and not supplied, the name of a function
-is the prefix "fn" followed by the index of this function within the
-unnamed functions in the list. Ultimately, names are made
-unique.
+The \code{.funs} argument can be a named or unnamed list.
+If a function is unnamed and the name cannot be derived automatically,
+a name of the form "fn#" is used.
+Similarly, \code{\link[=vars]{vars()}} accepts named and unnamed arguments.
+If a variable in \code{.vars} is named, a new column by that name will be created.
+
+Name collisions in the new columns are disambiguated using a unique suffix.
+}
+
+\section{Life cycle}{
+
+
+The functions are maturing, because the naming scheme and the
+disambiguation algorithm are subject to change in dplyr 0.9.0.
 }
 
 \examples{
@@ -107,27 +125,33 @@ iris <- as_tibble(iris)
 # we'll scale the variables `height` and `mass`:
 scale2 <- function(x, na.rm = FALSE) (x - mean(x, na.rm = na.rm)) / sd(x, na.rm)
 starwars \%>\% mutate_at(c("height", "mass"), scale2)
+# ->
+starwars \%>\% mutate(across(c("height", "mass"), scale2))
 
 # You can pass additional arguments to the function:
 starwars \%>\% mutate_at(c("height", "mass"), scale2, na.rm = TRUE)
-
-# You can also pass formulas to create functions on the spot, purrr-style:
 starwars \%>\% mutate_at(c("height", "mass"), ~scale2(., na.rm = TRUE))
+# ->
+starwars \%>\% mutate(across(c("height", "mass"), ~ scale2(.x, na.rm = TRUE)))
 
 # You can also supply selection helpers to _at() functions but you have
 # to quote them with vars():
 iris \%>\% mutate_at(vars(matches("Sepal")), log)
+iris \%>\% mutate(across(matches("Sepal"), log))
 
 # The _if() variants apply a predicate function (a function that
 # returns TRUE or FALSE) to determine the relevant subset of
 # columns. Here we divide all the numeric columns by 100:
 starwars \%>\% mutate_if(is.numeric, scale2, na.rm = TRUE)
+starwars \%>\% mutate(across(where(is.numeric), ~ scale2(.x, na.rm = TRUE)))
 
 # mutate_if() is particularly useful for transforming variables from
 # one type to another
 iris \%>\% mutate_if(is.factor, as.character)
 iris \%>\% mutate_if(is.double, as.integer)
-
+# ->
+iris \%>\% mutate(across(where(is.factor), as.character))
+iris \%>\% mutate(across(where(is.double), as.integer))
 
 # Multiple transformations ----------------------------------------
 
@@ -135,14 +159,12 @@ iris \%>\% mutate_if(is.double, as.integer)
 # functions. When there are multiple functions, they create new
 # variables instead of modifying the variables in place:
 iris \%>\% mutate_if(is.numeric, list(scale2, log))
-
-# The list can contain purrr-style formulas:
 iris \%>\% mutate_if(is.numeric, list(~scale2(.), ~log(.)))
-
-# Note how the new variables include the function name, in order to
-# keep things distinct. The default names are not always helpful
-# but you can also supply explicit names:
 iris \%>\% mutate_if(is.numeric, list(scale = scale2, log = log))
+# ->
+iris \%>\%
+  as_tibble() \%>\%
+  mutate(across(where(is.numeric), list(scale = scale2, log = log)))
 
 # When there's only one function in the list, it modifies existing
 # variables in place. Give it a name to instead create new variables:

@@ -7,10 +7,9 @@
 coalesce(...)
 }
 \arguments{
-\item{...}{Vectors. All inputs should either be length 1, or the
-same length as the first argument.
-
-These dots support \link[rlang:tidy-dots]{tidy dots} features.}
+\item{...}{<\code{\link[rlang:dyn-dots]{dynamic-dots}}> Vectors. Inputs should be
+recyclable (either be length 1 or same length as the longest vector) and
+coercible to a common type.}
 }
 \value{
 A vector the same length as the first \code{...} argument with
@@ -31,7 +30,7 @@ y <- c(1, 2, NA, NA, 5)
 z <- c(NA, NA, 3, 4, 5)
 coalesce(y, z)
 
-# Supply lists by splicing them into dots:
+# Supply lists by with dynamic dots
 vecs <- list(
   c(1, 2, NA, NA, 5),
   c(NA, NA, 3, 4, 5)

@@ -1,217 +1,133 @@
-#include "pch.h"
-#include <dplyr/main.h>
-
-#include <tools/Quosure.h>
-#include <tools/set_rownames.h>
-
-#include <dplyr/NamedListAccumulator.h>
-
-#include <dplyr/data/GroupedDataFrame.h>
-#include <dplyr/data/NaturalDataFrame.h>
-
-#include <dplyr/hybrid/hybrid.h>
-#include <dplyr/standard/GroupedCallReducer.h>
+#include "dplyr.h"
 
 namespace dplyr {
 
-static
-SEXP validate_unquoted_value(SEXP value, int nrows, const SymbolString& name) {
-  int n = Rf_length(value);
-  check_length(n, nrows, "the number of groups", name);
+void stop_summarise_unsupported_type(SEXP result) {
+  SEXP sym_stop_summarise_unsupported_type = Rf_install("stop_summarise_unsupported_type");
+  SEXP call = PROTECT(Rf_lang2(sym_stop_summarise_unsupported_type, result));
+  Rf_eval(call, dplyr::envs::ns_dplyr);
 
-  // Recycle length 1 vectors
-  if (n == 1) {
-    value = constant_recycle(value, nrows, name);
-  }
-
-  return value;
+  // for rchk
+  UNPROTECT(1);
 }
 
-SEXP reconstruct_groups(const Rcpp::DataFrame& old_groups, const Rcpp::List& new_indices, const Rcpp::IntegerVector& firsts, SEXP frame) {
-  int nv = old_groups.size() - 1 ;
-  Rcpp::Shield<SEXP> out(Rf_allocVector(VECSXP, nv));
-  Rcpp::Shield<SEXP> names(Rf_allocVector(STRSXP, nv));
-  Rcpp::Shield<SEXP> old_names(Rf_getAttrib(old_groups, symbols::names));
-  for (int i = 0; i < nv - 1; i++) {
-    SET_VECTOR_ELT(out, i, column_subset(old_groups[i], firsts, frame));
-    SET_STRING_ELT(names, i, STRING_ELT(old_names, i));
-  }
-  SET_VECTOR_ELT(out, nv - 1, new_indices);
-  SET_STRING_ELT(names, nv - 1, Rf_mkChar(".rows"));
+void stop_summarise_incompatible_size(int index_group, int index_expression, int expected_size, int size) {
+  SEXP s_size = PROTECT(Rf_ScalarInteger(size));
+  SEXP s_expected_size = PROTECT(Rf_ScalarInteger(expected_size));
+  SEXP s_index_group = PROTECT(Rf_ScalarInteger(index_group + 1));
+  SEXP s_index_expression = PROTECT(Rf_ScalarInteger(index_expression + 1));
+  SEXP sym_stop_summarise_incompatible_size = Rf_install("stop_summarise_incompatible_size");
+  SEXP call = PROTECT(Rf_lang5(sym_stop_summarise_incompatible_size, s_index_group, s_index_expression, s_expected_size, s_size));
+  Rf_eval(call, dplyr::envs::ns_dplyr);
 
-  set_rownames(out, new_indices.size());
-  set_class(out, NaturalDataFrame::classes());
-  copy_attrib(out, old_groups, symbols::dot_drop);
-  Rf_namesgets(out, names);
-  return out ;
+  // for rchk
+  UNPROTECT(5);
 }
 
-template <typename SlicedTibble>
-void structure_summarise(Rcpp::List& out, const SlicedTibble& df, SEXP frame) {
-  set_class(out, NaturalDataFrame::classes());
 }
 
-template <>
-void structure_summarise<GroupedDataFrame>(Rcpp::List& out, const GroupedDataFrame& gdf, SEXP frame) {
-  const Rcpp::DataFrame& df = gdf.data();
 
-  if (gdf.nvars() > 1) {
-    copy_class(out, df);
-    SymbolVector vars = gdf.get_vars();
-    vars.remove(gdf.nvars() - 1);
+SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private) {
+  DPLYR_MASK_INIT();
 
-    Rcpp::DataFrame old_groups = gdf.group_data();
-    int nv = gdf.nvars() - 1;
-    DataFrameVisitors visitors(old_groups, nv) ;
-    int old_nrows = old_groups.nrow();
+  SEXP chunks = PROTECT(Rf_allocVector(VECSXP, ngroups));
+  for (R_xlen_t i = 0; i < ngroups; i++) {
+    DPLYR_MASK_SET_GROUP(i);
 
-    // the number of new groups
-    int ngroups = 0;
+    SEXP result_i = PROTECT(DPLYR_MASK_EVAL(quo));
+    SET_VECTOR_ELT(chunks, i, result_i);
 
-    // sizes of each new group, there are at most old_nrows groups
-    std::vector<int> sizes(old_nrows);
-
-    for (int i = 0; i < old_nrows;) {
-      // go through one old group
-      int start = i++;
-      while (i < old_nrows && visitors.equal(start, i)) i++ ;
-
-      sizes[ngroups++] = i - start;
+    if (!vctrs::vec_is_vector(result_i)) {
+      dplyr::stop_summarise_unsupported_type(result_i);
     }
 
-    // collect the new indices, now that we know the size
-    Rcpp::List new_indices(ngroups);
-
-    // the first index of each group
-    Rcpp::IntegerVector firsts(Rcpp::no_init(ngroups));
-
-    int start = 0;
-    for (int i = 0; i < ngroups; i++) {
-      firsts[i] = start + 1;
-
-      int n = sizes[i];
-      if (n) {
-        new_indices[i] = Rcpp::IntegerVectorView(Rcpp::seq(start + 1, start + n));
-      } else {
-        new_indices[i] = Rcpp::IntegerVectorView(0);
-      }
-
-      start += sizes[i];
-    }
-
-    // groups
-    Rcpp::DataFrame groups = reconstruct_groups(old_groups, new_indices, firsts, frame);
-    GroupedDataFrame::set_groups(out, groups);
-  } else {
-    // clear groups and reset to non grouped classes
-    GroupedDataFrame::strip_groups(out);
-    Rf_classgets(out, NaturalDataFrame::classes());
+    UNPROTECT(1);
   }
+  DPLYR_MASK_FINALISE();
+
+  UNPROTECT(1);
+  return chunks;
 }
 
-template <typename SlicedTibble>
-Rcpp::DataFrame summarise_grouped(const Rcpp::DataFrame& df, const QuosureList& dots, SEXP frame, SEXP caller_env) {
-  SlicedTibble gdf(df);
+bool is_useful_chunk(SEXP ptype) {
+  return !Rf_inherits(ptype, "data.frame") || XLENGTH(ptype) > 0;
+}
 
-  int nexpr = dots.size();
-  int nvars = gdf.nvars();
-  gdf.check_not_groups(dots);
+SEXP dplyr_summarise_recycle_chunks(SEXP chunks, SEXP rows, SEXP ptypes) {
+  R_len_t n_chunks = LENGTH(chunks);
+  R_len_t n_groups = LENGTH(rows);
 
-  LOG_VERBOSE << "copying " << nvars << " variables to accumulator";
+  SEXP res = PROTECT(Rf_allocVector(VECSXP, 2));
+  Rf_namesgets(res, dplyr::vectors::names_summarise_recycle_chunks);
+  SET_VECTOR_ELT(res, 0, chunks);
 
-  NamedListAccumulator<SlicedTibble> accumulator;
-  int i = 0;
-  Rcpp::List results(nvars + nexpr);
-  for (; i < nvars; i++) {
-    LOG_VERBOSE << "copying " << gdf.symbol(i).get_utf8_cstring();
-    results[i] = gdf.label(i);
-    accumulator.set(gdf.symbol(i), results[i]);
+  SEXP useful = PROTECT(Rf_allocVector(LGLSXP, n_chunks));
+  int* p_useful = LOGICAL(useful);
+  int n_useful = 0;
+  for (R_len_t j = 0; j < n_chunks; j++) {
+    n_useful += p_useful[j] = is_useful_chunk(VECTOR_ELT(ptypes, j));
   }
 
-  LOG_VERBOSE <<  "processing " << nexpr << " variables";
+  // early exit if there are no useful chunks, this includes
+  // when there are no chunks at all
+  if (n_useful == 0) {
+    SET_VECTOR_ELT(res, 1, Rf_ScalarInteger(1));
+    UNPROTECT(2);
+    return res;
+  }
 
-  DataMask<SlicedTibble> mask(gdf);
-  for (int k = 0; k < nexpr; k++, i++) {
-    LOG_VERBOSE << "processing variable " << k;
-    Rcpp::checkUserInterrupt();
-    const NamedQuosure& quosure = dots[k];
+  bool all_one = true;
+  int k = 1;
+  SEXP sizes = PROTECT(Rf_allocVector(INTSXP, n_groups));
+  int* p_sizes = INTEGER(sizes);
+  for (R_xlen_t i = 0; i < n_groups; i++, ++p_sizes) {
+    R_len_t n_i = 1;
 
-    LOG_VERBOSE << "processing variable " << quosure.name().get_utf8_cstring();
+    R_len_t j = 0;
+    for (; j < n_chunks; j++) {
+      // skip useless chunks before looking for chunk size
+      for (; j < n_chunks && !p_useful[j]; j++);
+      if (j == n_chunks) break;
 
-    Rcpp::RObject result;
+      R_len_t n_i_j = vctrs::short_vec_size(VECTOR_ELT(VECTOR_ELT(chunks, j), i));
 
-    // Unquoted vectors are directly used as column. Expressions are
-    // evaluated in each group.
-    Rcpp::Shield<SEXP> quo_expr(quosure.expr());
-    if (is_vector(quo_expr)) {
-      result = validate_unquoted_value(quo_expr, gdf.ngroups(), quosure.name());
-    } else {
-      result = hybrid::summarise(quosure, gdf, mask, caller_env);
-
-      // If we could not find a direct Result,
-      // we can use a GroupedCallReducer which will callback to R.
-      if (result == R_UnboundValue) {
-        mask.setup();
-        result = GroupedCallReducer<SlicedTibble>(quosure, mask).process(gdf);
+      if (n_i != n_i_j) {
+        if (n_i == 1) {
+          n_i = n_i_j;
+        } else if (n_i_j != 1) {
+          dplyr::stop_summarise_incompatible_size(i, j, n_i, n_i_j);
+        }
       }
     }
-    check_not_null(result, quosure.name());
-    check_length(Rf_length(result), gdf.ngroups(), "a summary value", quosure.name());
 
-    results[i] = result;
-    accumulator.set(quosure.name(), result);
-    mask.input_summarised(quosure.name(), result);
+    k = k + n_i;
+    *p_sizes = n_i;
+    if (n_i != 1) {
+      all_one = false;
+    }
   }
 
-  Rcpp::List out = accumulator;
-  // so that the attributes of the original tibble are preserved
-  // as requested in issue #1064
-  copy_most_attributes(out, df);
-  Rf_namesgets(out, accumulator.names().get_vector());
-
-  int nr = gdf.ngroups();
-  set_rownames(out, nr);
-  structure_summarise<SlicedTibble>(out, gdf, frame) ;
-  return out;
-}
-
-}
-
-// [[Rcpp::export(rng = false)]]
-SEXP summarise_impl(Rcpp::DataFrame df, dplyr::QuosureList dots, SEXP frame, SEXP caller_env) {
-  check_valid_colnames(df);
-  if (Rcpp::is<dplyr::RowwiseDataFrame>(df)) {
-    return dplyr::summarise_grouped<dplyr::RowwiseDataFrame>(df, dots, frame, caller_env);
-  } else if (Rcpp::is<dplyr::GroupedDataFrame>(df)) {
-    return dplyr::summarise_grouped<dplyr::GroupedDataFrame>(df, dots, frame, caller_env);
+  if (all_one) {
+    SET_VECTOR_ELT(res, 1, Rf_ScalarInteger(1));
   } else {
-    return dplyr::summarise_grouped<dplyr::NaturalDataFrame>(df, dots, frame, caller_env);
+    // perform recycling
+    for (int j = 0; j < n_chunks; j++){
+      // skip useless chunks before recycling
+      for (; j < n_chunks && !p_useful[j]; j++);
+      if (j == n_chunks) break;
+
+      SEXP chunks_j = VECTOR_ELT(chunks, j);
+      int* p_sizes = INTEGER(sizes);
+      for (int i = 0; i < n_groups; i++, ++p_sizes) {
+        SET_VECTOR_ELT(chunks_j, i,
+          vctrs::short_vec_recycle(VECTOR_ELT(chunks_j, i), *p_sizes)
+        );
+      }
+    }
+    SET_VECTOR_ELT(res, 0, chunks);
+    SET_VECTOR_ELT(res, 1, sizes);
   }
-}
 
-namespace dplyr {
-
-template <typename SlicedTibble>
-SEXP hybrid_template(Rcpp::DataFrame df, const Quosure& quosure, SEXP caller_env) {
-  SlicedTibble gdf(df);
-
-  Rcpp::Shield<SEXP> env(quosure.env());
-  Rcpp::Shield<SEXP> expr(quosure.expr());
-  DataMask<SlicedTibble> mask(gdf);
-  return hybrid::match(expr, gdf, mask, env, caller_env);
-}
-
-}
-
-// [[Rcpp::export(rng = false)]]
-SEXP hybrid_impl(Rcpp::DataFrame df, dplyr::Quosure quosure, SEXP caller_env) {
-  check_valid_colnames(df);
-
-  if (Rcpp::is<dplyr::RowwiseDataFrame>(df)) {
-    return dplyr::hybrid_template<dplyr::RowwiseDataFrame >(df, quosure, caller_env);
-  } else if (Rcpp::is<dplyr::GroupedDataFrame>(df)) {
-    return dplyr::hybrid_template<dplyr::GroupedDataFrame >(df, quosure, caller_env);
-  } else {
-    return dplyr::hybrid_template<dplyr::NaturalDataFrame >(df, quosure, caller_env);
-  }
+  UNPROTECT(3);
+  return res;
 }

@@ -202,7 +202,7 @@ test_that("lag and lead work on factors inside mutate (#955)", {
   exp_lag  <- test_factor != lag(test_factor)
   exp_lead <- test_factor != lead(test_factor)
 
-  test_df <- tbl_df(data.frame(test = test_factor))
+  test_df <- tibble(test = test_factor)
   res <- test_df %>% mutate(
     is_diff_lag  = (test != lag(test)),
     is_diff_lead = (test != lead(test))
@@ -235,14 +235,14 @@ test_that("lag handles default argument in mutate (#915)", {
 #   expect_error(df_sqlite %>% mutate(r = row_number()), "does not support")
 # })
 
-test_that("dim attribute is stripped from grouped mutate (#1918)", {
-  df <- data.frame(a = 1:3, b = 1:3)
+test_that("mutate handles matrix columns", {
+  df <- data.frame(a = rep(1:3, each = 2), b = 1:6)
 
   df_regular <- mutate(df, b = scale(b))
   df_grouped <- mutate(group_by(df, a), b = scale(b))
   df_rowwise <- mutate(rowwise(df), b = scale(b))
 
-  expect_null(dim(df$b))
-  expect_null(dim(df_grouped$b))
-  expect_null(dim(df_rowwise$b))
+  expect_equal(dim(df_regular$b), c(6, 1))
+  expect_equal(dim(df_grouped$b), c(6, 1))
+  expect_equal(dim(df_rowwise$b), c(6, 1))
 })

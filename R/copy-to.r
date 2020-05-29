@@ -39,9 +39,14 @@ auto_copy <- function(x, y, copy = FALSE, ...) {
 
   if (!copy) {
     glubort(NULL, "`x` and `y` must share the same src, ",
-      "set `copy` = TRUE (may be slow)"
+      "set `copy` = TRUE (may be slow)."
     )
   }
 
   UseMethod("auto_copy")
+}
+
+#' @export
+auto_copy.data.frame <- function(x, y, copy = FALSE, ...) {
+  as.data.frame(y)
 }

@@ -1,112 +1,90 @@
-#include "pch.h"
-
-#include <tools/utils.h>
-
-#include <dplyr/main.h>
-#include <dplyr/symbols.h>
+#include "dplyr.h"
 
 namespace dplyr {
 
-SEXP get_date_classes() {
-  static Rcpp::CharacterVector klasses(1, Rf_mkChar("Date"));
+SEXP envs::ns_dplyr = NULL;
+
+SEXP get_classes_vctrs_list_of() {
+  SEXP klasses = Rf_allocVector(STRSXP, 3);
+  R_PreserveObject(klasses);
+  SET_STRING_ELT(klasses, 0, Rf_mkChar("vctrs_list_of"));
+  SET_STRING_ELT(klasses, 1, Rf_mkChar("vctrs_vctr"));
+  SET_STRING_ELT(klasses, 2, Rf_mkChar("list"));
   return klasses;
 }
 
-inline SEXP init_time_classes() {
-  Rcpp::Shield<SEXP> res(Rf_allocVector(STRSXP, 2));
-  SET_STRING_ELT(res, 0, Rf_mkChar("POSIXct"));
-  SET_STRING_ELT(res, 1, Rf_mkChar("POSIXt"));
-  return res;
-}
-
-SEXP get_time_classes() {
-  static Rcpp::CharacterVector klasses(init_time_classes());
-  return klasses;
-}
-
-SEXP get_factor_classes() {
-  static Rcpp::CharacterVector klasses(1, Rf_mkChar("factor"));
-  return klasses;
-}
-
-SEXP mark_precious(SEXP x) {
+SEXP get_empty_int_vector() {
+  SEXP x = Rf_allocVector(INTSXP, 0);
   R_PreserveObject(x);
   return x;
 }
 
-SEXP symbols::package = Rf_install("package");
-SEXP symbols::n = Rf_install("n");
-SEXP symbols::tzone = Rf_install("tzone");
-SEXP symbols::units = Rf_install("units");
-SEXP symbols::dot_env = Rf_install(".env");
-SEXP symbols::dot_data = Rf_install(".data");
+SEXP get_names_expanded() {
+  SEXP names = Rf_allocVector(STRSXP, 2);
+  R_PreserveObject(names);
+  SET_STRING_ELT(names, 0, Rf_mkChar("indices"));
+  SET_STRING_ELT(names, 1, Rf_mkChar("rows"));
+  return names;
+}
 
-SEXP symbols::sum = Rf_install("sum");
-SEXP symbols::mean = Rf_install("mean");
-SEXP symbols::var = Rf_install("var");
-SEXP symbols::sd = Rf_install("sd");
-SEXP symbols::n_distinct = Rf_install("n_distinct");
-SEXP symbols::first = Rf_install("first");
-SEXP symbols::last = Rf_install("last");
-SEXP symbols::nth = Rf_install("nth");
-SEXP symbols::group_indices = Rf_install("group_indices");
-SEXP symbols::min = Rf_install("min");
-SEXP symbols::max = Rf_install("max");
-SEXP symbols::row_number = Rf_install("row_number");
-SEXP symbols::ntile = Rf_install("ntile");
-SEXP symbols::min_rank = Rf_install("min_rank");
-SEXP symbols::percent_rank = Rf_install("percent_rank");
-SEXP symbols::dense_rank = Rf_install("dense_rank");
-SEXP symbols::cume_dist = Rf_install("cume_dist");
-SEXP symbols::lead = Rf_install("lead");
-SEXP symbols::lag = Rf_install("lag");
-SEXP symbols::in = Rf_install("%in%");
+SEXP get_names_summarise_recycle_chunks(){
+  SEXP names = Rf_allocVector(STRSXP, 2);
+  R_PreserveObject(names);
+  SET_STRING_ELT(names, 0, Rf_mkChar("chunks"));
+  SET_STRING_ELT(names, 1, Rf_mkChar("sizes"));
+  return names;
+}
 
-SEXP symbols::narm = Rf_install("na.rm");
-SEXP symbols::default_ = Rf_install("default");
-
-SEXP symbols::dplyr = Rf_install("dplyr");
-SEXP symbols::base = Rf_install("base");
-SEXP symbols::stats = Rf_install("stats");
-
-SEXP symbols::desc = Rf_install("desc");
-SEXP symbols::double_colon = Rf_install("::");
-SEXP symbols::na_rm = Rf_install("na.rm");
-SEXP symbols::new_env = Rf_install("new.env");
-SEXP symbols::comment = Rf_install("comment");
-SEXP symbols::groups = Rf_install("groups");
-SEXP symbols::vars = Rf_install("vars");
-SEXP symbols::position = Rf_install("position");
-
-SEXP symbols::op_minus = Rf_install("-");
-SEXP symbols::str = Rf_install("str");
-SEXP symbols::dot_Internal = Rf_install(".Internal");
-SEXP symbols::inspect = Rf_install("inspect");
-SEXP symbols::dot = Rf_install(".");
-SEXP symbols::dot_x = Rf_install(".x");
-SEXP symbols::drop = Rf_install("drop");
-
-SEXP symbols::rlang = Rf_install("rlang");
-SEXP symbols::eval_tidy = Rf_install("eval_tidy");
-SEXP symbols::quote = Rf_install("quote");
-SEXP symbols::dot_drop = Rf_install(".drop");
-SEXP symbols::warn_deprecated = Rf_install("warn_deprecated");
-SEXP symbols::signal_soft_deprecated = Rf_install("signal_soft_deprecated");
-SEXP symbols::call = Rf_install("call");
-SEXP symbols::env = Rf_install("env");
-SEXP symbols::fun = Rf_install("fun");
-SEXP symbols::cpp_class = Rf_install("cpp_class");
-SEXP symbols::levels = Rf_install("levels");
-SEXP symbols::labels = Rf_install("labels");
-SEXP symbols::indices = Rf_install("indices");
 SEXP symbols::ptype = Rf_install("ptype");
-SEXP symbols::names = R_NamesSymbol;
-SEXP symbols::formula = Rf_install("formula");
-SEXP fns::quote = Rf_eval(Rf_install("quote"), R_BaseEnv);
+SEXP symbols::levels = Rf_install("levels");
+SEXP symbols::groups = Rf_install("groups");
+SEXP symbols::current_group = Rf_install("current_group");
+SEXP symbols::current_expression = Rf_install("current_expression");
+SEXP symbols::rows = Rf_install("rows");
+SEXP symbols::mask = Rf_install("mask");
+SEXP symbols::caller = Rf_install("caller");
+SEXP symbols::resolved = Rf_install("resolved");
+SEXP symbols::bindings = Rf_install("bindings");
+SEXP symbols::which_used = Rf_install("which_used");
+SEXP symbols::dot_drop = Rf_install(".drop");
 
-SEXP strings::POSIXct = STRING_ELT(get_time_classes(), 0);
-SEXP strings::POSIXt = STRING_ELT(get_time_classes(), 1);
-SEXP strings::Date = STRING_ELT(get_date_classes(), 0);
+SEXP vectors::classes_vctrs_list_of = get_classes_vctrs_list_of();
+SEXP vectors::empty_int_vector = get_empty_int_vector();
 
-SEXP vectors::factor = get_factor_classes();
+SEXP vectors::names_expanded = get_names_expanded();
+SEXP vectors::names_summarise_recycle_chunks = get_names_summarise_recycle_chunks();
+
+} // dplyr
+
+SEXP dplyr_init_library(SEXP ns) {
+  dplyr::envs::ns_dplyr = ns;
+  return R_NilValue;
+}
+
+static const R_CallMethodDef CallEntries[] = {
+  {"dplyr_init_library", (DL_FUNC)& dplyr_init_library, 1},
+
+  {"dplyr_expand_groups", (DL_FUNC)& dplyr_expand_groups, 3},
+  {"dplyr_between", (DL_FUNC)& dplyr_between, 3},
+  {"dplyr_cumall", (DL_FUNC)& dplyr_cumall, 1},
+  {"dplyr_cumany", (DL_FUNC)& dplyr_cumany, 1},
+  {"dplyr_cummean", (DL_FUNC)& dplyr_cummean, 1},
+  {"dplyr_validate_grouped_df", (DL_FUNC)& dplyr_validate_grouped_df, 2},
+
+  {"dplyr_mask_eval_all", (DL_FUNC)& dplyr_mask_eval_all, 2},
+  {"dplyr_mask_eval_all_summarise", (DL_FUNC)& dplyr_mask_eval_all_summarise, 2},
+  {"dplyr_mask_eval_all_mutate", (DL_FUNC)& dplyr_mask_eval_all_mutate, 2},
+  {"dplyr_mask_eval_all_filter", (DL_FUNC)& dplyr_mask_eval_all_filter, 4},
+
+  {"dplyr_summarise_recycle_chunks", (DL_FUNC)& dplyr_summarise_recycle_chunks, 3},
+
+  {"dplyr_group_indices", (DL_FUNC)& dplyr_group_indices, 2},
+  {"dplyr_group_keys", (DL_FUNC)& dplyr_group_keys, 1},
+
+  {NULL, NULL, 0}
+};
+
+extern "C" void R_init_dplyr(DllInfo* dll) {
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
 }

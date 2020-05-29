@@ -29,22 +29,6 @@ bad_calls <- function(calls, ..., .envir = parent.frame()) {
   glubort(fmt_calls(calls), ..., .envir = .envir)
 }
 
-bad_named_calls <- function(named_calls, ..., .envir = parent.frame()) {
-  glubort(fmt_named_calls(named_calls), ..., .envir = .envir)
-}
-
-bad_eq_ops <- function(named_calls, ..., .envir = parent.frame()) {
-  glubort(fmt_wrong_eq_ops(named_calls), ..., .envir = .envir)
-}
-
-bad_cols <- function(cols, ..., .envir = parent.frame()) {
-  glubort(fmt_cols(cols), ..., .envir = .envir)
-}
-
-bad_measures <- function(measures, ..., .envir = parent.frame()) {
-  glubort(fmt_measures(measures), ..., .envir = .envir)
-}
-
 glubort <- function(header, ..., .envir = parent.frame(), .abort = abort) {
   text <- glue(..., .envir = .envir)
   if (!is_null(header)) text <- paste0(header, " ", text)
@@ -73,8 +57,9 @@ fmt_named_calls <- function(...) {
 
 fmt_wrong_eq_ops <- function(...) {
   x <- parse_named_call(...)
-  fmt_comma(
-    paste0(fmt_obj1(names2(x)), " (", fmt_obj1(paste0(names2(x), " = ", x)), ")")
+  fmt_items(
+    paste0("Did you mean ", fmt_obj1(paste0(names2(x), " == ", x)), "?"),
+    bullet = "*"
   )
 }
 
@@ -118,14 +103,14 @@ fmt_comma <- function(..., .max = 6) {
   commas(x)
 }
 
-fmt_items <- function(x, .max = 6) {
+fmt_items <- function(x, bullet = "-", .max = 6) {
   if (length(x) > .max) {
     more <- glue("({length(x) - (.max - 1)} more)")
     length(x) <- .max
     x[.max] <- more
   }
 
-  paste0(glue("- {x}"), collapse = "\n")
+  paste0(glue("{bullet} {x}"), collapse = "\n")
 }
 
 parse_args <- function(x) {

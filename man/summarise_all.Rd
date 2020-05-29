@@ -48,6 +48,11 @@ names needed to uniquely identify the output. To force inclusion of a name,
 even when not needed, name the input (see examples for details).
 }
 \description{
+\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+
+Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
+\code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
+
 The \link{scoped} variants of \code{\link[=summarise]{summarise()}} make it easy to apply the same
 transformation to multiple variables.
 There are three variants.
@@ -73,7 +78,7 @@ selection is \strong{implicit} (\code{all} and \code{if} selections) or
 }
 
 Or remove \code{group_vars()} from the character vector of column names:\preformatted{nms <- setdiff(nms, group_vars(data))
-data \%>\% summarise_at(vars, myoperation)
+data \%>\% summarise_at(nms, myoperation)
 }
 \item Grouping variables covered by implicit selections are silently
 ignored by \code{summarise_all()} and \code{summarise_if()}.
@@ -83,64 +88,71 @@ ignored by \code{summarise_all()} and \code{summarise_if()}.
 \section{Naming}{
 
 
-The names of the created columns is derived from the names of the
+The names of the new columns are derived from the names of the
 input variables and the names of the functions.
 \itemize{
-\item if there is only one unnamed function, the names of the input variables
-are used to name the created columns
-\item if there is only one unnamed variable, the names of the functions
-are used to name the created columns.
-\item otherwise in the most general case, the created names are created by
-concatenating the names of the input variables and the names of the functions.
+\item if there is only one unnamed function (i.e. if \code{.funs} is an unnamed list
+of length one),
+the names of the input variables are used to name the new columns;
+\item for \verb{_at} functions, if there is only one unnamed variable (i.e.,
+if \code{.vars} is of the form \code{vars(a_single_column)}) and \code{.funs} has length
+greater than one,
+the names of the functions are used to name the new columns;
+\item otherwise, the new names are created by
+concatenating the names of the input variables and the names of the
+functions, separated with an underscore \code{"_"}.
 }
 
-The names of the functions here means the names of the list of functions
-that is supplied. When needed and not supplied, the name of a function
-is the prefix "fn" followed by the index of this function within the
-unnamed functions in the list. Ultimately, names are made
-unique.
+The \code{.funs} argument can be a named or unnamed list.
+If a function is unnamed and the name cannot be derived automatically,
+a name of the form "fn#" is used.
+Similarly, \code{\link[=vars]{vars()}} accepts named and unnamed arguments.
+If a variable in \code{.vars} is named, a new column by that name will be created.
+
+Name collisions in the new columns are disambiguated using a unique suffix.
+}
+
+\section{Life cycle}{
+
+
+The functions are maturing, because the naming scheme and the
+disambiguation algorithm are subject to change in dplyr 0.9.0.
 }
 
 \examples{
-by_species <- iris \%>\%
-  group_by(Species)
-
-
 # The _at() variants directly support strings:
 starwars \%>\%
   summarise_at(c("height", "mass"), mean, na.rm = TRUE)
+# ->
+starwars \%>\% summarise(across(c("height", "mass"), ~ mean(.x, na.rm = TRUE)))
 
 # You can also supply selection helpers to _at() functions but you have
 # to quote them with vars():
 starwars \%>\%
   summarise_at(vars(height:mass), mean, na.rm = TRUE)
+# ->
+starwars \%>\%
+  summarise(across(height:mass, ~ mean(.x, na.rm = TRUE)))
 
 # The _if() variants apply a predicate function (a function that
 # returns TRUE or FALSE) to determine the relevant subset of
 # columns. Here we apply mean() to the numeric columns:
 starwars \%>\%
   summarise_if(is.numeric, mean, na.rm = TRUE)
+starwars \%>\%
+  summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
+
+by_species <- iris \%>\%
+  group_by(Species)
 
 # If you want to apply multiple transformations, pass a list of
 # functions. When there are multiple functions, they create new
 # variables instead of modifying the variables in place:
 by_species \%>\%
   summarise_all(list(min, max))
-
-# Note how the new variables include the function name, in order to
-# keep things distinct. Passing purrr-style lambdas often creates
-# better default names:
+# ->
 by_species \%>\%
-  summarise_all(list(~min(.), ~max(.)))
-
-# When that's not good enough, you can also supply the names explicitly:
-by_species \%>\%
-  summarise_all(list(min = min, max = max))
-
-# When there's only one function in the list, it modifies existing
-# variables in place. Give it a name to create new variables instead:
-by_species \%>\% summarise_all(list(med = median))
-by_species \%>\% summarise_all(list(Q3 = quantile), probs = 0.75)
+  summarise(across(everything(), list(min = min, max = max)))
 }
 \seealso{
 \link[=scoped]{The other scoped verbs}, \code{\link[=vars]{vars()}}

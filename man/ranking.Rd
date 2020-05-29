@@ -43,11 +43,12 @@ to smallest outputs. Use \code{\link[=desc]{desc()}} to reverse the direction.
 \item \code{dense_rank()}: like \code{min_rank()}, but with no gaps between
 ranks
 \item \code{percent_rank()}: a number between 0 and 1 computed by
-rescaling \code{min_rank} to \code{[0, 1]}
+rescaling \code{min_rank} to \verb{[0, 1]}
 \item \code{cume_dist()}: a cumulative distribution function. Proportion
 of all values less than or equal to the current rank.
 \item \code{ntile()}: a rough rank, which breaks the input vector into
-\code{n} buckets.
+\code{n} buckets. The size of the buckets may differ by up to one,
+larger buckets have lower rank.
 }
 }
 \examples{
@@ -59,7 +60,7 @@ percent_rank(x)
 cume_dist(x)
 
 ntile(x, 2)
-ntile(runif(100), 10)
+ntile(1:8, 3)
 
 # row_number can be used with single table verbs without specifying x
 # (for data frames and databases that support windowing)

@@ -4,7 +4,7 @@
 #' statements. It is an R equivalent of the SQL `CASE WHEN` statement.
 #' If no cases match, `NA` is returned.
 #'
-#' @param ... A sequence of two-sided formulas. The left hand side (LHS)
+#' @param ... <[`dynamic-dots`][rlang::dyn-dots]> A sequence of two-sided formulas. The left hand side (LHS)
 #'   determines which values match this case. The right hand side (RHS)
 #'   provides the replacement value.
 #'
@@ -16,10 +16,6 @@
 #'   `n == 0` is treated as a variant of `n != 1`.
 #'
 #'   `NULL` inputs are ignored.
-#'
-#'   These dots support [tidy dots][rlang::list2] features. In
-#'   particular, if your patterns are stored in a list, you can
-#'   splice that in with `!!!`.
 #' @export
 #' @return A vector of length 1 or `n`, matching the length of the logical
 #'   input or output vectors, with the type (and attributes) of the first
@@ -148,7 +144,7 @@ case_when <- function(...) {
   n <- length(fs)
 
   if (n == 0) {
-    abort("No cases provided")
+    abort("No cases provided.")
   }
 
   query <- vector("list", n)
@@ -192,7 +188,7 @@ validate_formula <- function(x, i, default_env, dots_env) {
     abort_case_when_formula(arg, i, x)
   }
   if (is_null(f_lhs(x))) {
-    abort("formulas must be two-sided")
+    abort("formulas must be two-sided.")
   }
 
   # Formula might be unevaluated, e.g. if it's been quosured
@@ -207,13 +203,13 @@ validate_formula <- function(x, i, default_env, dots_env) {
 abort_case_when_formula <- function(arg, i, obj) {
   deparsed <- fmt_obj1(deparse_trunc(arg))
   type <- friendly_type_of(obj)
-  abort(glue("Case {i} ({deparsed}) must be a two-sided formula, not {type}"))
+  abort(glue("Case {i} ({deparsed}) must be a two-sided formula, not {type}."))
 }
 
 abort_case_when_logical <- function(lhs, i, query) {
   deparsed <- fmt_obj1(deparse_trunc(quo_squash(lhs)))
   type <- friendly_type_of(query)
-  abort(glue("LHS of case {i} ({deparsed}) must be a logical vector, not {type}"))
+  abort(glue("LHS of case {i} ({deparsed}) must be a logical vector, not {type}."))
 }
 
 validate_case_when_length <- function(query, value, fs) {

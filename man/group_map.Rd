@@ -6,14 +6,14 @@
 \alias{group_walk}
 \title{Apply a function to each group}
 \usage{
-group_map(.tbl, .f, ..., keep = FALSE)
+group_map(.data, .f, ..., .keep = FALSE)
 
-group_modify(.tbl, .f, ..., keep = FALSE)
+group_modify(.data, .f, ..., .keep = FALSE)
 
-group_walk(.tbl, .f, ...)
+group_walk(.data, .f, ...)
 }
 \arguments{
-\item{.tbl}{A grouped tibble}
+\item{.data}{A grouped tibble}
 
 \item{.f}{A function or formula to apply to each group. It must return a data frame.
 
@@ -31,7 +31,7 @@ that identifies the group
 
 \item{...}{Additional arguments passed on to \code{.f}}
 
-\item{keep}{are the grouping variables kept in \code{.x}}
+\item{.keep}{are the grouping variables kept in \code{.x}}
 }
 \value{
 \itemize{
@@ -41,12 +41,12 @@ that identifies the group
 }
 }
 \description{
+\Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+
 \code{group_map()}, \code{group_modify()} and \code{group_walk()} are purrr-style functions that can
 be used to iterate on grouped tibbles.
 }
 \details{
-\Sexpr[results=rd, stage=render]{dplyr:::lifecycle("experimental")}
-
 Use \code{group_modify()} when \code{summarize()} is too limited, in terms of what you need
 to do and return for each group. \code{group_modify()} is good for "data frame in, data frame out".
 If that is too limited, you need to use a \link[=group_nest]{nested} or \link[=group_split]{split} workflow.
@@ -123,10 +123,10 @@ mtcars \%>\%
 
 }
 \seealso{
-Other grouping functions: \code{\link{group_by_all}},
-  \code{\link{group_by}}, \code{\link{group_indices}},
-  \code{\link{group_keys}}, \code{\link{group_nest}},
-  \code{\link{group_rows}}, \code{\link{group_size}},
-  \code{\link{group_trim}}, \code{\link{groups}}
+Other grouping functions: 
+\code{\link{group_by}()},
+\code{\link{group_nest}()},
+\code{\link{group_split}()},
+\code{\link{group_trim}()}
 }
 \concept{grouping functions}

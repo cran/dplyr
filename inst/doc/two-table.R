@@ -2,9 +2,6 @@
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 options(tibble.print_min = 5)
 library(dplyr)
-knit_print.tbl_df <- function(x, options) {
-  knitr::knit_print(trunc_mat(x), options)
-}
 
 ## ---- warning = FALSE---------------------------------------------------------
 library("nycflights13")
@@ -26,7 +23,7 @@ flights2 %>% left_join(airports, c("origin" = "faa"))
 
 ## -----------------------------------------------------------------------------
 df1 <- tibble(x = c(1, 2), y = 2:1)
-df2 <- tibble(x = c(1, 3), a = 10, b = "a")
+df2 <- tibble(x = c(3, 1), a = 10, b = "a")
 
 ## -----------------------------------------------------------------------------
 df1 %>% inner_join(df2) %>% knitr::kable()
@@ -74,24 +71,4 @@ intersect(df1, df2)
 union(df1, df2)
 setdiff(df1, df2)
 setdiff(df2, df1)
-
-## -----------------------------------------------------------------------------
-df1 <- tibble(x = 1, y = factor("a"))
-df2 <- tibble(x = 2, y = factor("b"))
-full_join(df1, df2) %>% str()
-
-## -----------------------------------------------------------------------------
-df1 <- tibble(x = 1, y = factor("a", levels = c("a", "b")))
-df2 <- tibble(x = 2, y = factor("b", levels = c("b", "a")))
-full_join(df1, df2) %>% str()
-
-## -----------------------------------------------------------------------------
-df1 <- tibble(x = 1, y = factor("a", levels = c("a", "b")))
-df2 <- tibble(x = 2, y = factor("b", levels = c("a", "b")))
-full_join(df1, df2) %>% str()
-
-## -----------------------------------------------------------------------------
-df1 <- tibble(x = 1, y = "a")
-df2 <- tibble(x = 2, y = factor("a"))
-full_join(df1, df2) %>% str()
 
