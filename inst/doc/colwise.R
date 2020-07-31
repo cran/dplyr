@@ -6,7 +6,7 @@ set.seed(1014)
 ## ---- eval = FALSE------------------------------------------------------------
 #  df %>%
 #    group_by(g1, g2) %>%
-#    summarise(a = mean(a), b = mean(b), c = mean(c), d = mean(c))
+#    summarise(a = mean(a), b = mean(b), c = mean(c), d = mean(d))
 
 ## ---- eval = FALSE------------------------------------------------------------
 #  df %>%

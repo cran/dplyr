@@ -14,16 +14,19 @@
 
 <title>Row-wise operations</title>
 
-<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
-// be compatible with the behavior of Pandoc < 2.8).
-document.addEventListener('DOMContentLoaded', function(e) {
-  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
-  var i, h, a;
-  for (i = 0; i < hs.length; i++) {
-    h = hs[i];
-    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
-    a = h.attributes;
-    while (a.length > 0) h.removeAttribute(a[0].name);
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
   }
 });
 </script>
@@ -31,18 +34,19 @@ document.addEventListener('DOMContentLoaded', function(e) {
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -62,7 +66,7 @@ pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-le
 div.sourceCode
   {   }
 @media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -577,7 +581,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb19-11"><a href="#cb19-11"></a><span class="co">#&gt; ℹ Input `y2` is `y`.</span></span>
 <span id="cb19-12"><a href="#cb19-12"></a><span class="co">#&gt; ℹ Input `y2` must be size 1, not 3.</span></span>
 <span id="cb19-13"><a href="#cb19-13"></a><span class="co">#&gt; ℹ Did you mean: `y2 = list(y)` ?</span></span>
-<span id="cb19-14"><a href="#cb19-14"></a><span class="co">#&gt; ℹ The error occured in row 1.</span></span>
+<span id="cb19-14"><a href="#cb19-14"></a><span class="co">#&gt; ℹ The error occurred in row 1.</span></span>
 <span id="cb19-15"><a href="#cb19-15"></a>rf <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">y2 =</span> <span class="kw">list</span>(y))</span>
 <span id="cb19-16"><a href="#cb19-16"></a><span class="co">#&gt; # A tibble: 2 x 3</span></span>
 <span id="cb19-17"><a href="#cb19-17"></a><span class="co">#&gt; # Rowwise:  g</span></span>
@@ -641,14 +645,14 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb23-18"><a href="#cb23-18"></a><span class="co">#&gt; 3     8 0.423</span></span>
 <span id="cb23-19"><a href="#cb23-19"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(broom<span class="op">::</span><span class="kw">glance</span>(mod))</span>
 <span id="cb23-20"><a href="#cb23-20"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
-<span id="cb23-21"><a href="#cb23-21"></a><span class="co">#&gt; # A tibble: 3 x 12</span></span>
+<span id="cb23-21"><a href="#cb23-21"></a><span class="co">#&gt; # A tibble: 3 x 13</span></span>
 <span id="cb23-22"><a href="#cb23-22"></a><span class="co">#&gt; # Groups:   cyl [3]</span></span>
 <span id="cb23-23"><a href="#cb23-23"></a><span class="co">#&gt;     cyl r.squared adj.r.squared sigma statistic p.value    df logLik   AIC   BIC</span></span>
-<span id="cb23-24"><a href="#cb23-24"></a><span class="co">#&gt;   &lt;dbl&gt;     &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb23-25"><a href="#cb23-25"></a><span class="co">#&gt; 1     4     0.509         0.454  3.33      9.32  0.0137     2 -27.7   61.5  62.7</span></span>
-<span id="cb23-26"><a href="#cb23-26"></a><span class="co">#&gt; 2     6     0.465         0.357  1.17      4.34  0.0918     2  -9.83  25.7  25.5</span></span>
-<span id="cb23-27"><a href="#cb23-27"></a><span class="co">#&gt; 3     8     0.423         0.375  2.02      8.80  0.0118     2 -28.7   63.3  65.2</span></span>
-<span id="cb23-28"><a href="#cb23-28"></a><span class="co">#&gt; # … with 2 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;</span></span></code></pre></div>
+<span id="cb23-24"><a href="#cb23-24"></a><span class="co">#&gt;   &lt;dbl&gt;     &lt;dbl&gt;         &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb23-25"><a href="#cb23-25"></a><span class="co">#&gt; 1     4     0.509         0.454  3.33      9.32  0.0137     1 -27.7   61.5  62.7</span></span>
+<span id="cb23-26"><a href="#cb23-26"></a><span class="co">#&gt; 2     6     0.465         0.357  1.17      4.34  0.0918     1  -9.83  25.7  25.5</span></span>
+<span id="cb23-27"><a href="#cb23-27"></a><span class="co">#&gt; 3     8     0.423         0.375  2.02      8.80  0.0118     1 -28.7   63.3  65.2</span></span>
+<span id="cb23-28"><a href="#cb23-28"></a><span class="co">#&gt; # … with 3 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;, nobs &lt;int&gt;</span></span></code></pre></div>
 <p>Or easily access the parameters of each model:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(broom<span class="op">::</span><span class="kw">tidy</span>(mod))</span>
 <span id="cb24-2"><a href="#cb24-2"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
@@ -668,7 +672,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p><code>rowwise()</code> doesn’t just work with functions that return a length-1 vector (aka summary functions); it can work with any function if the result is a list. This means that <code>rowwise()</code> and <code>mutate()</code> provide an elegant way to call a function many times with varying arguments, storing the outputs alongside the inputs.</p>
 <div id="simulations" class="section level3">
 <h3>Simulations</h3>
-<p>I think this is particularly elegant way to perform simulations, because it lets you store simulated values along with the parameters that generated them. For example, imagine you have the following data frame that describes the properties of 3 samples from the uniform distribution:</p>
+<p>I think this is a particularly elegant way to perform simulations, because it lets you store simulated values along with the parameters that generated them. For example, imagine you have the following data frame that describes the properties of 3 samples from the uniform distribution:</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1"></a>df &lt;-<span class="st"> </span><span class="kw">tribble</span>(</span>
 <span id="cb25-2"><a href="#cb25-2"></a>  <span class="op">~</span><span class="st"> </span>n, <span class="op">~</span><span class="st"> </span>min, <span class="op">~</span><span class="st"> </span>max,</span>
 <span id="cb25-3"><a href="#cb25-3"></a>    <span class="dv">1</span>,     <span class="dv">0</span>,     <span class="dv">1</span>,</span>
@@ -686,7 +690,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb26-8"><a href="#cb26-8"></a><span class="co">#&gt; 1     1     0     1 &lt;dbl [1]&gt;</span></span>
 <span id="cb26-9"><a href="#cb26-9"></a><span class="co">#&gt; 2     2    10   100 &lt;dbl [2]&gt;</span></span>
 <span id="cb26-10"><a href="#cb26-10"></a><span class="co">#&gt; 3     3   100  1000 &lt;dbl [3]&gt;</span></span></code></pre></div>
-<p>Note the use of <code>list()</code> here - <code>runif()</code> returns multiple values and a <code>mutate()</code> expression has to return something of length 1. <code>list()</code> means that we’ll get a list column where each row is a list containing multiple values. If you forget to use <code>list()</code>, dplyr will you a hint:</p>
+<p>Note the use of <code>list()</code> here - <code>runif()</code> returns multiple values and a <code>mutate()</code> expression has to return something of length 1. <code>list()</code> means that we’ll get a list column where each row is a list containing multiple values. If you forget to use <code>list()</code>, dplyr will give you a hint:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb27-2"><a href="#cb27-2"></a><span class="st">  </span><span class="kw">rowwise</span>() <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb27-3"><a href="#cb27-3"></a><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">data =</span> <span class="kw">runif</span>(n, min, max))</span>
@@ -695,7 +699,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb27-6"><a href="#cb27-6"></a><span class="co">#&gt; ℹ Input `data` is `runif(n, min, max)`.</span></span>
 <span id="cb27-7"><a href="#cb27-7"></a><span class="co">#&gt; ℹ Input `data` must be size 1, not 2.</span></span>
 <span id="cb27-8"><a href="#cb27-8"></a><span class="co">#&gt; ℹ Did you mean: `data = list(runif(n, min, max))` ?</span></span>
-<span id="cb27-9"><a href="#cb27-9"></a><span class="co">#&gt; ℹ The error occured in row 2.</span></span></code></pre></div>
+<span id="cb27-9"><a href="#cb27-9"></a><span class="co">#&gt; ℹ The error occurred in row 2.</span></span></code></pre></div>
 </div>
 <div id="multiple-combinations" class="section level3">
 <h3>Multiple combinations</h3>
@@ -793,7 +797,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb33-8"><a href="#cb33-8"></a><span class="co">#&gt; 1     4    11</span></span>
 <span id="cb33-9"><a href="#cb33-9"></a><span class="co">#&gt; 2     6     7</span></span>
 <span id="cb33-10"><a href="#cb33-10"></a><span class="co">#&gt; 3     8    14</span></span></code></pre></div>
-<p>If needed (unlike here), you can wrap the results in list yourself.</p></li>
+<p>If needed (unlike here), you can wrap the results in a list yourself.</p></li>
 </ul>
 <p>The addition of <code>cur_data()</code>/<code>across()</code> and the increased scope of <code>summarise()</code> means that <code>do()</code> is no longer needed, so it is now superseded.</p>
 </div>

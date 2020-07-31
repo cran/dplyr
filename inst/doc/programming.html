@@ -14,16 +14,19 @@
 
 <title>Programming with dplyr</title>
 
-<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
-// be compatible with the behavior of Pandoc < 2.8).
-document.addEventListener('DOMContentLoaded', function(e) {
-  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
-  var i, h, a;
-  for (i = 0; i < hs.length; i++) {
-    h = hs[i];
-    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
-    a = h.attributes;
-    while (a.length > 0) h.removeAttribute(a[0].name);
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
   }
 });
 </script>
@@ -31,18 +34,19 @@ document.addEventListener('DOMContentLoaded', function(e) {
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { display: inline-block; line-height: 1.25; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
+code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+code.sourceCode { white-space: pre-wrap; }
+code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -62,7 +66,7 @@ pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-le
 div.sourceCode
   {   }
 @media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -378,7 +382,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h3>The tidyselect DSL</h3>
 <p>Underneath all functions that use tidy selection is the <a href="http://tidyselect.r-lib.org/">tidyselect</a> package. It provides a miniature domain specific language that makes it easy to select columns by name, position, or type. For example:</p>
 <ul>
-<li><p><code>select(df, 1)</code> selects the first column; <code>select(1, last_col())</code> selects the last column.</p></li>
+<li><p><code>select(df, 1)</code> selects the first column; <code>select(df, last_col())</code> selects the last column.</p></li>
 <li><p><code>select(df, c(a, b, c))</code> selects columns <code>a</code>, <code>b</code>, and <code>c</code>.</p></li>
 <li><p><code>select(df, starts_with(&quot;a&quot;))</code> selects all columns whose name starts with “a”; <code>select(df, ends_with(&quot;z&quot;))</code> selects all columns whose name ends with “z”.</p></li>
 <li><p><code>select(df, is.numeric)</code> selects all numeric columns.</p></li>
@@ -531,7 +535,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1"></a>my_summarise &lt;-<span class="st"> </span><span class="cf">function</span>(data, group_var, summarise_var) {</span>
 <span id="cb19-2"><a href="#cb19-2"></a>  data <span class="op">%&gt;%</span></span>
 <span id="cb19-3"><a href="#cb19-3"></a><span class="st">    </span><span class="kw">group_by</span>(<span class="kw">across</span>({{ group_var }})) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb19-4"><a href="#cb19-4"></a><span class="st">    </span><span class="kw">summarise</span>(<span class="kw">across</span>({{ group_var }}, mean))</span>
+<span id="cb19-4"><a href="#cb19-4"></a><span class="st">    </span><span class="kw">summarise</span>(<span class="kw">across</span>({{ summarise_var }}, mean))</span>
 <span id="cb19-5"><a href="#cb19-5"></a>}</span></code></pre></div>
 <p>Use the <code>.names</code> argument to <code>across()</code> to control the names of the output.</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>my_summarise &lt;-<span class="st"> </span><span class="cf">function</span>(data, group_var, summarise_var) {</span>

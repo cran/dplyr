@@ -44,7 +44,7 @@ subset(starwars, mass > 1000)
 subset(starwars, hair_color == "none" & eye_color == "black")
 
 ## -----------------------------------------------------------------------------
-starwars[which(starwars$species == "human"), , drop = FALSE]
+starwars[which(starwars$species == "Human"), , drop = FALSE]
 starwars[which(starwars$mass > 1000), , drop = FALSE]
 starwars[which(starwars$hair_color == "none" & starwars$eye_color == "black"), , drop = FALSE]
 
