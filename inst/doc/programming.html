@@ -380,7 +380,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>Data masking makes it easy to compute on values within a dataset. Tidy selection is a complementary tool that makes it easy to work with the columns of a dataset.</p>
 <div id="the-tidyselect-dsl" class="section level3">
 <h3>The tidyselect DSL</h3>
-<p>Underneath all functions that use tidy selection is the <a href="http://tidyselect.r-lib.org/">tidyselect</a> package. It provides a miniature domain specific language that makes it easy to select columns by name, position, or type. For example:</p>
+<p>Underneath all functions that use tidy selection is the <a href="https://tidyselect.r-lib.org/">tidyselect</a> package. It provides a miniature domain specific language that makes it easy to select columns by name, position, or type. For example:</p>
 <ul>
 <li><p><code>select(df, 1)</code> selects the first column; <code>select(df, last_col())</code> selects the last column.</p></li>
 <li><p><code>select(df, c(a, b, c))</code> selects columns <code>a</code>, <code>b</code>, and <code>c</code>.</p></li>
@@ -541,7 +541,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>my_summarise &lt;-<span class="st"> </span><span class="cf">function</span>(data, group_var, summarise_var) {</span>
 <span id="cb20-2"><a href="#cb20-2"></a>  data <span class="op">%&gt;%</span></span>
 <span id="cb20-3"><a href="#cb20-3"></a><span class="st">    </span><span class="kw">group_by</span>(<span class="kw">across</span>({{ group_var }})) <span class="op">%&gt;%</span><span class="st"> </span></span>
-<span id="cb20-4"><a href="#cb20-4"></a><span class="st">    </span><span class="kw">summarise</span>(<span class="kw">across</span>({{ summarise_var }}, mean, <span class="dt">.names =</span> <span class="st">&quot;mean_{col}&quot;</span>))</span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="st">    </span><span class="kw">summarise</span>(<span class="kw">across</span>({{ summarise_var }}, mean, <span class="dt">.names =</span> <span class="st">&quot;mean_{.col}&quot;</span>))</span>
 <span id="cb20-5"><a href="#cb20-5"></a>}</span></code></pre></div>
 </div>
 <div id="loop-over-multiple-variables" class="section level3">

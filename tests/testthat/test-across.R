@@ -22,7 +22,7 @@ test_that("across() correctly names output columns", {
     c("x", "y", "z", "s")
   )
   expect_named(
-    summarise(gf, across(.names = "id_{col}")),
+    summarise(gf, across(.names = "id_{.col}")),
     c("x", "id_y", "id_z", "id_s")
   )
   expect_named(
@@ -30,7 +30,7 @@ test_that("across() correctly names output columns", {
     c("x", "y", "z")
   )
   expect_named(
-    summarise(gf, across(where(is.numeric), mean, .names = "mean_{col}")),
+    summarise(gf, across(where(is.numeric), mean, .names = "mean_{.col}")),
     c("x", "mean_y", "mean_z")
   )
   expect_named(
@@ -50,7 +50,7 @@ test_that("across() correctly names output columns", {
     c("x", "y_1", "y_2", "z_1", "z_2")
   )
   expect_named(
-    summarise(gf, across(where(is.numeric), list(mean = mean, sum = sum), .names = "{fn}_{col}")),
+    summarise(gf, across(where(is.numeric), list(mean = mean, sum = sum), .names = "{.fn}_{.col}")),
     c("x", "mean_y", "sum_y", "mean_z", "sum_z")
   )
 })
@@ -192,6 +192,42 @@ test_that("across(<empty set>) returns a data frame with 1 row (#5204)", {
     expect_equal(nrow(res), 1L)
     res
   })
+})
+
+test_that("across(.names=) can use local variables in addition to {col} and {fn}", {
+  res <- local({
+    prefix <- "MEAN"
+    data.frame(x = 42) %>%
+      summarise(across(everything(), mean, .names = "{prefix}_{.col}"))
+  })
+  expect_identical(res, data.frame(MEAN_x = 42))
+})
+
+test_that("across() uses environment from the current quosure (#5460)", {
+  # If the data frame `y` is selected, causes a subscript conversion
+  # error since it is fractional
+  df <- data.frame(x = 1, y = 2.4)
+  y <- "x"
+  expect_equal(df %>% summarise(across(all_of(y), mean)), data.frame(x = 1))
+  expect_equal(df %>% mutate(across(all_of(y), mean)), df)
+  expect_equal(df %>% filter(across(all_of(y), ~ .x < 2)), df)
+
+  # Recursive case
+  out <- df %>% summarise(summarise(across(), across(all_of(y), mean)))
+  expect_equal(out, data.frame(x = 1))
+
+  # Inherited case
+  out <- df %>% summarise(local(across(all_of(y), mean)))
+  expect_equal(out, data.frame(x = 1))
+
+  # Recursive + inherited case
+  out <- df %>%
+    summarise(
+      local(
+        summarise(across(), across(all_of(y), mean))
+      )
+    )
+  expect_equal(out, data.frame(x = 1))
 })
 
 

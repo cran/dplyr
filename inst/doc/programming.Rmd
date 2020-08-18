@@ -129,7 +129,7 @@ Data masking makes it easy to compute on values within a dataset. Tidy selection
 
 ### The tidyselect DSL
 
-Underneath all functions that use tidy selection is the [tidyselect](http://tidyselect.r-lib.org/) package. It provides a miniature domain specific language that makes it easy to select columns by name, position, or type. For example:
+Underneath all functions that use tidy selection is the [tidyselect](https://tidyselect.r-lib.org/) package. It provides a miniature domain specific language that makes it easy to select columns by name, position, or type. For example:
 
 * `select(df, 1)` selects the first column; 
   `select(df, last_col())` selects the last column.
@@ -324,7 +324,7 @@ Use the `.names` argument to `across()` to control the names of the output.
 my_summarise <- function(data, group_var, summarise_var) {
   data %>%
     group_by(across({{ group_var }})) %>% 
-    summarise(across({{ summarise_var }}, mean, .names = "mean_{col}"))
+    summarise(across({{ summarise_var }}, mean, .names = "mean_{.col}"))
 }
 ```
 

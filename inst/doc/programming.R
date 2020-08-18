@@ -133,7 +133,7 @@ my_summarise <- function(data, group_var, summarise_var) {
 my_summarise <- function(data, group_var, summarise_var) {
   data %>%
     group_by(across({{ group_var }})) %>% 
-    summarise(across({{ summarise_var }}, mean, .names = "mean_{col}"))
+    summarise(across({{ summarise_var }}, mean, .names = "mean_{.col}"))
 }
 
 ## ---- results = FALSE---------------------------------------------------------

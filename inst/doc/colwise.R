@@ -44,12 +44,12 @@ min_max <- list(
 starwars %>% summarise(across(where(is.numeric), min_max))
 
 ## -----------------------------------------------------------------------------
-starwars %>% summarise(across(where(is.numeric), min_max, .names = "{fn}.{col}"))
+starwars %>% summarise(across(where(is.numeric), min_max, .names = "{.fn}.{.col}"))
 
 ## -----------------------------------------------------------------------------
 starwars %>% summarise(
-  across(where(is.numeric), ~min(.x, na.rm = TRUE), .names = "min_{col}"),
-  across(where(is.numeric), ~max(.x, na.rm = TRUE), .names = "max_{col}")
+  across(where(is.numeric), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
+  across(where(is.numeric), ~max(.x, na.rm = TRUE), .names = "max_{.col}")
 )
 
 ## -----------------------------------------------------------------------------

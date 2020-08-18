@@ -189,6 +189,8 @@ test_that("summarise(.groups=)", {
   ))
 
   df <- data.frame(x = 1, y = 2)
+  expect_equal(df %>% summarise(z = 3, .groups= "rowwise"), rowwise(data.frame(z = 3)))
+
   gf <- df %>% group_by(x, y)
   expect_equal(gf %>% summarise() %>% group_vars(), "x")
   expect_equal(gf %>% summarise(.groups = "drop_last") %>% group_vars(), "x")
@@ -263,5 +265,9 @@ test_that("summarise() gives meaningful errors", {
 
     "# Duplicate column names"
     tibble(x = 1, x = 1, .name_repair = "minimal") %>% summarise(x)
+
+    "# Not glue()ing"
+    tibble() %>% summarise(stop("{"))
+    tibble(a = 1, b="{value:1, unit:a}") %>% group_by(b) %>% summarise(a = stop("!"))
   })
 })
