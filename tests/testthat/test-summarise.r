@@ -202,6 +202,14 @@ test_that("summarise(.groups=)", {
   expect_equal(rf %>% summarise(.groups = "keep") %>% group_vars(), c("x", "y"))
 })
 
+test_that("summarise() casts data frame results to common type (#5646)", {
+  df <- data.frame(x = 1:2, g = 1:2) %>% group_by(g)
+
+  res <- df %>%
+    summarise(if (g == 1) data.frame(y = 1) else data.frame(y = 1, z = 2), .groups = "drop")
+  expect_equal(res$z, c(NA, 2))
+})
+
 # errors -------------------------------------------------------------------
 
 test_that("summarise() preserves the call stack on error (#5308)", {
@@ -222,7 +230,6 @@ test_that("summarise() gives meaningful errors", {
   verify_output(env = env(global_env()), test_path("test-summarise-errors.txt"), {
     "# Messages about .groups="
     ignored <- tibble(x = 1, y = 2) %>% group_by(x, y) %>% summarise()
-    ignored <- tibble(x = 1, y = 2) %>% group_by(x) %>% summarise()
     ignored <- tibble(x = 1, y = 2) %>% group_by(x, y) %>% summarise(z = c(2,2))
     ignored <- tibble(x = 1, y = 2) %>% rowwise(x, y) %>% summarise()
     ignored <- tibble(x = 1, y = 2) %>% rowwise() %>% summarise()

@@ -42,15 +42,30 @@ min_max <- list(
   max = ~max(.x, na.rm = TRUE)
 )
 starwars %>% summarise(across(where(is.numeric), min_max))
+starwars %>% summarise(across(c(height, mass, birth_year), min_max))
 
 ## -----------------------------------------------------------------------------
 starwars %>% summarise(across(where(is.numeric), min_max, .names = "{.fn}.{.col}"))
+starwars %>% summarise(across(c(height, mass, birth_year), min_max, .names = "{.fn}.{.col}"))
 
 ## -----------------------------------------------------------------------------
 starwars %>% summarise(
-  across(where(is.numeric), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
-  across(where(is.numeric), ~max(.x, na.rm = TRUE), .names = "max_{.col}")
+  across(c(height, mass, birth_year), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
+  across(c(height, mass, birth_year), ~max(.x, na.rm = TRUE), .names = "max_{.col}")
 )
+
+## -----------------------------------------------------------------------------
+starwars %>% summarise(
+  tibble(
+    across(where(is.numeric), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
+    across(where(is.numeric), ~max(.x, na.rm = TRUE), .names = "max_{.col}")  
+  )
+)
+
+## -----------------------------------------------------------------------------
+starwars %>% 
+  summarise(across(where(is.numeric), min_max, .names = "{.fn}.{.col}")) %>% 
+  relocate(starts_with("min"))
 
 ## -----------------------------------------------------------------------------
 df <- tibble(x = 1:3, y = 3:5, z = 5:7)
@@ -71,6 +86,12 @@ df %>%
 ## -----------------------------------------------------------------------------
 df %>% 
   summarise(n = n(), across(where(is.numeric) & !n, sd))
+
+## -----------------------------------------------------------------------------
+df %>% 
+  summarise(
+    tibble(n = n(), across(where(is.numeric), sd))
+  )
 
 ## -----------------------------------------------------------------------------
 rescale01 <- function(x) {

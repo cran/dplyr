@@ -1,3 +1,42 @@
+# dplyr 1.0.3
+
+* `summarise()` no longer informs when the result is ungrouped (#5633).
+
+* `group_by(.drop = FALSE)` preserves ordered factors (@brianrice2, #5545).
+
+* `count()` and `tally()` are now generic. 
+
+* Removed default fallbacks to lazyeval methods; this will yield better error messages when 
+  you call a dplyr function with the wrong input, and is part of our long term 
+  plan to remove the deprecated lazyeval interface. 
+
+* `inner_join()` gains a `keep` parameter for consistency with the other
+  mutating joins (@patrickbarks, #5581).
+
+* Improved performance with many columns, with a dynamic data mask using active
+  bindings and lazy chops (#5017). 
+
+* `mutate()` and friends preserves row names in data frames once more (#5418).
+
+* `group_by()` uses the ungrouped data for the implicit mutate step (#5598). 
+  You might have to define an `ungroup()` method for custom classes.
+  For example, see https://github.com/hadley/cubelyr/pull/3. 
+
+* `relocate()` can rename columns it relocates (#5569).
+
+* `distinct()` and `group_by()` have better error messages when the mutate step fails (#5060).
+
+* Clarify that `between()` is not vectorised (#5493).
+
+* Fixed `across()` issue where data frame columns would could not be referred to
+  with `all_of()` in the nested case (`mutate()` within `mutate()`) (#5498).
+  
+* `across()` handles data frames with 0 columns (#5523). 
+
+* `mutate()` always keeps grouping variables, unconditional to `.keep=` (#5582).
+
+* dplyr now depends on R 3.3.0
+
 # dplyr 1.0.2
 
 * Fixed `across()` issue where data frame columns would mask objects referred to
@@ -1444,7 +1483,7 @@ All data table related code has been separated out in to a new dtplyr package. T
 
 ### Tibble
 
-Functions related to the creation and coercion of `tbl_df`s, now live in their own package: [tibble](http://blog.rstudio.org/2016/03/24/tibble-1-0-0/). See `vignette("tibble")` for more details.
+Functions related to the creation and coercion of `tbl_df`s, now live in their own package: [tibble](https://blog.rstudio.com/2016/03/24/tibble-1-0-0/). See `vignette("tibble")` for more details.
 
 * `$` and `[[` methods that never do partial matching (#1504), and throw
   an error if the variable does not exist.

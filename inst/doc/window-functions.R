@@ -4,6 +4,10 @@ options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(dplyr)
 set.seed(1014)
 
+if (!rlang::is_installed("Lahman")) {
+  knitr::opts_chunk$set(eval = FALSE)
+}
+
 ## -----------------------------------------------------------------------------
 library(Lahman)
 

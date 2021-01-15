@@ -1,8 +1,9 @@
 #' Starwars characters
 #'
-#' This data comes from SWAPI, the Star Wars API, <https://swapi.dev/>
+#' The original data, from SWAPI, the Star Wars API, <https://swapi.dev/>, has been revised
+#' to reflect additional research into gender and sex determinations of characters.
 #'
-#' @format A tibble with 87 rows and 13 variables:
+#' @format A tibble with 87 rows and 14 variables:
 #' \describe{
 #' \item{name}{Name of the character}
 #' \item{height}{Height (cm)}

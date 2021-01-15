@@ -1,12 +1,3 @@
-
-# Initialised at load time
-dplyr_proxy_order <- function(...) NULL
-
-# Hack to pass CRAN check with older vctrs versions where
-# `vec_proxy_order()` doesn't exist
-utils::globalVariables("vec_proxy_order")
-
-
 .onLoad <- function(libname, pkgname) {
   op <- options()
   op.dplyr <- list(
@@ -15,15 +6,12 @@ utils::globalVariables("vec_proxy_order")
   toset <- !(names(op.dplyr) %in% names(op))
   if (any(toset)) options(op.dplyr[toset])
 
-  .Call(dplyr_init_library, ns_env("dplyr"))
+  .Call(dplyr_init_library, ns_env("dplyr"), ns_env("vctrs"), ns_env("rlang"))
 
-  # FIXME: Temporary until the API change from
-  # https://github.com/r-lib/vctrs/pull/1155 is on CRAN and we can
-  # depend on it
-  if (env_has(ns_env("vctrs"), "vec_proxy_order")) {
-    dplyr_proxy_order <<- vec_proxy_order
-  } else {
-    dplyr_proxy_order <<- function(x, ...) vec_proxy_compare(x, ..., relax = TRUE)
+  has_dbplyr <- is_installed("dbplyr")
+  if (!has_dbplyr || !exists("count.tbl_sql", ns_env("dbplyr"))) {
+    s3_register("dplyr::count", "tbl_sql")
+    s3_register("dplyr::tally", "tbl_sql")
   }
 
   invisible()

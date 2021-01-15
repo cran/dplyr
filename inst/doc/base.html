@@ -14,6 +14,19 @@
 
 <title>dplyr &lt;-&gt; base R</title>
 
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
 <script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
 // v0.0.1
 // Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
@@ -34,19 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
-code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -66,7 +78,7 @@ pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-le
 div.sourceCode
   {   }
 @media screen {
-code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -448,38 +460,38 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt; # A tibble: 10 x 1</span></span>
 <span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt;       x</span></span>
 <span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt;   &lt;int&gt;</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; 1     2</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; 2     5</span></span>
-<span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; 3     3</span></span>
-<span id="cb6-13"><a href="#cb6-13"></a><span class="co">#&gt; 4     1</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; 1     8</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; 2     1</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; 3     7</span></span>
+<span id="cb6-13"><a href="#cb6-13"></a><span class="co">#&gt; 4     4</span></span>
 <span id="cb6-14"><a href="#cb6-14"></a><span class="co">#&gt; # … with 6 more rows</span></span>
 <span id="cb6-15"><a href="#cb6-15"></a>df <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">distinct</span>(x, <span class="dt">.keep_all =</span> <span class="ot">TRUE</span>) <span class="co"># whole data frame</span></span>
 <span id="cb6-16"><a href="#cb6-16"></a><span class="co">#&gt; # A tibble: 10 x 2</span></span>
 <span id="cb6-17"><a href="#cb6-17"></a><span class="co">#&gt;       x     y</span></span>
 <span id="cb6-18"><a href="#cb6-18"></a><span class="co">#&gt;   &lt;int&gt; &lt;int&gt;</span></span>
-<span id="cb6-19"><a href="#cb6-19"></a><span class="co">#&gt; 1     2     2</span></span>
-<span id="cb6-20"><a href="#cb6-20"></a><span class="co">#&gt; 2     5     2</span></span>
-<span id="cb6-21"><a href="#cb6-21"></a><span class="co">#&gt; 3     3     5</span></span>
-<span id="cb6-22"><a href="#cb6-22"></a><span class="co">#&gt; 4     1     5</span></span>
+<span id="cb6-19"><a href="#cb6-19"></a><span class="co">#&gt; 1     8     7</span></span>
+<span id="cb6-20"><a href="#cb6-20"></a><span class="co">#&gt; 2     1     2</span></span>
+<span id="cb6-21"><a href="#cb6-21"></a><span class="co">#&gt; 3     7     9</span></span>
+<span id="cb6-22"><a href="#cb6-22"></a><span class="co">#&gt; 4     4     9</span></span>
 <span id="cb6-23"><a href="#cb6-23"></a><span class="co">#&gt; # … with 6 more rows</span></span></code></pre></div>
 <p>There are two equivalents in base R, depending on whether you want the whole data frame, or just selected variables:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a><span class="kw">unique</span>(df[<span class="st">&quot;x&quot;</span>]) <span class="co"># selected columns</span></span>
 <span id="cb7-2"><a href="#cb7-2"></a><span class="co">#&gt; # A tibble: 10 x 1</span></span>
 <span id="cb7-3"><a href="#cb7-3"></a><span class="co">#&gt;       x</span></span>
 <span id="cb7-4"><a href="#cb7-4"></a><span class="co">#&gt;   &lt;int&gt;</span></span>
-<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt; 1     2</span></span>
-<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt; 2     5</span></span>
-<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt; 3     3</span></span>
-<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt; 4     1</span></span>
+<span id="cb7-5"><a href="#cb7-5"></a><span class="co">#&gt; 1     8</span></span>
+<span id="cb7-6"><a href="#cb7-6"></a><span class="co">#&gt; 2     1</span></span>
+<span id="cb7-7"><a href="#cb7-7"></a><span class="co">#&gt; 3     7</span></span>
+<span id="cb7-8"><a href="#cb7-8"></a><span class="co">#&gt; 4     4</span></span>
 <span id="cb7-9"><a href="#cb7-9"></a><span class="co">#&gt; # … with 6 more rows</span></span>
 <span id="cb7-10"><a href="#cb7-10"></a>df[<span class="op">!</span><span class="kw">duplicated</span>(df<span class="op">$</span>x), , drop =<span class="st"> </span><span class="ot">FALSE</span>] <span class="co"># whole data frame</span></span>
 <span id="cb7-11"><a href="#cb7-11"></a><span class="co">#&gt; # A tibble: 10 x 2</span></span>
 <span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt;       x     y</span></span>
 <span id="cb7-13"><a href="#cb7-13"></a><span class="co">#&gt;   &lt;int&gt; &lt;int&gt;</span></span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="co">#&gt; 1     2     2</span></span>
-<span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt; 2     5     2</span></span>
-<span id="cb7-16"><a href="#cb7-16"></a><span class="co">#&gt; 3     3     5</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a><span class="co">#&gt; 4     1     5</span></span>
+<span id="cb7-14"><a href="#cb7-14"></a><span class="co">#&gt; 1     8     7</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt; 2     1     2</span></span>
+<span id="cb7-16"><a href="#cb7-16"></a><span class="co">#&gt; 3     7     9</span></span>
+<span id="cb7-17"><a href="#cb7-17"></a><span class="co">#&gt; 4     4     9</span></span>
 <span id="cb7-18"><a href="#cb7-18"></a><span class="co">#&gt; # … with 6 more rows</span></span></code></pre></div>
 </div>
 <div id="filter-return-rows-with-matching-conditions" class="section level2">
@@ -576,20 +588,20 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb11-2"><a href="#cb11-2"></a><span class="co">#&gt; # A tibble: 100 x 4</span></span>
 <span id="cb11-3"><a href="#cb11-3"></a><span class="co">#&gt;       x     y     z    z2</span></span>
 <span id="cb11-4"><a href="#cb11-4"></a><span class="co">#&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;dbl&gt;</span></span>
-<span id="cb11-5"><a href="#cb11-5"></a><span class="co">#&gt; 1     2     2     4    16</span></span>
-<span id="cb11-6"><a href="#cb11-6"></a><span class="co">#&gt; 2     5     2     7    49</span></span>
-<span id="cb11-7"><a href="#cb11-7"></a><span class="co">#&gt; 3     3     5     8    64</span></span>
-<span id="cb11-8"><a href="#cb11-8"></a><span class="co">#&gt; 4     1     5     6    36</span></span>
+<span id="cb11-5"><a href="#cb11-5"></a><span class="co">#&gt; 1     8     7    15   225</span></span>
+<span id="cb11-6"><a href="#cb11-6"></a><span class="co">#&gt; 2     1     2     3     9</span></span>
+<span id="cb11-7"><a href="#cb11-7"></a><span class="co">#&gt; 3     7     9    16   256</span></span>
+<span id="cb11-8"><a href="#cb11-8"></a><span class="co">#&gt; 4     4     9    13   169</span></span>
 <span id="cb11-9"><a href="#cb11-9"></a><span class="co">#&gt; # … with 96 more rows</span></span></code></pre></div>
 <p>The closest base equivalent is <code>transform()</code>, but note that it cannot use freshly created variables:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="kw">head</span>(<span class="kw">transform</span>(df, <span class="dt">z =</span> x <span class="op">+</span><span class="st"> </span>y, <span class="dt">z2 =</span> (x <span class="op">+</span><span class="st"> </span>y) <span class="op">^</span><span class="st"> </span><span class="dv">2</span>))</span>
-<span id="cb12-2"><a href="#cb12-2"></a><span class="co">#&gt;    x y  z  z2</span></span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="co">#&gt; 1  2 2  4  16</span></span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="co">#&gt; 2  5 2  7  49</span></span>
-<span id="cb12-5"><a href="#cb12-5"></a><span class="co">#&gt; 3  3 5  8  64</span></span>
-<span id="cb12-6"><a href="#cb12-6"></a><span class="co">#&gt; 4  1 5  6  36</span></span>
-<span id="cb12-7"><a href="#cb12-7"></a><span class="co">#&gt; 5 10 3 13 169</span></span>
-<span id="cb12-8"><a href="#cb12-8"></a><span class="co">#&gt; 6  6 5 11 121</span></span></code></pre></div>
+<span id="cb12-2"><a href="#cb12-2"></a><span class="co">#&gt;   x y  z  z2</span></span>
+<span id="cb12-3"><a href="#cb12-3"></a><span class="co">#&gt; 1 8 7 15 225</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a><span class="co">#&gt; 2 1 2  3   9</span></span>
+<span id="cb12-5"><a href="#cb12-5"></a><span class="co">#&gt; 3 7 9 16 256</span></span>
+<span id="cb12-6"><a href="#cb12-6"></a><span class="co">#&gt; 4 4 9 13 169</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a><span class="co">#&gt; 5 9 8 17 289</span></span>
+<span id="cb12-8"><a href="#cb12-8"></a><span class="co">#&gt; 6 7 9 16 256</span></span></code></pre></div>
 <p>Alternatively, you can use <code>$&lt;-</code>:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>mtcars<span class="op">$</span>cyl2 &lt;-<span class="st"> </span>mtcars<span class="op">$</span>cyl <span class="op">*</span><span class="st"> </span><span class="dv">2</span></span>
 <span id="cb13-2"><a href="#cb13-2"></a>mtcars<span class="op">$</span>cyl4 &lt;-<span class="st"> </span>mtcars<span class="op">$</span>cyl2 <span class="op">*</span><span class="st"> </span><span class="dv">2</span></span></code></pre></div>
@@ -824,13 +836,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1"></a>mtcars <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb30-2"><a href="#cb30-2"></a><span class="st">  </span><span class="kw">group_by</span>(cyl) <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb30-3"><a href="#cb30-3"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(disp), <span class="dt">n =</span> <span class="kw">n</span>())</span>
-<span id="cb30-4"><a href="#cb30-4"></a><span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span></span>
-<span id="cb30-5"><a href="#cb30-5"></a><span class="co">#&gt; # A tibble: 3 x 3</span></span>
-<span id="cb30-6"><a href="#cb30-6"></a><span class="co">#&gt;     cyl  mean     n</span></span>
-<span id="cb30-7"><a href="#cb30-7"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;</span></span>
-<span id="cb30-8"><a href="#cb30-8"></a><span class="co">#&gt; 1     4  105.    11</span></span>
-<span id="cb30-9"><a href="#cb30-9"></a><span class="co">#&gt; 2     6  183.     7</span></span>
-<span id="cb30-10"><a href="#cb30-10"></a><span class="co">#&gt; 3     8  353.    14</span></span></code></pre></div>
+<span id="cb30-4"><a href="#cb30-4"></a><span class="co">#&gt; # A tibble: 3 x 3</span></span>
+<span id="cb30-5"><a href="#cb30-5"></a><span class="co">#&gt;     cyl  mean     n</span></span>
+<span id="cb30-6"><a href="#cb30-6"></a><span class="co">#&gt; * &lt;dbl&gt; &lt;dbl&gt; &lt;int&gt;</span></span>
+<span id="cb30-7"><a href="#cb30-7"></a><span class="co">#&gt; 1     4  105.    11</span></span>
+<span id="cb30-8"><a href="#cb30-8"></a><span class="co">#&gt; 2     6  183.     7</span></span>
+<span id="cb30-9"><a href="#cb30-9"></a><span class="co">#&gt; 3     8  353.    14</span></span></code></pre></div>
 <p>I think the closest base R equivalent uses <code>by()</code>. Unfortunately <code>by()</code> returns a list of data frames, but you can combine them back together again with <code>do.call()</code> and <code>rbind()</code>:</p>
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>mtcars_by &lt;-<span class="st"> </span><span class="kw">by</span>(mtcars, mtcars<span class="op">$</span>cyl, <span class="cf">function</span>(df) {</span>
 <span id="cb31-2"><a href="#cb31-2"></a>  <span class="kw">with</span>(df, <span class="kw">data.frame</span>(<span class="dt">cyl =</span> cyl[[<span class="dv">1</span>]], <span class="dt">mean =</span> <span class="kw">mean</span>(disp), <span class="dt">n =</span> <span class="kw">nrow</span>(df)))</span>
@@ -855,7 +866,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb33-5"><a href="#cb33-5"></a><span class="co">#&gt;   ..- attr(*, &quot;dimnames&quot;)=List of 2</span></span>
 <span id="cb33-6"><a href="#cb33-6"></a><span class="co">#&gt;   .. ..$ : NULL</span></span>
 <span id="cb33-7"><a href="#cb33-7"></a><span class="co">#&gt;   .. ..$ : chr [1:2] &quot;mean&quot; &quot;n&quot;</span></span></code></pre></div>
-<p>You can see a variety of other options at <a href="https://gist.github.com/hadley/c430501804349d382ce90754936ab8ec" class="uri">https://gist.github.com/hadley/c430501804349d382ce90754936ab8ec</a>, many generated by the R community inspired by <a href="https://twitter.com/hadleywickham/status/1231252596712771585">a tweet</a>.</p>
+<p>You can see a variety of other options at <a href="https://gist.github.com/hadley/c430501804349d382ce90754936ab8ec" class="uri">https://gist.github.com/hadley/c430501804349d382ce90754936ab8ec</a>.</p>
 </div>
 <div id="slice-choose-rows-by-position" class="section level2">
 <h2><code>slice()</code>: Choose rows by position</h2>

@@ -5,7 +5,7 @@
 \alias{starwars}
 \title{Starwars characters}
 \format{
-A tibble with 87 rows and 13 variables:
+A tibble with 87 rows and 14 variables:
 \describe{
 \item{name}{Name of the character}
 \item{height}{Height (cm)}
@@ -25,7 +25,8 @@ A tibble with 87 rows and 13 variables:
 starwars
 }
 \description{
-This data comes from SWAPI, the Star Wars API, \url{https://swapi.dev/}
+The original data, from SWAPI, the Star Wars API, \url{https://swapi.dev/}, has been revised
+to reflect additional research into gender and sex determinations of characters.
 }
 \examples{
 starwars

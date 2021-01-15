@@ -76,8 +76,12 @@ compute_groups <- function(data, vars, drop = FALSE) {
 
     # Make the new keys from the old keys and the new_indices
     new_keys <- pmap(list(old_keys, new_indices, uniques), function(key, index, unique) {
-      if(is.factor(key)) {
-        new_factor(index, levels = levels(key))
+      if (is.factor(key)) {
+        if (is.ordered(key)) {
+          new_ordered(index, levels = levels(key))
+        } else {
+          new_factor(index, levels = levels(key))
+        }
       } else {
         vec_slice(unique, index)
       }
@@ -294,7 +298,10 @@ expand_groups <- function(old_groups, positions, nr) {
 vec_split_id_order <- function(x) {
   split_id <- vec_group_loc(x)
   split_id$loc <- new_list_of(split_id$loc, ptype = integer())
-  vec_slice(split_id, vec_order(split_id$key))
+
+  # TODO: remove as.data.frame() once this is resolved
+  #       https://github.com/r-lib/vctrs/issues/1298
+  vec_slice(split_id, vec_order(as.data.frame(split_id$key)))
 }
 
 group_intersect <- function(x, new) {

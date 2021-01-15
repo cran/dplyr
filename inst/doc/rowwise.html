@@ -14,6 +14,19 @@
 
 <title>Row-wise operations</title>
 
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
 <script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
 // v0.0.1
 // Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
@@ -34,19 +47,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
-code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
-code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode { white-space: pre; position: relative; }
 div.sourceCode { margin: 1em 0; }
 pre.sourceCode { margin: 0; }
 @media screen {
 div.sourceCode { overflow: auto; }
 }
 @media print {
-code.sourceCode { white-space: pre-wrap; }
-code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -66,7 +78,7 @@ pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-le
 div.sourceCode
   {   }
 @media screen {
-code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 code span.al { color: #ff0000; font-weight: bold; } /* Alert */
 code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
@@ -363,7 +375,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-3"><a href="#cb4-3"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb4-4"><a href="#cb4-4"></a><span class="st">  </span><span class="kw">rowwise</span>() <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb4-5"><a href="#cb4-5"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="dt">m =</span> <span class="kw">mean</span>(<span class="kw">c</span>(x, y, z)))</span>
-<span id="cb4-6"><a href="#cb4-6"></a><span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a><span class="co">#&gt; `summarise()` has ungrouped output. You can override using the `.groups` argument.</span></span>
 <span id="cb4-7"><a href="#cb4-7"></a><span class="co">#&gt; # A tibble: 2 x 1</span></span>
 <span id="cb4-8"><a href="#cb4-8"></a><span class="co">#&gt;       m</span></span>
 <span id="cb4-9"><a href="#cb4-9"></a><span class="co">#&gt;   &lt;dbl&gt;</span></span>
@@ -373,7 +385,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-13"><a href="#cb4-13"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb4-14"><a href="#cb4-14"></a><span class="st">  </span><span class="kw">rowwise</span>(name) <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb4-15"><a href="#cb4-15"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="dt">m =</span> <span class="kw">mean</span>(<span class="kw">c</span>(x, y, z)))</span>
-<span id="cb4-16"><a href="#cb4-16"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;name&#39; (override with `.groups` argument)</span></span>
+<span id="cb4-16"><a href="#cb4-16"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;name&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb4-17"><a href="#cb4-17"></a><span class="co">#&gt; # A tibble: 2 x 2</span></span>
 <span id="cb4-18"><a href="#cb4-18"></a><span class="co">#&gt; # Groups:   name [2]</span></span>
 <span id="cb4-19"><a href="#cb4-19"></a><span class="co">#&gt;   name       m</span></span>
@@ -409,7 +421,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb7-9"><a href="#cb7-9"></a><span class="co">#&gt; 4     4    13    23    33    43   112</span></span>
 <span id="cb7-10"><a href="#cb7-10"></a><span class="co">#&gt; # … with 2 more rows</span></span>
 <span id="cb7-11"><a href="#cb7-11"></a>rf <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">total =</span> <span class="kw">sum</span>(<span class="kw">c</span>(w, x, y, z)))</span>
-<span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;id&#39; (override with `.groups` argument)</span></span>
+<span id="cb7-12"><a href="#cb7-12"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;id&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb7-13"><a href="#cb7-13"></a><span class="co">#&gt; # A tibble: 6 x 2</span></span>
 <span id="cb7-14"><a href="#cb7-14"></a><span class="co">#&gt; # Groups:   id [6]</span></span>
 <span id="cb7-15"><a href="#cb7-15"></a><span class="co">#&gt;      id total</span></span>
@@ -594,15 +606,14 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <h3>Modelling</h3>
 <p><code>rowwise()</code> data frames allow you to solve a variety of modelling problems in what I think is a particularly elegant way. We’ll start by creating a nested data frame:</p>
 <div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1"></a>by_cyl &lt;-<span class="st"> </span>mtcars <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">nest_by</span>(cyl)</span>
-<span id="cb20-2"><a href="#cb20-2"></a><span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span></span>
-<span id="cb20-3"><a href="#cb20-3"></a>by_cyl</span>
-<span id="cb20-4"><a href="#cb20-4"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
-<span id="cb20-5"><a href="#cb20-5"></a><span class="co">#&gt; # Rowwise:  cyl</span></span>
-<span id="cb20-6"><a href="#cb20-6"></a><span class="co">#&gt;     cyl data              </span></span>
-<span id="cb20-7"><a href="#cb20-7"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;            </span></span>
-<span id="cb20-8"><a href="#cb20-8"></a><span class="co">#&gt; 1     4 &lt;tibble [11 × 12]&gt;</span></span>
-<span id="cb20-9"><a href="#cb20-9"></a><span class="co">#&gt; 2     6 &lt;tibble [7 × 12]&gt; </span></span>
-<span id="cb20-10"><a href="#cb20-10"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt;</span></span></code></pre></div>
+<span id="cb20-2"><a href="#cb20-2"></a>by_cyl</span>
+<span id="cb20-3"><a href="#cb20-3"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
+<span id="cb20-4"><a href="#cb20-4"></a><span class="co">#&gt; # Rowwise:  cyl</span></span>
+<span id="cb20-5"><a href="#cb20-5"></a><span class="co">#&gt;     cyl data              </span></span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;            </span></span>
+<span id="cb20-7"><a href="#cb20-7"></a><span class="co">#&gt; 1     4 &lt;tibble [11 × 12]&gt;</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a><span class="co">#&gt; 2     6 &lt;tibble [7 × 12]&gt; </span></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt;</span></span></code></pre></div>
 <p>This is a little different to the usual <code>group_by()</code> output: we have visibly changed the structure of the data. Now we have three rows (one for each group), and we have a list-col, <code>data</code>, that stores the data for that group. Also note that the output is <code>rowwise()</code>; this is important because it’s going to make working with that list of data frames much easier.</p>
 <p>Once we have one data frame per row, it’s straightforward to make one model per row:</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>mods &lt;-<span class="st"> </span>by_cyl <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">mod =</span> <span class="kw">list</span>(<span class="kw">lm</span>(mpg <span class="op">~</span><span class="st"> </span>wt, <span class="dt">data =</span> data)))</span>
@@ -626,7 +637,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb22-9"><a href="#cb22-9"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt; &lt;lm&gt;   &lt;dbl [14]&gt;</span></span></code></pre></div>
 <p>You could then summarise the model in a variety of ways:</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">rmse =</span> <span class="kw">sqrt</span>(<span class="kw">mean</span>((pred <span class="op">-</span><span class="st"> </span>data<span class="op">$</span>mpg) <span class="op">^</span><span class="st"> </span><span class="dv">2</span>)))</span>
-<span id="cb23-2"><a href="#cb23-2"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
+<span id="cb23-2"><a href="#cb23-2"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;cyl&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb23-3"><a href="#cb23-3"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
 <span id="cb23-4"><a href="#cb23-4"></a><span class="co">#&gt; # Groups:   cyl [3]</span></span>
 <span id="cb23-5"><a href="#cb23-5"></a><span class="co">#&gt;     cyl  rmse</span></span>
@@ -635,7 +646,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb23-8"><a href="#cb23-8"></a><span class="co">#&gt; 2     6 0.985</span></span>
 <span id="cb23-9"><a href="#cb23-9"></a><span class="co">#&gt; 3     8 1.87</span></span>
 <span id="cb23-10"><a href="#cb23-10"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">rsq =</span> <span class="kw">summary</span>(mod)<span class="op">$</span>r.squared)</span>
-<span id="cb23-11"><a href="#cb23-11"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
+<span id="cb23-11"><a href="#cb23-11"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;cyl&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb23-12"><a href="#cb23-12"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
 <span id="cb23-13"><a href="#cb23-13"></a><span class="co">#&gt; # Groups:   cyl [3]</span></span>
 <span id="cb23-14"><a href="#cb23-14"></a><span class="co">#&gt;     cyl   rsq</span></span>
@@ -644,7 +655,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb23-17"><a href="#cb23-17"></a><span class="co">#&gt; 2     6 0.465</span></span>
 <span id="cb23-18"><a href="#cb23-18"></a><span class="co">#&gt; 3     8 0.423</span></span>
 <span id="cb23-19"><a href="#cb23-19"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(broom<span class="op">::</span><span class="kw">glance</span>(mod))</span>
-<span id="cb23-20"><a href="#cb23-20"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
+<span id="cb23-20"><a href="#cb23-20"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;cyl&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb23-21"><a href="#cb23-21"></a><span class="co">#&gt; # A tibble: 3 x 13</span></span>
 <span id="cb23-22"><a href="#cb23-22"></a><span class="co">#&gt; # Groups:   cyl [3]</span></span>
 <span id="cb23-23"><a href="#cb23-23"></a><span class="co">#&gt;     cyl r.squared adj.r.squared sigma statistic p.value    df logLik   AIC   BIC</span></span>
@@ -655,7 +666,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb23-28"><a href="#cb23-28"></a><span class="co">#&gt; # … with 3 more variables: deviance &lt;dbl&gt;, df.residual &lt;int&gt;, nobs &lt;int&gt;</span></span></code></pre></div>
 <p>Or easily access the parameters of each model:</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(broom<span class="op">::</span><span class="kw">tidy</span>(mod))</span>
-<span id="cb24-2"><a href="#cb24-2"></a><span class="co">#&gt; `summarise()` regrouping output by &#39;cyl&#39; (override with `.groups` argument)</span></span>
+<span id="cb24-2"><a href="#cb24-2"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;cyl&#39;. You can override using the `.groups` argument.</span></span>
 <span id="cb24-3"><a href="#cb24-3"></a><span class="co">#&gt; # A tibble: 6 x 6</span></span>
 <span id="cb24-4"><a href="#cb24-4"></a><span class="co">#&gt; # Groups:   cyl [3]</span></span>
 <span id="cb24-5"><a href="#cb24-5"></a><span class="co">#&gt;     cyl term        estimate std.error statistic    p.value</span></span>
@@ -768,13 +779,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1"></a>mtcars <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb31-2"><a href="#cb31-2"></a><span class="st">  </span><span class="kw">group_by</span>(cyl) <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb31-3"><a href="#cb31-3"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="kw">head</span>(<span class="kw">cur_data</span>(), <span class="dv">1</span>))</span>
-<span id="cb31-4"><a href="#cb31-4"></a><span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span></span>
-<span id="cb31-5"><a href="#cb31-5"></a><span class="co">#&gt; # A tibble: 3 x 13</span></span>
-<span id="cb31-6"><a href="#cb31-6"></a><span class="co">#&gt;     cyl   mpg  disp    hp  drat    wt  qsec    vs    am  gear  carb  cyl2  cyl4</span></span>
-<span id="cb31-7"><a href="#cb31-7"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb31-8"><a href="#cb31-8"></a><span class="co">#&gt; 1     4  22.8   108    93  3.85  2.32  18.6     1     1     4     1     8    16</span></span>
-<span id="cb31-9"><a href="#cb31-9"></a><span class="co">#&gt; 2     6  21     160   110  3.9   2.62  16.5     0     1     4     4    12    24</span></span>
-<span id="cb31-10"><a href="#cb31-10"></a><span class="co">#&gt; 3     8  18.7   360   175  3.15  3.44  17.0     0     0     3     2    16    32</span></span></code></pre></div></li>
+<span id="cb31-4"><a href="#cb31-4"></a><span class="co">#&gt; # A tibble: 3 x 13</span></span>
+<span id="cb31-5"><a href="#cb31-5"></a><span class="co">#&gt;     cyl   mpg  disp    hp  drat    wt  qsec    vs    am  gear  carb  cyl2  cyl4</span></span>
+<span id="cb31-6"><a href="#cb31-6"></a><span class="co">#&gt; * &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb31-7"><a href="#cb31-7"></a><span class="co">#&gt; 1     4  22.8   108    93  3.85  2.32  18.6     1     1     4     1     8    16</span></span>
+<span id="cb31-8"><a href="#cb31-8"></a><span class="co">#&gt; 2     6  21     160   110  3.9   2.62  16.5     0     1     4     4    12    24</span></span>
+<span id="cb31-9"><a href="#cb31-9"></a><span class="co">#&gt; 3     8  18.7   360   175  3.15  3.44  17.0     0     0     3     2    16    32</span></span></code></pre></div></li>
 <li><p>With arguments: it worked like <code>mutate()</code> but automatically wrapped every element in a list:</p>
 <div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1"></a>mtcars <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb32-2"><a href="#cb32-2"></a><span class="st">  </span><span class="kw">group_by</span>(cyl) <span class="op">%&gt;%</span><span class="st"> </span></span>
@@ -790,13 +800,12 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1"></a>mtcars <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb33-2"><a href="#cb33-2"></a><span class="st">  </span><span class="kw">group_by</span>(cyl) <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb33-3"><a href="#cb33-3"></a><span class="st">  </span><span class="kw">summarise</span>(<span class="dt">nrows =</span> <span class="kw">nrow</span>(<span class="kw">cur_data</span>()))</span>
-<span id="cb33-4"><a href="#cb33-4"></a><span class="co">#&gt; `summarise()` ungrouping output (override with `.groups` argument)</span></span>
-<span id="cb33-5"><a href="#cb33-5"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
-<span id="cb33-6"><a href="#cb33-6"></a><span class="co">#&gt;     cyl nrows</span></span>
-<span id="cb33-7"><a href="#cb33-7"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;int&gt;</span></span>
-<span id="cb33-8"><a href="#cb33-8"></a><span class="co">#&gt; 1     4    11</span></span>
-<span id="cb33-9"><a href="#cb33-9"></a><span class="co">#&gt; 2     6     7</span></span>
-<span id="cb33-10"><a href="#cb33-10"></a><span class="co">#&gt; 3     8    14</span></span></code></pre></div>
+<span id="cb33-4"><a href="#cb33-4"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
+<span id="cb33-5"><a href="#cb33-5"></a><span class="co">#&gt;     cyl nrows</span></span>
+<span id="cb33-6"><a href="#cb33-6"></a><span class="co">#&gt; * &lt;dbl&gt; &lt;int&gt;</span></span>
+<span id="cb33-7"><a href="#cb33-7"></a><span class="co">#&gt; 1     4    11</span></span>
+<span id="cb33-8"><a href="#cb33-8"></a><span class="co">#&gt; 2     6     7</span></span>
+<span id="cb33-9"><a href="#cb33-9"></a><span class="co">#&gt; 3     8    14</span></span></code></pre></div>
 <p>If needed (unlike here), you can wrap the results in a list yourself.</p></li>
 </ul>
 <p>The addition of <code>cur_data()</code>/<code>across()</code> and the increased scope of <code>summarise()</code> means that <code>do()</code> is no longer needed, so it is now superseded.</p>

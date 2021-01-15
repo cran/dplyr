@@ -116,15 +116,10 @@ arrange_rows <- function(.data, dots) {
   data <- withCallingHandlers({
     transmute(new_data_frame(.data), !!!quosures)
   }, error = function(cnd) {
-    if (inherits(cnd, "dplyr:::mutate_error")) {
-      error_name <- cnd$error_name
-      index <- sub("^.*_", "", error_name)
-      error_expression <- cnd$error_expression
 
-      bullets <- c(
-        x = glue("Could not create a temporary column for `..{index}`."),
-        i = glue("`..{index}` is `{error_expression}`.")
-      )
+    if (inherits(cnd, "dplyr:::mutate_error")) {
+      # reverse the name mangling
+      bullets <- gsub("^^--arrange_quosure_", "..", cnd$bullets, fixed = TRUE)
     } else {
       bullets <- c(x = conditionMessage(cnd))
     }
@@ -142,7 +137,7 @@ arrange_rows <- function(.data, dots) {
   #
   # should really be map2(quosures, directions, ...)
   proxies <- map2(data, directions, function(column, direction) {
-    proxy <- dplyr_proxy_order(column)
+    proxy <- vec_proxy_order(column)
     desc <- identical(direction, "desc")
     if (is.data.frame(proxy)) {
       proxy <- order(vec_order(proxy,

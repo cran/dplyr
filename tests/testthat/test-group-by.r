@@ -387,6 +387,15 @@ test_that("grouped data frames remember their .drop = FALSE (#4337)", {
   expect_false(group_by_drop_default(res2))
 })
 
+test_that("group_by(.drop = FALSE) preserve ordered factors (#5455)", {
+  df <- tibble(x = ordered("x"))
+  drop <- df %>% group_by(x) %>% group_data()
+  nodrop <- df %>% group_by(x, .drop = FALSE) %>% group_data()
+
+  expect_equal(is.ordered(drop$x), is.ordered(nodrop$x))
+  expect_true(is.ordered(nodrop$x))
+})
+
 test_that("summarise maintains the .drop attribute (#4061)", {
   df <- tibble(
     f1 = factor("a", levels = c("a", "b", "c")),
@@ -505,6 +514,14 @@ test_that("group_by() has mutate() semantics (#4984)", {
   )
 })
 
+test_that("implicit mutate() operates on ungrouped data (#5598)", {
+  vars <- tibble(x = c(1,2), y = c(3,4), z = c(5,6)) %>%
+    dplyr::group_by(y) %>%
+    dplyr::group_by(across(any_of(c('y','z')))) %>%
+    dplyr::group_vars()
+  expect_equal(vars, c("y", "z"))
+})
+
 # Errors ------------------------------------------------------------------
 
 test_that("group_by() and ungroup() give meaningful error messages", {
@@ -515,6 +532,8 @@ test_that("group_by() and ungroup() give meaningful error messages", {
 
     df %>% ungroup(x)
     df %>% group_by(x, y) %>% ungroup(z)
+
+    df %>% group_by(z = a + 1)
   })
 })
 

@@ -47,16 +47,16 @@
 #'   only supported option before version 1.0.0.
 #'   * "drop": All levels of grouping are dropped.
 #'   * "keep": Same grouping structure as `.data`.
-#'   * "rowwise": Each row is it's own group.
+#'   * "rowwise": Each row is its own group.
 #'
 #'   When `.groups` is not specified, it is chosen
 #'   based on the number of rows of the results:
 #'   * If all the results have 1 row, you get "drop_last".
 #'   * If the number of rows varies, you get "keep".
 #'
-#'   In addition, a message informs you of that choice, unless the
-#'   option "dplyr.summarise.inform" is set to `FALSE`, or when `summarise()`
-#'   is called from a function in a package.
+#'   In addition, a message informs you of that choice, unless the result is ungrouped,
+#'   the option "dplyr.summarise.inform" is set to `FALSE`,
+#'   or when `summarise()` is called from a function in a package.
 #'
 #' @family single table verbs
 #' @return
@@ -153,18 +153,14 @@ summarise.grouped_df <- function(.data, ..., .groups = NULL) {
     if (n > 1) {
       if (verbose) {
         new_groups <- glue_collapse(paste0("'", group_vars[-n], "'"), sep = ", ")
-        summarise_inform("regrouping output by {new_groups}")
+        summarise_inform("has grouped output by {new_groups}")
       }
       out <- grouped_df(out, group_vars[-n], group_by_drop_default(.data))
-    } else {
-      if (verbose) {
-        summarise_inform("ungrouping output")
-      }
     }
   } else if (identical(.groups, "keep")) {
     if (verbose) {
       new_groups <- glue_collapse(paste0("'", group_vars, "'"), sep = ", ")
-      summarise_inform("regrouping output by {new_groups}")
+      summarise_inform("has grouped output by {new_groups}")
     }
     out <- grouped_df(out, group_vars, group_by_drop_default(.data))
   } else if (identical(.groups, "rowwise")) {
@@ -190,9 +186,9 @@ summarise.rowwise_df <- function(.data, ..., .groups = NULL) {
     if (verbose) {
       if (length(group_vars)) {
         new_groups <- glue_collapse(paste0("'", group_vars, "'"), sep = ", ")
-        summarise_inform("regrouping output by {new_groups}")
+        summarise_inform("has grouped output by {new_groups}")
       } else {
-        summarise_inform("ungrouping output")
+        summarise_inform("has ungrouped output")
       }
     }
     out <- grouped_df(out, group_vars)
@@ -241,6 +237,8 @@ summarise_cols <- function(.data, ...) {
           abort(class = "dplyr:::error_summarise_incompatible_combine", parent = cnd)
         }
       )
+
+      chunks[[i]] <- vec_cast_common(!!!chunks[[i]], .to = result_type)
 
       if ((is.null(dots_names) || dots_names[i] == "") && is.data.frame(result_type)) {
         # remember each result separately
@@ -332,6 +330,6 @@ summarise_verbose <- function(.groups, .env) {
 
 summarise_inform <- function(..., .env = parent.frame()) {
   inform(paste0(
-    "`summarise()` ", glue(..., .envir = .env), " (override with `.groups` argument)"
+    "`summarise()` ", glue(..., .envir = .env), '. You can override using the `.groups` argument.'
   ))
 }

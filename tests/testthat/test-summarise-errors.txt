@@ -3,19 +3,16 @@ Messages about .groups=
 =======================
 
 > ignored <- tibble(x = 1, y = 2) %>% group_by(x, y) %>% summarise()
-Message: `summarise()` regrouping output by 'x' (override with `.groups` argument)
-
-> ignored <- tibble(x = 1, y = 2) %>% group_by(x) %>% summarise()
-Message: `summarise()` ungrouping output (override with `.groups` argument)
+Message: `summarise()` has grouped output by 'x'. You can override using the `.groups` argument.
 
 > ignored <- tibble(x = 1, y = 2) %>% group_by(x, y) %>% summarise(z = c(2, 2))
-Message: `summarise()` regrouping output by 'x', 'y' (override with `.groups` argument)
+Message: `summarise()` has grouped output by 'x', 'y'. You can override using the `.groups` argument.
 
 > ignored <- tibble(x = 1, y = 2) %>% rowwise(x, y) %>% summarise()
-Message: `summarise()` regrouping output by 'x', 'y' (override with `.groups` argument)
+Message: `summarise()` has grouped output by 'x', 'y'. You can override using the `.groups` argument.
 
 > ignored <- tibble(x = 1, y = 2) %>% rowwise() %>% summarise()
-Message: `summarise()` ungrouping output (override with `.groups` argument)
+Message: `summarise()` has ungrouped output. You can override using the `.groups` argument.
 
 
 unsupported type
@@ -26,8 +23,8 @@ Error: Problem with `summarise()` input `a`.
 x Input `a` must be a vector, not an environment.
 i Input `a` is `rlang::env(a = 1)`.
 
-> tibble(x = 1, y = c(1, 2, 2), z = runif(3)) %>% group_by(x, y) %>% summarise(a = rlang::
-+   env(a = 1))
+> tibble(x = 1, y = c(1, 2, 2), z = runif(3)) %>% group_by(x, y) %>% summarise(a = rlang::env(
++   a = 1))
 Error: Problem with `summarise()` input `a`.
 x Input `a` must be a vector, not an environment.
 i Input `a` is `rlang::env(a = 1)`.
