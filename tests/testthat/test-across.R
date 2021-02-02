@@ -210,14 +210,14 @@ test_that("across() uses environment from the current quosure (#5460)", {
   y <- "x"
   expect_equal(df %>% summarise(across(all_of(y), mean)), data.frame(x = 1))
   expect_equal(df %>% mutate(across(all_of(y), mean)), df)
-  expect_equal(df %>% filter(across(all_of(y), ~ .x < 2)), df)
-
-  # Recursive case fails because the `y` column has precedence (#5498)
-  expect_error(df %>% summarise(summarise(across(), across(all_of(y), mean))))
+  expect_equal(df %>% filter(if_all(all_of(y), ~ .x < 2)), df)
 
   # Inherited case
   out <- df %>% summarise(local(across(all_of(y), mean)))
   expect_equal(out, data.frame(x = 1))
+
+  # Recursive case fails because the `y` column has precedence (#5498)
+  expect_error(df %>% summarise(summarise(across(), across(all_of(y), mean))))
 })
 
 test_that("across() sees columns in the recursive case (#5498)", {
@@ -253,6 +253,65 @@ test_that("across() works with empty data frames (#5523)", {
      mutate(tibble(), across()),
      tibble()
    )
+})
+
+test_that("lambdas in across() can use columns", {
+  df <- tibble(x = 2, y = 4, z = 8)
+  expect_identical(
+    df %>% mutate_all(~ .x / y),
+    df %>% mutate(across(everything(), ~ .x / y))
+  )
+  expect_identical(
+    df %>% mutate_all(~ .x / y),
+    df %>% mutate(across(everything(), ~ .x / .data$y))
+  )
+})
+
+test_that("lambdas in across() can use columns in follow up expressions (#5717)", {
+  df <- tibble(x = 2, y = 4, z = 8)
+  expect_identical(
+    df %>% mutate(a = 2, x = x / y, y = y / y, z = z / y),
+    df %>% mutate(a = 2, across(c(x, y, z), ~ .x / y))
+  )
+  expect_identical(
+    df %>% mutate(a = 2, x = x / y, y = y / y, z = z / y),
+    df %>% mutate(a = 2, across(c(x, y, z), ~ .x / .data$y))
+  )
+})
+
+test_that("if_any() and if_all() enforce logical", {
+  # TODO: use snapshot tests
+  d <- data.frame(x = 10, y = 10)
+  expect_error(filter(d, if_all(x:y, identity)))
+  expect_error(filter(d, if_any(x:y, identity)))
+
+  expect_error(mutate(d, ok = if_any(x:y, identity)))
+  expect_error(mutate(d, ok = if_all(x:y, identity)))
+})
+
+test_that("if_any() and if_all() can be used in mutate() (#5709)", {
+  d <- data.frame(x = c(1, 5, 10, 10), y = c(0, 0, 0, 10), z = c(10, 5, 1, 10))
+  res <- d %>%
+    mutate(
+      any = if_any(x:z, ~ . > 8),
+      all = if_all(x:z, ~ . > 8)
+    )
+  expect_equal(res$any, c(TRUE, FALSE, TRUE, TRUE))
+  expect_equal(res$all, c(FALSE, FALSE, FALSE, TRUE))
+})
+
+test_that("if_any() and if_all() respect filter()-like NA handling", {
+  df <- expand.grid(
+    x = c(TRUE, FALSE, NA), y = c(TRUE, FALSE, NA)
+  )
+  expect_identical(
+    filter(df, x & y),
+    filter(df, if_all(c(x,y), identity))
+  )
+  expect_identical(
+    filter(df, x | y),
+    filter(df, if_any(c(x,y), identity))
+  )
 })
 
 # c_across ----------------------------------------------------------------

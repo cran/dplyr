@@ -44,6 +44,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
@@ -132,6 +141,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
   }
 })();
 </script>
+
 
 
 
@@ -392,15 +402,15 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb4-4"><a href="#cb4-4"></a><span class="co">#&gt; [1] 0.0 0.0 0.5 0.5 0.5</span></span></code></pre></div>
 <p>These are useful if you want to select (for example) the top 10% of records within each group. For example:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="kw">filter</span>(players, <span class="kw">cume_dist</span>(<span class="kw">desc</span>(G)) <span class="op">&lt;</span><span class="st"> </span><span class="fl">0.1</span>)</span>
-<span id="cb5-2"><a href="#cb5-2"></a><span class="co">#&gt; # A tibble: 1,037 x 7</span></span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt; # Groups:   playerID [945]</span></span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="co">#&gt; # A tibble: 1,047 x 7</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a><span class="co">#&gt; # Groups:   playerID [954]</span></span>
 <span id="cb5-4"><a href="#cb5-4"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H</span></span>
 <span id="cb5-5"><a href="#cb5-5"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></span>
 <span id="cb5-6"><a href="#cb5-6"></a><span class="co">#&gt; 1 aaronha01   1963 ML1      161   631   121   201</span></span>
 <span id="cb5-7"><a href="#cb5-7"></a><span class="co">#&gt; 2 aaronha01   1968 ATL      160   606    84   174</span></span>
 <span id="cb5-8"><a href="#cb5-8"></a><span class="co">#&gt; 3 abbotji01   1991 CAL       34     0     0     0</span></span>
 <span id="cb5-9"><a href="#cb5-9"></a><span class="co">#&gt; 4 abernte02   1965 CHN       84    18     1     3</span></span>
-<span id="cb5-10"><a href="#cb5-10"></a><span class="co">#&gt; # … with 1,033 more rows</span></span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10"></a><span class="co">#&gt; # … with 1,043 more rows</span></span></code></pre></div>
 <p>Finally, <code>ntile()</code> divides the data up into <code>n</code> evenly sized buckets. It’s a coarse ranking, and it can be used in with <code>mutate()</code> to divide the data into buckets for further summary. For example, we could use <code>ntile()</code> to divide the players within a team into four ranked groups, and calculate the average number of games within each group.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>by_team_player &lt;-<span class="st"> </span><span class="kw">group_by</span>(batting, teamID, playerID)</span>
 <span id="cb6-2"><a href="#cb6-2"></a>by_team &lt;-<span class="st"> </span><span class="kw">summarise</span>(by_team_player, <span class="dt">G =</span> <span class="kw">sum</span>(G))</span>
@@ -410,9 +420,9 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb6-6"><a href="#cb6-6"></a><span class="co">#&gt; # A tibble: 4 x 2</span></span>
 <span id="cb6-7"><a href="#cb6-7"></a><span class="co">#&gt;   quartile `mean(G)`</span></span>
 <span id="cb6-8"><a href="#cb6-8"></a><span class="co">#&gt; *    &lt;int&gt;     &lt;dbl&gt;</span></span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; 1        1      23.2</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; 2        2      93.4</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; 3        3     258. </span></span>
+<span id="cb6-9"><a href="#cb6-9"></a><span class="co">#&gt; 1        1      23.1</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a><span class="co">#&gt; 2        2      93.0</span></span>
+<span id="cb6-11"><a href="#cb6-11"></a><span class="co">#&gt; 3        3     257. </span></span>
 <span id="cb6-12"><a href="#cb6-12"></a><span class="co">#&gt; 4        4     975.</span></span></code></pre></div>
 <p>All ranking functions rank from lowest to highest so that small input values get small ranks. Use <code>desc()</code> to rank from highest to lowest.</p>
 </div>
@@ -481,7 +491,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <p>You can also use this idea to select the records with the highest (<code>x == max(x)</code>) or lowest value (<code>x == min(x)</code>) for a field, but the ranking functions give you more control over ties, and allow you to select any number of records.</p>
 <p>Recycled aggregates are also useful in conjunction with <code>mutate()</code>. For example, with the batting data, we could compute the “career year”, the number of years a player has played since they entered the league:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="kw">mutate</span>(players, <span class="dt">career_year =</span> yearID <span class="op">-</span><span class="st"> </span><span class="kw">min</span>(yearID) <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)</span>
-<span id="cb15-2"><a href="#cb15-2"></a><span class="co">#&gt; # A tibble: 19,834 x 8</span></span>
+<span id="cb15-2"><a href="#cb15-2"></a><span class="co">#&gt; # A tibble: 19,978 x 8</span></span>
 <span id="cb15-3"><a href="#cb15-3"></a><span class="co">#&gt; # Groups:   playerID [1,359]</span></span>
 <span id="cb15-4"><a href="#cb15-4"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H career_year</span></span>
 <span id="cb15-5"><a href="#cb15-5"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;       &lt;dbl&gt;</span></span>
@@ -489,10 +499,10 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb15-7"><a href="#cb15-7"></a><span class="co">#&gt; 2 aaronha01   1955 ML1      153   602   105   189           2</span></span>
 <span id="cb15-8"><a href="#cb15-8"></a><span class="co">#&gt; 3 aaronha01   1956 ML1      153   609   106   200           3</span></span>
 <span id="cb15-9"><a href="#cb15-9"></a><span class="co">#&gt; 4 aaronha01   1957 ML1      151   615   118   198           4</span></span>
-<span id="cb15-10"><a href="#cb15-10"></a><span class="co">#&gt; # … with 19,830 more rows</span></span></code></pre></div>
+<span id="cb15-10"><a href="#cb15-10"></a><span class="co">#&gt; # … with 19,974 more rows</span></span></code></pre></div>
 <p>Or, as in the introductory example, we could compute a z-score:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1"></a><span class="kw">mutate</span>(players, <span class="dt">G_z =</span> (G <span class="op">-</span><span class="st"> </span><span class="kw">mean</span>(G)) <span class="op">/</span><span class="st"> </span><span class="kw">sd</span>(G))</span>
-<span id="cb16-2"><a href="#cb16-2"></a><span class="co">#&gt; # A tibble: 19,834 x 8</span></span>
+<span id="cb16-2"><a href="#cb16-2"></a><span class="co">#&gt; # A tibble: 19,978 x 8</span></span>
 <span id="cb16-3"><a href="#cb16-3"></a><span class="co">#&gt; # Groups:   playerID [1,359]</span></span>
 <span id="cb16-4"><a href="#cb16-4"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H    G_z</span></span>
 <span id="cb16-5"><a href="#cb16-5"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;dbl&gt;</span></span>
@@ -500,7 +510,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb16-7"><a href="#cb16-7"></a><span class="co">#&gt; 2 aaronha01   1955 ML1      153   602   105   189  0.519</span></span>
 <span id="cb16-8"><a href="#cb16-8"></a><span class="co">#&gt; 3 aaronha01   1956 ML1      153   609   106   200  0.519</span></span>
 <span id="cb16-9"><a href="#cb16-9"></a><span class="co">#&gt; 4 aaronha01   1957 ML1      151   615   118   198  0.411</span></span>
-<span id="cb16-10"><a href="#cb16-10"></a><span class="co">#&gt; # … with 19,830 more rows</span></span></code></pre></div>
+<span id="cb16-10"><a href="#cb16-10"></a><span class="co">#&gt; # … with 19,974 more rows</span></span></code></pre></div>
 </div>
 
 

@@ -52,6 +52,8 @@ struct symbols {
   static SEXP vec_is_list;
   static SEXP new_env;
   static SEXP dot_data;
+  static SEXP used;
+  static SEXP across;
 };
 
 struct vectors {
@@ -76,6 +78,7 @@ SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
 SEXP as_data_pronoun(SEXP x);
 SEXP new_data_mask(SEXP bottom, SEXP top);
 SEXP str_as_symbol(SEXP);
+SEXP quo_get_expr(SEXP quo);
 }
 
 namespace vctrs {
@@ -106,6 +109,8 @@ SEXP dplyr_mask_eval_all_filter(SEXP quos, SEXP env_private, SEXP s_n, SEXP env_
 SEXP dplyr_summarise_recycle_chunks(SEXP chunks, SEXP rows, SEXP ptypes);
 SEXP dplyr_group_indices(SEXP data, SEXP rows);
 SEXP dplyr_group_keys(SEXP group_data);
+SEXP dplyr_reduce_lgl_or(SEXP, SEXP);
+SEXP dplyr_reduce_lgl_and(SEXP, SEXP);
 
 SEXP dplyr_mask_remove(SEXP env_private, SEXP s_name);
 SEXP dplyr_mask_add(SEXP env_private, SEXP s_name, SEXP chunks);
@@ -114,6 +119,8 @@ SEXP dplyr_lazy_vec_chop(SEXP data, SEXP rows);
 SEXP dplyr_data_masks_setup(SEXP chops, SEXP data, SEXP rows);
 SEXP env_resolved(SEXP env, SEXP names);
 void add_mask_binding(SEXP name, SEXP env_bindings, SEXP env_chops);
+
+SEXP dplyr_extract_chunks(SEXP df_list, SEXP df_ptype);
 
 #define DPLYR_MASK_INIT()                                                                    \
 SEXP rows = PROTECT(Rf_findVarInFrame(env_private, dplyr::symbols::rows));                   \

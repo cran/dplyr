@@ -9,6 +9,12 @@ void stop_summarise_unsupported_type(SEXP result) {
   DPLYR_ERROR_THROW("dplyr:::summarise_unsupported_type");
 }
 
+void stop_summarise_mixed_null() {
+  DPLYR_ERROR_INIT(0);
+  DPLYR_ERROR_MESG_INIT(0);
+  DPLYR_ERROR_THROW("dplyr:::summarise_mixed_null");
+}
+
 void stop_summarise_incompatible_size(int index_group, int index_expression, int expected_size, int size) {
   DPLYR_ERROR_INIT(4);
     DPLYR_ERROR_SET(0, "group", Rf_ScalarInteger(index_group + 1));
@@ -25,6 +31,7 @@ void stop_summarise_incompatible_size(int index_group, int index_expression, int
 SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private) {
   DPLYR_MASK_INIT();
 
+  R_xlen_t n_null = 0;
   SEXP chunks = PROTECT(Rf_allocVector(VECSXP, ngroups));
   for (R_xlen_t i = 0; i < ngroups; i++) {
     DPLYR_MASK_SET_GROUP(i);
@@ -32,15 +39,23 @@ SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private) {
     SEXP result_i = PROTECT(DPLYR_MASK_EVAL(quo));
     SET_VECTOR_ELT(chunks, i, result_i);
 
-    if (!vctrs::vec_is_vector(result_i)) {
+    if (result_i == R_NilValue) {
+      n_null++;
+    } else if (!vctrs::vec_is_vector(result_i)) {
       dplyr::stop_summarise_unsupported_type(result_i);
     }
 
     UNPROTECT(1);
   }
   DPLYR_MASK_FINALISE();
-
   UNPROTECT(1);
+
+  if (n_null == ngroups) {
+    return R_NilValue;
+  } else if (n_null != 0) {
+    dplyr::stop_summarise_mixed_null();
+  }
+
   return chunks;
 }
 
@@ -128,3 +143,25 @@ SEXP dplyr_summarise_recycle_chunks(SEXP chunks, SEXP rows, SEXP ptypes) {
   UNPROTECT(3);
   return res;
 }
+
+SEXP dplyr_extract_chunks(SEXP df_list, SEXP df_ptype) {
+  R_xlen_t n_columns = XLENGTH(df_ptype);
+  R_xlen_t n_rows = XLENGTH(df_list);
+
+  const SEXP* p_df_list = VECTOR_PTR_RO(df_list);
+
+  SEXP out = PROTECT(Rf_allocVector(VECSXP, n_columns));
+  for (R_xlen_t i = 0; i < n_columns; i++) {
+    SEXP out_i = PROTECT(Rf_allocVector(VECSXP, n_rows));
+    for (R_xlen_t j = 0; j < n_rows; j++) {
+      SET_VECTOR_ELT(out_i, j, VECTOR_ELT(p_df_list[j], i));
+    }
+    SET_VECTOR_ELT(out, i, out_i);
+    UNPROTECT(1);
+  }
+  Rf_namesgets(out, Rf_getAttrib(df_ptype, R_NamesSymbol));
+  UNPROTECT(1);
+  return out;
+}
+
+

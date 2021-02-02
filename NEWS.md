@@ -1,3 +1,16 @@
+# dplyr 1.0.4
+
+* Improved performance for `across()`. This makes `summarise(across())` and 
+  `mutate(across())` perform as well as the superseded colwise equivalents (#5697). 
+
+* New functions `if_any()` and `if_all()` (#4770, #5713).
+
+* `summarise()` silently ignores NULL results (#5708).
+
+* Fixed a performance regression in `mutate()` when warnings occur once per
+  group (#5675). We no longer instrument warnings with debugging information
+  when `mutate()` is called within `suppressWarnings()`.
+
 # dplyr 1.0.3
 
 * `summarise()` no longer informs when the result is ungrouped (#5633).
@@ -21,7 +34,7 @@
 * `group_by()` uses the ungrouped data for the implicit mutate step (#5598). 
   You might have to define an `ungroup()` method for custom classes.
   For example, see https://github.com/hadley/cubelyr/pull/3. 
-
+  
 * `relocate()` can rename columns it relocates (#5569).
 
 * `distinct()` and `group_by()` have better error messages when the mutate step fails (#5060).

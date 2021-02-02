@@ -102,13 +102,21 @@ df <- tibble(x = 1:4, y = rnorm(4))
 df %>% mutate(across(where(is.numeric), rescale01))
 
 ## -----------------------------------------------------------------------------
-starwars %>% filter(across(everything(), ~ !is.na(.x)))
-
-## -----------------------------------------------------------------------------
 starwars %>% distinct(across(contains("color")))
 
 ## -----------------------------------------------------------------------------
 starwars %>% count(across(contains("color")), sort = TRUE)
+
+## -----------------------------------------------------------------------------
+starwars %>% 
+  filter(if_any(everything(), ~ !is.na(.x)))
+
+## -----------------------------------------------------------------------------
+starwars %>% 
+  filter(if_all(everything(), ~ !is.na(.x)))
+
+## -----------------------------------------------------------------------------
+starwars %>% filter(across(everything(), ~ !is.na(.x)))
 
 ## ---- eval = FALSE------------------------------------------------------------
 #  df %>%
@@ -136,11 +144,10 @@ df %>% mutate(across(everything(), mean))
 df <- tibble(x = c("a", "b"), y = c(1, 1), z = c(-1, 1))
 
 # Find all rows where EVERY numeric variable is greater than zero
-df %>% filter(across(where(is.numeric), ~ .x > 0))
+df %>% filter(if_all(where(is.numeric), ~ .x > 0))
 
 # Find all rows where ANY numeric variable is greater than zero
-rowAny <- function(x) rowSums(x) > 0
-df %>% filter(rowAny(across(where(is.numeric), ~ .x > 0)))
+df %>% filter(if_any(where(is.numeric), ~ .x > 0))
 
 ## -----------------------------------------------------------------------------
 df <- tibble(x = 2, y = 4, z = 8)
