@@ -149,7 +149,8 @@ group_by_prepare <- function(.data, ..., .add = FALSE, .dots = deprecated(), add
   }
 
   # If any calls, use mutate to add new columns, then group by those
-  computed_columns <- add_computed_columns(ungroup(.data), new_groups, "group_by")
+  computed_columns <- add_computed_columns(.data, new_groups, "group_by")
+
   out <- computed_columns$data
   group_names <- computed_columns$added_names
 
@@ -180,7 +181,7 @@ add_computed_columns <- function(.data, vars, .fn = "group_by") {
     # TODO: use less of a hack
     if (inherits(.data, "data.frame")) {
       cols <- withCallingHandlers(
-        mutate_cols(.data, !!!vars),
+        mutate_cols(ungroup(.data), !!!vars),
         error = function(e) {
           abort(c(
             glue("Problem adding computed columns in `{.fn}()`."),

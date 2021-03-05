@@ -6,7 +6,7 @@
 #' functions like [summarise()] and [mutate()]. See `vignette("colwise")` for
 #'  more details.
 #'
-#' `if_any()` and `if_all()` are used with to apply the same
+#' `if_any()` and `if_all()` apply the same
 #' predicate function to a selection of columns and combine the
 #' results into a single logical vector.
 #'
@@ -147,7 +147,7 @@ across <- function(.cols = everything(), .fns = NULL, ..., .names = NULL) {
 
 #' @rdname across
 #' @export
-if_any <- function(.cols, .fns = NULL, ..., .names = NULL) {
+if_any <- function(.cols = everything(), .fns = NULL, ..., .names = NULL) {
   df <- across({{ .cols }}, .fns = .fns, ..., .names = .names)
   n <- nrow(df)
   df <- vec_cast_common(!!!df, .to = logical())
@@ -156,7 +156,7 @@ if_any <- function(.cols, .fns = NULL, ..., .names = NULL) {
 
 #' @rdname across
 #' @export
-if_all <- function(.cols, .fns = NULL, ..., .names = NULL) {
+if_all <- function(.cols = everything(), .fns = NULL, ..., .names = NULL) {
   df <- across({{ .cols }}, .fns = .fns, ..., .names = .names)
   n <- nrow(df)
   df <- vec_cast_common(!!!df, .to = logical())
@@ -213,7 +213,7 @@ across_setup <- function(cols, fns, names, key, .caller_env) {
   mask <- peek_mask("across()")
   value <- mask$across_cache_get(key)
   if (is.null(value)) {
-    value <- across_setup_impl({{cols}},
+    value <- across_setup_impl({{ cols }},
       fns = fns, names = names, .caller_env = .caller_env, mask = mask,
       .top_level = FALSE
     )
@@ -233,11 +233,10 @@ across_setup_impl <- function(cols, fns, names, .caller_env, mask = peek_mask("a
     #        across_setup() is only ever called on the first group anyway
     #        but perhaps it is time to review how across_cols() work
     mask$set_current_group(1L)
-  } else {
-    # The real `across()` is evaluated in a data mask so we need to remove the
-    # mask layer from the quosure environment (#5460)
-    cols <- quo_set_env(cols, data_mask_top(quo_get_env(cols), recursive = FALSE, inherit = TRUE))
   }
+  # `across()` is evaluated in a data mask so we need to remove the
+  # mask layer from the quosure environment (#5460)
+  cols <- quo_set_env(cols, data_mask_top(quo_get_env(cols), recursive = FALSE, inherit = TRUE))
 
   vars <- tidyselect::eval_select(cols, data = mask$across_cols())
   vars <- names(vars)
@@ -266,21 +265,7 @@ across_setup_impl <- function(cols, fns, names, .caller_env, mask = peek_mask("a
     ))
   }
 
-  expr_protect <- function(x) {
-    call2(quote, x)
-  }
-
-  fns <- map(fns, function(fn) {
-    if (is_formula(fn) && .top_level) {
-      f_rhs(fn) <- call2(
-        quote(rlang::eval_tidy),
-        expr_protect(f_rhs(fn)),
-        data = mask$get_rlang_mask()
-      )
-    }
-    fn <- as_function(fn)
-    fn
-  })
+  fns <- map(fns, as_function)
 
   # make sure fns has names, use number to replace unnamed
   if (is.null(names(fns))) {
@@ -429,7 +414,8 @@ expand_quosure <- function(quo) {
     # call top_across() instead of across()
     quo_env <- quo_get_env(quo)
     quo <- new_quosure(node_poke_car(quo_get_expr(quo), top_across), quo_env)
-    expressions <- eval_tidy(quo)
+    mask <- peek_mask()
+    expressions <- eval_tidy(quo, mask$get_rlang_mask(), mask$get_caller_env())
     names_expressions <- names(expressions)
 
     # process the results of top_across()
