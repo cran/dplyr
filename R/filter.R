@@ -116,20 +116,30 @@ filter.data.frame <- function(.data, ..., .preserve = FALSE) {
 }
 
 filter_rows <- function(.data, ...) {
-  dots <- check_filter(enquos(...))
+  dots <- dplyr_quosures(...)
+  check_filter(dots)
+
   mask <- DataMask$new(.data, caller_env())
   on.exit(mask$forget("filter"), add = TRUE)
 
   env_filter <- env()
-  withCallingHandlers(
-    mask$eval_all_filter(dots, env_filter),
-    error = function(e) {
+
+  # Names that expand to logical vectors are ignored. Remove them so
+  # they don't get in the way of the flatmap step below.
+  dots <- unname(dots)
+  withCallingHandlers({
+    dots <- new_quosures(flatten(imap(dots, function(dot, index) {
+      env_filter$current_expression <- index
+      expand_if_across(dot)
+    })))
+    mask$eval_all_filter(dots, env_filter)
+  }, error = function(e) {
       local_call_step(dots = dots, .index = env_filter$current_expression, .fn = "filter")
 
       abort(c(
         cnd_bullet_header(),
-        x = conditionMessage(e),
         i = cnd_bullet_input_info(),
+        x = conditionMessage(e),
         i = cnd_bullet_cur_group_label()
       ), class = "dplyr_error")
 
@@ -156,6 +166,4 @@ check_filter <- function(dots) {
     }
 
   }
-
-  dots
 }

@@ -54,7 +54,14 @@ document.addEventListener('DOMContentLoaded', function() {
     </style>
 
 
-<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
@@ -598,19 +605,18 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb19-6"><a href="#cb19-6"></a><span class="co">#&gt; 1     1 &lt;int [3]&gt; &lt;int [3]&gt;</span></span>
 <span id="cb19-7"><a href="#cb19-7"></a><span class="co">#&gt; 2     2 &lt;chr [1]&gt; &lt;chr [1]&gt;</span></span>
 <span id="cb19-8"><a href="#cb19-8"></a>rf <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">y2 =</span> y)</span>
-<span id="cb19-9"><a href="#cb19-9"></a><span class="co">#&gt; Error: Problem with `mutate()` input `y2`.</span></span>
-<span id="cb19-10"><a href="#cb19-10"></a><span class="co">#&gt; x Input `y2` can&#39;t be recycled to size 1.</span></span>
-<span id="cb19-11"><a href="#cb19-11"></a><span class="co">#&gt; ℹ Input `y2` is `y`.</span></span>
-<span id="cb19-12"><a href="#cb19-12"></a><span class="co">#&gt; ℹ Input `y2` must be size 1, not 3.</span></span>
-<span id="cb19-13"><a href="#cb19-13"></a><span class="co">#&gt; ℹ Did you mean: `y2 = list(y)` ?</span></span>
-<span id="cb19-14"><a href="#cb19-14"></a><span class="co">#&gt; ℹ The error occurred in row 1.</span></span>
-<span id="cb19-15"><a href="#cb19-15"></a>rf <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">y2 =</span> <span class="kw">list</span>(y))</span>
-<span id="cb19-16"><a href="#cb19-16"></a><span class="co">#&gt; # A tibble: 2 x 3</span></span>
-<span id="cb19-17"><a href="#cb19-17"></a><span class="co">#&gt; # Rowwise:  g</span></span>
-<span id="cb19-18"><a href="#cb19-18"></a><span class="co">#&gt;       g y         y2       </span></span>
-<span id="cb19-19"><a href="#cb19-19"></a><span class="co">#&gt;   &lt;int&gt; &lt;list&gt;    &lt;list&gt;   </span></span>
-<span id="cb19-20"><a href="#cb19-20"></a><span class="co">#&gt; 1     1 &lt;int [3]&gt; &lt;int [3]&gt;</span></span>
-<span id="cb19-21"><a href="#cb19-21"></a><span class="co">#&gt; 2     2 &lt;chr [1]&gt; &lt;chr [1]&gt;</span></span></code></pre></div>
+<span id="cb19-9"><a href="#cb19-9"></a><span class="co">#&gt; Error: Problem with `mutate()` column `y2`.</span></span>
+<span id="cb19-10"><a href="#cb19-10"></a><span class="co">#&gt; ℹ `y2 = y`.</span></span>
+<span id="cb19-11"><a href="#cb19-11"></a><span class="co">#&gt; ℹ `y2` must be size 1, not 3.</span></span>
+<span id="cb19-12"><a href="#cb19-12"></a><span class="co">#&gt; ℹ Did you mean: `y2 = list(y)` ?</span></span>
+<span id="cb19-13"><a href="#cb19-13"></a><span class="co">#&gt; ℹ The error occurred in row 1.</span></span>
+<span id="cb19-14"><a href="#cb19-14"></a>rf <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">y2 =</span> <span class="kw">list</span>(y))</span>
+<span id="cb19-15"><a href="#cb19-15"></a><span class="co">#&gt; # A tibble: 2 x 3</span></span>
+<span id="cb19-16"><a href="#cb19-16"></a><span class="co">#&gt; # Rowwise:  g</span></span>
+<span id="cb19-17"><a href="#cb19-17"></a><span class="co">#&gt;       g y         y2       </span></span>
+<span id="cb19-18"><a href="#cb19-18"></a><span class="co">#&gt;   &lt;int&gt; &lt;list&gt;    &lt;list&gt;   </span></span>
+<span id="cb19-19"><a href="#cb19-19"></a><span class="co">#&gt; 1     1 &lt;int [3]&gt; &lt;int [3]&gt;</span></span>
+<span id="cb19-20"><a href="#cb19-20"></a><span class="co">#&gt; 2     2 &lt;chr [1]&gt; &lt;chr [1]&gt;</span></span></code></pre></div>
 </div>
 <div id="modelling" class="section level3">
 <h3>Modelling</h3>
@@ -619,32 +625,32 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <span id="cb20-2"><a href="#cb20-2"></a>by_cyl</span>
 <span id="cb20-3"><a href="#cb20-3"></a><span class="co">#&gt; # A tibble: 3 x 2</span></span>
 <span id="cb20-4"><a href="#cb20-4"></a><span class="co">#&gt; # Rowwise:  cyl</span></span>
-<span id="cb20-5"><a href="#cb20-5"></a><span class="co">#&gt;     cyl data              </span></span>
-<span id="cb20-6"><a href="#cb20-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;            </span></span>
-<span id="cb20-7"><a href="#cb20-7"></a><span class="co">#&gt; 1     4 &lt;tibble [11 × 12]&gt;</span></span>
-<span id="cb20-8"><a href="#cb20-8"></a><span class="co">#&gt; 2     6 &lt;tibble [7 × 12]&gt; </span></span>
-<span id="cb20-9"><a href="#cb20-9"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt;</span></span></code></pre></div>
+<span id="cb20-5"><a href="#cb20-5"></a><span class="co">#&gt;     cyl data                   </span></span>
+<span id="cb20-6"><a href="#cb20-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;                 </span></span>
+<span id="cb20-7"><a href="#cb20-7"></a><span class="co">#&gt; 1     4 &lt;tibble[,12] [11 × 12]&gt;</span></span>
+<span id="cb20-8"><a href="#cb20-8"></a><span class="co">#&gt; 2     6 &lt;tibble[,12] [7 × 12]&gt; </span></span>
+<span id="cb20-9"><a href="#cb20-9"></a><span class="co">#&gt; 3     8 &lt;tibble[,12] [14 × 12]&gt;</span></span></code></pre></div>
 <p>This is a little different to the usual <code>group_by()</code> output: we have visibly changed the structure of the data. Now we have three rows (one for each group), and we have a list-col, <code>data</code>, that stores the data for that group. Also note that the output is <code>rowwise()</code>; this is important because it’s going to make working with that list of data frames much easier.</p>
 <p>Once we have one data frame per row, it’s straightforward to make one model per row:</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1"></a>mods &lt;-<span class="st"> </span>by_cyl <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">mod =</span> <span class="kw">list</span>(<span class="kw">lm</span>(mpg <span class="op">~</span><span class="st"> </span>wt, <span class="dt">data =</span> data)))</span>
 <span id="cb21-2"><a href="#cb21-2"></a>mods</span>
 <span id="cb21-3"><a href="#cb21-3"></a><span class="co">#&gt; # A tibble: 3 x 3</span></span>
 <span id="cb21-4"><a href="#cb21-4"></a><span class="co">#&gt; # Rowwise:  cyl</span></span>
-<span id="cb21-5"><a href="#cb21-5"></a><span class="co">#&gt;     cyl data               mod   </span></span>
-<span id="cb21-6"><a href="#cb21-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;             &lt;list&gt;</span></span>
-<span id="cb21-7"><a href="#cb21-7"></a><span class="co">#&gt; 1     4 &lt;tibble [11 × 12]&gt; &lt;lm&gt;  </span></span>
-<span id="cb21-8"><a href="#cb21-8"></a><span class="co">#&gt; 2     6 &lt;tibble [7 × 12]&gt;  &lt;lm&gt;  </span></span>
-<span id="cb21-9"><a href="#cb21-9"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt; &lt;lm&gt;</span></span></code></pre></div>
+<span id="cb21-5"><a href="#cb21-5"></a><span class="co">#&gt;     cyl data                    mod   </span></span>
+<span id="cb21-6"><a href="#cb21-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;                  &lt;list&gt;</span></span>
+<span id="cb21-7"><a href="#cb21-7"></a><span class="co">#&gt; 1     4 &lt;tibble[,12] [11 × 12]&gt; &lt;lm&gt;  </span></span>
+<span id="cb21-8"><a href="#cb21-8"></a><span class="co">#&gt; 2     6 &lt;tibble[,12] [7 × 12]&gt;  &lt;lm&gt;  </span></span>
+<span id="cb21-9"><a href="#cb21-9"></a><span class="co">#&gt; 3     8 &lt;tibble[,12] [14 × 12]&gt; &lt;lm&gt;</span></span></code></pre></div>
 <p>And supplement that with one set of predictions per row:</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1"></a>mods &lt;-<span class="st"> </span>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">mutate</span>(<span class="dt">pred =</span> <span class="kw">list</span>(<span class="kw">predict</span>(mod, data)))</span>
 <span id="cb22-2"><a href="#cb22-2"></a>mods</span>
 <span id="cb22-3"><a href="#cb22-3"></a><span class="co">#&gt; # A tibble: 3 x 4</span></span>
 <span id="cb22-4"><a href="#cb22-4"></a><span class="co">#&gt; # Rowwise:  cyl</span></span>
-<span id="cb22-5"><a href="#cb22-5"></a><span class="co">#&gt;     cyl data               mod    pred      </span></span>
-<span id="cb22-6"><a href="#cb22-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;             &lt;list&gt; &lt;list&gt;    </span></span>
-<span id="cb22-7"><a href="#cb22-7"></a><span class="co">#&gt; 1     4 &lt;tibble [11 × 12]&gt; &lt;lm&gt;   &lt;dbl [11]&gt;</span></span>
-<span id="cb22-8"><a href="#cb22-8"></a><span class="co">#&gt; 2     6 &lt;tibble [7 × 12]&gt;  &lt;lm&gt;   &lt;dbl [7]&gt; </span></span>
-<span id="cb22-9"><a href="#cb22-9"></a><span class="co">#&gt; 3     8 &lt;tibble [14 × 12]&gt; &lt;lm&gt;   &lt;dbl [14]&gt;</span></span></code></pre></div>
+<span id="cb22-5"><a href="#cb22-5"></a><span class="co">#&gt;     cyl data                    mod    pred      </span></span>
+<span id="cb22-6"><a href="#cb22-6"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;list&gt;                  &lt;list&gt; &lt;list&gt;    </span></span>
+<span id="cb22-7"><a href="#cb22-7"></a><span class="co">#&gt; 1     4 &lt;tibble[,12] [11 × 12]&gt; &lt;lm&gt;   &lt;dbl [11]&gt;</span></span>
+<span id="cb22-8"><a href="#cb22-8"></a><span class="co">#&gt; 2     6 &lt;tibble[,12] [7 × 12]&gt;  &lt;lm&gt;   &lt;dbl [7]&gt; </span></span>
+<span id="cb22-9"><a href="#cb22-9"></a><span class="co">#&gt; 3     8 &lt;tibble[,12] [14 × 12]&gt; &lt;lm&gt;   &lt;dbl [14]&gt;</span></span></code></pre></div>
 <p>You could then summarise the model in a variety of ways:</p>
 <div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1"></a>mods <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">summarise</span>(<span class="dt">rmse =</span> <span class="kw">sqrt</span>(<span class="kw">mean</span>((pred <span class="op">-</span><span class="st"> </span>data<span class="op">$</span>mpg) <span class="op">^</span><span class="st"> </span><span class="dv">2</span>)))</span>
 <span id="cb23-2"><a href="#cb23-2"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;cyl&#39;. You can override using the `.groups` argument.</span></span>
@@ -715,12 +721,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 <div class="sourceCode" id="cb27"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1"></a>df <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb27-2"><a href="#cb27-2"></a><span class="st">  </span><span class="kw">rowwise</span>() <span class="op">%&gt;%</span><span class="st"> </span></span>
 <span id="cb27-3"><a href="#cb27-3"></a><span class="st">  </span><span class="kw">mutate</span>(<span class="dt">data =</span> <span class="kw">runif</span>(n, min, max))</span>
-<span id="cb27-4"><a href="#cb27-4"></a><span class="co">#&gt; Error: Problem with `mutate()` input `data`.</span></span>
-<span id="cb27-5"><a href="#cb27-5"></a><span class="co">#&gt; x Input `data` can&#39;t be recycled to size 1.</span></span>
-<span id="cb27-6"><a href="#cb27-6"></a><span class="co">#&gt; ℹ Input `data` is `runif(n, min, max)`.</span></span>
-<span id="cb27-7"><a href="#cb27-7"></a><span class="co">#&gt; ℹ Input `data` must be size 1, not 2.</span></span>
-<span id="cb27-8"><a href="#cb27-8"></a><span class="co">#&gt; ℹ Did you mean: `data = list(runif(n, min, max))` ?</span></span>
-<span id="cb27-9"><a href="#cb27-9"></a><span class="co">#&gt; ℹ The error occurred in row 2.</span></span></code></pre></div>
+<span id="cb27-4"><a href="#cb27-4"></a><span class="co">#&gt; Error: Problem with `mutate()` column `data`.</span></span>
+<span id="cb27-5"><a href="#cb27-5"></a><span class="co">#&gt; ℹ `data = runif(n, min, max)`.</span></span>
+<span id="cb27-6"><a href="#cb27-6"></a><span class="co">#&gt; ℹ `data` must be size 1, not 2.</span></span>
+<span id="cb27-7"><a href="#cb27-7"></a><span class="co">#&gt; ℹ Did you mean: `data = list(runif(n, min, max))` ?</span></span>
+<span id="cb27-8"><a href="#cb27-8"></a><span class="co">#&gt; ℹ The error occurred in row 2.</span></span></code></pre></div>
 </div>
 <div id="multiple-combinations" class="section level3">
 <h3>Multiple combinations</h3>

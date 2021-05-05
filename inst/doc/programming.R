@@ -84,7 +84,7 @@ my_summarise2 <- function(data, expr) {
 ## -----------------------------------------------------------------------------
 my_summarise3 <- function(data, mean_var, sd_var) {
   data %>% 
-    summarise(mean = mean({{ mean_var }}), sd = mean({{ sd_var }}))
+    summarise(mean = mean({{ mean_var }}), sd = sd({{ sd_var }}))
 }
 
 ## -----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ my_summarise5 <- function(data, mean_var, sd_var) {
   data %>% 
     summarise(
       "mean_{{mean_var}}" := mean({{ mean_var }}), 
-      "sd_{{sd_var}}" := mean({{ sd_var }})
+      "sd_{{sd_var}}" := sd({{ sd_var }})
     )
 }
 

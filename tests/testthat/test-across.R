@@ -212,11 +212,12 @@ test_that("across() uses environment from the current quosure (#5460)", {
   expect_equal(df %>% filter(if_all(all_of(y), ~ .x < 2)), df)
 
   # Inherited case
-  out <- df %>% summarise(local(across(all_of(y), mean)))
-  expect_equal(out, data.frame(x = 1))
+  expect_error(df %>% summarise(local(across(all_of(y), mean))))
 
-  # Recursive case fails because the `y` column has precedence (#5498)
-  expect_error(df %>% summarise(summarise(across(), across(all_of(y), mean))))
+  expect_equal(
+    df %>% summarise(summarise(cur_data(), across(all_of(y), mean))),
+    df %>% summarise(across(all_of(y), mean))
+  )
 })
 
 test_that("across() sees columns in the recursive case (#5498)", {
@@ -346,14 +347,21 @@ test_that("functions defined inline can use columns (#5734)", {
   )
 })
 
-test_that("if_any() and if_all() enforce logical", {
-  # TODO: use snapshot tests
+test_that("if_any() and if_all() do not enforce logical", {
+  # We used to coerce to logical using vctrs. Now we use base
+  # semantics because we expand `if_all(x:y)` to `x & y`.
   d <- data.frame(x = 10, y = 10)
-  expect_error(filter(d, if_all(x:y, identity)))
-  expect_error(filter(d, if_any(x:y, identity)))
+  expect_equal(filter(d, if_all(x:y, identity)), d)
+  expect_equal(filter(d, if_any(x:y, identity)), d)
 
-  expect_error(mutate(d, ok = if_any(x:y, identity)))
-  expect_error(mutate(d, ok = if_all(x:y, identity)))
+  expect_equal(
+    mutate(d, ok = if_any(x:y, identity)),
+    mutate(d, ok = TRUE)
+  )
+  expect_equal(
+    mutate(d, ok = if_all(x:y, identity)),
+    mutate(d, ok = TRUE)
+  )
 })
 
 test_that("if_any() and if_all() can be used in mutate() (#5709)", {
@@ -365,6 +373,16 @@ test_that("if_any() and if_all() can be used in mutate() (#5709)", {
     )
   expect_equal(res$any, c(TRUE, FALSE, TRUE, TRUE))
   expect_equal(res$all, c(FALSE, FALSE, FALSE, TRUE))
+})
+
+test_that("across() caching not confused when used from if_any() and if_all() (#5782)", {
+  res <- data.frame(x = 1:3) %>%
+    mutate(
+      any = if_any(x, ~ . >= 2) + if_any(x, ~ . >= 3),
+      all = if_all(x, ~ . >= 2) + if_all(x, ~ . >= 3)
+    )
+  expect_equal(res$any, c(0, 1, 2))
+  expect_equal(res$all, c(0, 1, 2))
 })
 
 test_that("if_any() and if_all() respect filter()-like NA handling", {
@@ -380,6 +398,211 @@ test_that("if_any() and if_all() respect filter()-like NA handling", {
     filter(df, if_any(c(x,y), identity))
   )
 })
+
+test_that("if_any() and if_all() aborts when predicate mistakingly used in .cols= (#5732)", {
+  df <- data.frame(x = 1:10, y = 1:10)
+  expect_snapshot({
+    # expanded case
+    (expect_error(filter(df, if_any(~ .x > 5))))
+    (expect_error(filter(df, if_all(~ .x > 5))))
+
+    # non expanded case
+    (expect_error(filter(df, !if_any(~ .x > 5))))
+    (expect_error(filter(df, !if_all(~ .x > 5))))
+  })
+})
+
+test_that("across() correctly reset column", {
+  expect_error(cur_column())
+  res <- data.frame(x = 1) %>%
+    summarise(
+      a = { expect_error(cur_column()); 2},
+      across(x, ~{ expect_equal(cur_column(), "x"); 3}, .names = "b"),        # top_across()
+      c = { expect_error(cur_column()); 4},
+      force(across(x, ~{ expect_equal(cur_column(), "x"); 5}, .names = "d")),  # across()
+      e = { expect_error(cur_column()); 6}
+    )
+  expect_equal(res, data.frame(a = 2, b = 3, c = 4, d = 5, e = 6))
+  expect_error(cur_column())
+
+  res <- data.frame(x = 1) %>%
+    mutate(
+      a = { expect_error(cur_column()); 2},
+      across(x, ~{ expect_equal(cur_column(), "x"); 3}, .names = "b"),        # top_across()
+      c = { expect_error(cur_column()); 4},
+      force(across(x, ~{ expect_equal(cur_column(), "x"); 5}, .names = "d")),  # across()
+      e = { expect_error(cur_column()); 6}
+    )
+  expect_equal(res, data.frame(x = 1, a = 2, b = 3, c = 4, d = 5, e = 6))
+  expect_error(cur_column())
+})
+
+test_that("top_across() evaluates ... with promise semantics (#5813)", {
+  df <- tibble(x = tibble(foo = 1), y = tibble(foo = 2))
+
+  res <- mutate(df, across(
+    everything(),
+    mutate,
+    foo = foo + 1
+  ))
+  expect_equal(res$x$foo, 2)
+  expect_equal(res$y$foo, 3)
+
+  # Can omit dots
+  res <- mutate(df, across(
+    everything(),
+    list
+  ))
+  expect_equal(res$x[[1]]$foo, 1)
+  expect_equal(res$y[[1]]$foo, 2)
+
+  # Dots are evaluated only once
+  new_counter <- function() {
+    n <- 0L
+    function() {
+      n <<- n + 1L
+      n
+    }
+  }
+  counter <- new_counter()
+  list_second <- function(...) {
+    list(..2)
+  }
+  res <- mutate(df, across(
+    everything(),
+    list_second,
+    counter()
+  ))
+  expect_equal(res$x[[1]], 1)
+  expect_equal(res$y[[1]], 1)
+})
+
+test_that("group variables are in scope (#5832)", {
+  f <- function(x, z) x + z
+  gdf <- data.frame(x = 1:2, y = 3:4, g = 1:2) %>% group_by(g)
+  exp <- gdf %>% summarise(x = f(x, z = y))
+
+  expect_equal(
+    gdf %>% summarise(across(x, ~ f(.x, z = y))),
+    exp
+  )
+
+  expect_equal(
+    gdf %>% summarise(across(x, f, z = y)),
+    exp
+  )
+
+  expect_equal(
+    gdf %>% summarise((across(x, ~ f(.x, z = y)))),
+    exp
+  )
+
+  expect_equal(
+    gdf %>% summarise((across(x, f, z = y))),
+    exp
+  )
+})
+
+test_that("arguments in dots are evaluated once per group", {
+  set.seed(0)
+  out <- data.frame(g = 1:3, var = NA) %>%
+    group_by(g) %>%
+    mutate(across(var, function(x, y) y, rnorm(1))) %>%
+    pull(var)
+
+  set.seed(0)
+  expect_equal(out, rnorm(3))
+})
+
+test_that("can pass quosure through `across()`", {
+  summarise_mean <- function(data, vars) {
+    data %>% summarise(across({{ vars }}, mean))
+  }
+  gdf <- data.frame(g = c(1, 1, 2), x = 1:3) %>% group_by(g)
+
+  expect_equal(
+    gdf %>% summarise_mean(where(is.numeric)),
+    summarise(gdf, x = mean(x))
+  )
+})
+
+test_that("across() inlines formulas", {
+  env <- env()
+
+  expect_equal(
+    as_across_fn_call(~ toupper(.x), quote(foo), env),
+    new_quosure(quote(toupper(foo)), env)
+  )
+
+  expect_equal(
+    as_across_fn_call(~ list(.x, ., .x), quote(foo), env),
+    new_quosure(quote(list(foo, foo, foo)), env)
+  )
+})
+
+test_that("across() can access lexical scope (#5862)", {
+  f_across <- function(data, cols, fn) {
+    data %>%
+      summarise(
+        across({{ cols }}, fn)
+      )
+  }
+
+  df <- data.frame(x = 1:10, y = 1:10)
+  expect_equal(
+    f_across(df, c(x, y), mean),
+    summarise(df, across(c(x, y), mean))
+  )
+})
+
+test_that("if_any() and if_all() expansions deal with no inputs or single inputs", {
+  d <- data.frame(x = 1)
+
+  # No inputs
+  expect_equal(
+    filter(d, if_any(starts_with("c"), ~ FALSE)),
+    filter(d)
+  )
+  expect_equal(
+    filter(d, if_all(starts_with("c"), ~ FALSE)),
+    filter(d)
+  )
+
+  # Single inputs
+  expect_equal(
+    filter(d, if_any(x, ~ FALSE)),
+    filter(d, FALSE)
+  )
+  expect_equal(
+    filter(d, if_all(x, ~ FALSE)),
+    filter(d, FALSE)
+  )
+})
+
+test_that("if_any() and if_all() wrapped deal with no inputs or single inputs", {
+  d <- data.frame(x = 1)
+
+  # No inputs
+  expect_equal(
+    filter(d, (if_any(starts_with("c"), ~ FALSE))),
+    filter(d)
+  )
+  expect_equal(
+    filter(d, (if_all(starts_with("c"), ~ FALSE))),
+    filter(d)
+  )
+
+  # Single inputs
+  expect_equal(
+    filter(d, (if_any(x, ~ FALSE))),
+    filter(d, FALSE)
+  )
+  expect_equal(
+    filter(d, (if_all(x, ~ FALSE))),
+    filter(d, FALSE)
+  )
+})
+
 
 # c_across ----------------------------------------------------------------
 

@@ -173,7 +173,7 @@ mutate.data.frame <- function(.data, ...,
                               .before = NULL, .after = NULL) {
   keep <- arg_match(.keep)
 
-  cols <- mutate_cols(.data, ...)
+  cols <- mutate_cols(.data, ..., caller_env = caller_env())
   out <- dplyr_col_modify(.data, cols)
 
   .before <- enquo(.before)
@@ -215,13 +215,30 @@ transmute <- function(.data, ...) {
 
 #' @export
 transmute.data.frame <- function(.data, ...) {
-  mutate(.data, ..., .keep = "none")
+  dots <- check_transmute_args(...)
+  mutate(.data, !!!dots, .keep = "none")
 }
 
 # Helpers -----------------------------------------------------------------
 
-mutate_cols <- function(.data, ...) {
-  mask <- DataMask$new(.data, caller_env())
+check_transmute_args <- function(..., .keep, .before, .after) {
+  if (!missing(.keep)) {
+    abort("`transmute()` does not support the `.keep` argument")
+  }
+  if (!missing(.before)) {
+    abort("`transmute()` does not support the `.before` argument")
+  }
+  if (!missing(.after)) {
+    abort("`transmute()` does not support the `.after` argument")
+  }
+  enquos(...)
+}
+
+mutate_cols <- function(.data, ..., caller_env) {
+  mask <- DataMask$new(.data, caller_env)
+  old_current_column <- context_peek_bare("column")
+
+  on.exit(context_poke("column", old_current_column), add = TRUE)
   on.exit(mask$forget("mutate"), add = TRUE)
 
   rows <- mask$get_rows()
@@ -235,17 +252,19 @@ mutate_cols <- function(.data, ...) {
   withCallingHandlers({
     for (i in seq_along(dots)) {
       mask$across_cache_reset()
+      context_poke("column", old_current_column)
 
       # get results from all the quosures that are expanded from ..i
       # then ingest them after
-      quosures <- expand_quosure(dots[[i]])
+      quosures <- expand_across(dots[[i]])
       quosures_results <- vector(mode = "list", length = length(quosures))
 
       for (k in seq_along(quosures)) {
         quo <- quosures[[k]]
         quo_data <- attr(quo, "dplyr:::data")
-        context_poke("column", quo_data$column)
-
+        if (!is.null(quo_data$column)) {
+          context_poke("column", quo_data$column)
+        }
         # a list in which each element is the result of
         # evaluating the quosure in the "sliced data mask"
         # recycling it appropriately to match the group size
@@ -350,36 +369,36 @@ mutate_cols <- function(.data, ...) {
       size <- vec_size(rows[[mask$get_current_group()]])
       x_size <- e$x_size
       bullets <- c(
-        x = glue("Input `{error_name}` can't be recycled to size {size}."),
-        i = cnd_bullet_input_info(),
-        i = glue("Input `{error_name}` must be size {or_1(size)}, not {x_size}."),
+        i = cnd_bullet_column_info(),
+        i = glue("`{error_name}` must be size {or_1(size)}, not {x_size}."),
         i = cnd_bullet_rowwise_unlist()
       )
     } else if (inherits(e, "dplyr:::mutate_mixed_null")) {
       show_group_details <- FALSE
       bullets <- c(
+        i = cnd_bullet_column_info(),
         x = glue("`{error_name}` must return compatible vectors across groups."),
-        i = cnd_bullet_input_info(),
         i = "Cannot combine NULL and non NULL results.",
         i = cnd_bullet_rowwise_unlist()
       )
     } else if (inherits(e, "dplyr:::mutate_not_vector")) {
       bullets <- c(
-        x = glue("Input `{error_name}` must be a vector, not {friendly_type_of(e$result)}."),
-        i = cnd_bullet_input_info(),
+        i = cnd_bullet_column_info(),
+        x = glue("`{error_name}` must be a vector, not {friendly_type_of(e$result)}."),
         i = cnd_bullet_rowwise_unlist()
       )
     } else if(inherits(e, "dplyr:::error_mutate_incompatible_combine")) {
       show_group_details <- FALSE
       bullets <- c(
-        x = glue("Input `{error_name}` must return compatible vectors across groups"),
-        i = cnd_bullet_input_info(),
+        i = cnd_bullet_column_info(),
+        x = glue("`{error_name}` must return compatible vectors across groups"),
         i = cnd_bullet_combine_details(e$parent$x, e$parent$x_arg),
         i = cnd_bullet_combine_details(e$parent$y, e$parent$y_arg)
       )
     } else {
       bullets <- c(
-        x = conditionMessage(e), i = cnd_bullet_input_info()
+        i = cnd_bullet_column_info(),
+        x = conditionMessage(e)
       )
     }
 
@@ -410,8 +429,8 @@ mutate_cols <- function(.data, ...) {
 
     warn(c(
       cnd_bullet_header(),
+      i = cnd_bullet_column_info(),
       i = conditionMessage(w),
-      i = cnd_bullet_input_info(),
       i = cnd_bullet_cur_group_label(what = "warning")
     ))
 

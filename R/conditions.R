@@ -1,6 +1,6 @@
 arg_name <- function(quos, index) {
   name  <- names(quos)[index]
-  if (name == "") {
+  if (is.null(name) || name == "") {
     name <- glue("..{index}")
   }
   name
@@ -54,7 +54,18 @@ peek_call_step <- function() {
 }
 
 cnd_bullet_header <- function() {
-  glue("Problem with `{fn}()` input `{error_name}`.", .envir = peek_call_step())
+  call_step <- peek_call_step()
+
+  input_name <- "column"
+  if (call_step[["fn"]] == "filter" || grepl("^[.][.]", call_step[["error_name"]])) {
+    input_name <- "input"
+  }
+
+  glue("Problem with `{fn}()` {name} `{error_name}`.", .envir = env(name = input_name, call_step))
+}
+
+cnd_bullet_column_info <- function(){
+  glue("`{error_name} = {error_expression}`.", .envir = peek_call_step())
 }
 
 cnd_bullet_input_info <- function(){

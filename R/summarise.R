@@ -125,7 +125,7 @@ summarize <- summarise
 
 #' @export
 summarise.data.frame <- function(.data, ..., .groups = NULL) {
-  cols <- summarise_cols(.data, ...)
+  cols <- summarise_cols(.data, ..., caller_env = caller_env())
   out <- summarise_build(.data, cols)
   if (identical(.groups, "rowwise")) {
     out <- rowwise_df(out, character())
@@ -135,7 +135,7 @@ summarise.data.frame <- function(.data, ..., .groups = NULL) {
 
 #' @export
 summarise.grouped_df <- function(.data, ..., .groups = NULL) {
-  cols <- summarise_cols(.data, ...)
+  cols <- summarise_cols(.data, ..., caller_env = caller_env())
   out <- summarise_build(.data, cols)
   verbose <- summarise_verbose(.groups, caller_env())
 
@@ -177,7 +177,7 @@ summarise.grouped_df <- function(.data, ..., .groups = NULL) {
 
 #' @export
 summarise.rowwise_df <- function(.data, ..., .groups = NULL) {
-  cols <- summarise_cols(.data, ...)
+  cols <- summarise_cols(.data, ..., caller_env = caller_env())
   out <- summarise_build(.data, cols)
   verbose <- summarise_verbose(.groups, caller_env())
 
@@ -204,8 +204,11 @@ summarise.rowwise_df <- function(.data, ..., .groups = NULL) {
   out
 }
 
-summarise_cols <- function(.data, ...) {
-  mask <- DataMask$new(.data, caller_env())
+summarise_cols <- function(.data, ..., caller_env) {
+  mask <- DataMask$new(.data, caller_env)
+  old_current_column <- context_peek_bare("column")
+
+  on.exit(context_poke("column", old_current_column), add = TRUE)
   on.exit(mask$forget("summarise"), add = TRUE)
 
   dots <- dplyr_quosures(...)
@@ -223,8 +226,9 @@ summarise_cols <- function(.data, ...) {
   withCallingHandlers({
     for (i in seq_along(dots)) {
       mask$across_cache_reset()
+      context_poke("column", old_current_column)
 
-      quosures <- expand_quosure(dots[[i]])
+      quosures <- expand_across(dots[[i]])
       quosures_results <- vector(mode = "list", length = length(quosures))
 
       # with the previous part above, for each element of ... we can
@@ -232,7 +236,9 @@ summarise_cols <- function(.data, ...) {
       for (k in seq_along(quosures)) {
         quo <- quosures[[k]]
         quo_data <- attr(quo, "dplyr:::data")
-        context_poke("column", quo_data$column)
+        if (!is.null(quo_data$column)) {
+          context_poke("column", quo_data$column)
+        }
 
         chunks_k <- mask$eval_all_summarise(quo)
         if (is.null(chunks_k)) {
@@ -304,13 +310,13 @@ summarise_cols <- function(.data, ...) {
     if (inherits(e, "dplyr:::error_summarise_incompatible_combine")) {
       show_group_details <- FALSE
       bullets <- c(
-        x = glue("Input `{error_name}` must return compatible vectors across groups", .envir = peek_call_step()),
+        x = glue("`{error_name}` must return compatible vectors across groups", .envir = peek_call_step()),
         i = cnd_bullet_combine_details(e$parent$x, e$parent$x_arg),
         i = cnd_bullet_combine_details(e$parent$y, e$parent$y_arg)
       )
     } else if (inherits(e, "dplyr:::summarise_unsupported_type")) {
       bullets <- c(
-        x = glue("Input `{error_name}` must be a vector, not {friendly_type_of(result)}.", result = e$result),
+        x = glue("`{error_name}` must be a vector, not {friendly_type_of(result)}.", result = e$result),
         i = cnd_bullet_rowwise_unlist()
       )
     } else if (inherits(e, "dplyr:::summarise_incompatible_size")) {
@@ -318,7 +324,7 @@ summarise_cols <- function(.data, ...) {
       peek_mask()$set_current_group(e$group)
 
       bullets <- c(
-        x = glue("Input `{error_name}` must be size {or_1(expected_size)}, not {size}.", expected_size = e$expected_size, size = e$size),
+        x = glue("`{error_name}` must be size {or_1(expected_size)}, not {size}.", expected_size = e$expected_size, size = e$size),
         i = glue("An earlier column had size {expected_size}.", expected_size = e$expected_size)
       )
     } else if (inherits(e, "dplyr:::summarise_mixed_null")) {
@@ -335,8 +341,8 @@ summarise_cols <- function(.data, ...) {
 
     bullets <- c(
       cnd_bullet_header(),
+      i = cnd_bullet_column_info(),
       bullets,
-      i = cnd_bullet_input_info(),
       i = if (show_group_details) cnd_bullet_cur_group_label()
     )
     abort(bullets, class = "dplyr_error")

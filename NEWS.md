@@ -1,3 +1,35 @@
+# dplyr 1.0.6
+
+* `add_count()` is now generic (#5837).
+
+* `if_any()` and `if_all()` abort when a predicate is mistakingly used as `.cols=` (#5732).
+
+* Multiple calls to `if_any()` and/or `if_all()` in the same expression are now
+  properly disambiguated (#5782). 
+
+* `filter()` now inlines `if_any()` and `if_all()` expressions. This greatly
+  improves performance with grouped data frames.
+
+* Fixed behaviour of `...` in top-level `across()` calls (#5813, #5832).
+
+* `across()` now inlines lambda-formulas. This is slightly more performant and
+  will allow more optimisations in the future.
+
+* Fixed issue in `bind_rows()` causing lists to be incorrectly transformed as
+  data frames (#5417, #5749).
+
+* `select()` no longer creates duplicate variables when renaming a variable 
+  to the same name as a grouping variable (#5841).
+
+* `dplyr_col_select()` keeps attributes for bare data frames (#5294, #5831).
+
+* Fixed quosure handling in `dplyr::group_by()` that caused issues with extra
+  arguments (tidyverse/lubridate#959).
+
+* Removed the `name` argument from the `compute()` generic (@ianmcook, #5783).
+
+* row-wise data frames of 0 rows and list columns are supported again (#5804).
+
 # dplyr 1.0.5
 
 * Fixed edge case of `slice_sample()` when `weight_by=` is used and there 
@@ -64,6 +96,7 @@
 * `mutate()` always keeps grouping variables, unconditional to `.keep=` (#5582).
 
 * dplyr now depends on R 3.3.0
+
 
 # dplyr 1.0.2
 
