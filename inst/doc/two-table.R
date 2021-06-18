@@ -4,7 +4,7 @@ options(tibble.print_min = 5)
 library(dplyr)
 
 ## ---- warning = FALSE---------------------------------------------------------
-library("nycflights13")
+library(nycflights13)
 # Drop unimportant variables so it's easier to understand the join results.
 flights2 <- flights %>% select(year:day, hour, origin, dest, tailnum, carrier)
 

@@ -528,15 +528,54 @@ test_that("can pass quosure through `across()`", {
 
 test_that("across() inlines formulas", {
   env <- env()
+  f <- ~ toupper(.x)
 
   expect_equal(
-    as_across_fn_call(~ toupper(.x), quote(foo), env),
-    new_quosure(quote(toupper(foo)), env)
+    as_across_fn_call(f, quote(foo), env, env),
+    new_quosure(quote(toupper(foo)), f_env(f))
   )
 
+  f <- ~ list(.x, ., .x)
   expect_equal(
-    as_across_fn_call(~ list(.x, ., .x), quote(foo), env),
-    new_quosure(quote(list(foo, foo, foo)), env)
+    as_across_fn_call(f, quote(foo), env, env),
+    new_quosure(quote(list(foo, foo, foo)), f_env(f))
+  )
+})
+
+test_that("across() uses local formula environment (#5881)", {
+  f <- local({
+    prefix <- "foo"
+    ~ paste(prefix, .x)
+  })
+  df <- tibble(x = "x")
+  expect_equal(
+    mutate(df, across(x, f)),
+    tibble(x = "foo x")
+  )
+  expect_equal(
+    mutate(df, across(x, list(f = f))),
+    tibble(x = "x", x_f = "foo x")
+  )
+
+  local({
+    # local() here is not necessary, it's just in case the
+    # code is run directly without the test_that()
+    prefix <- "foo"
+    expect_equal(
+      mutate(df, across(x, ~paste(prefix, .x))),
+      tibble(x = "foo x")
+    )
+    expect_equal(
+      mutate(df, across(x, list(f = ~paste(prefix, .x)))),
+      tibble(x = "x", x_f = "foo x")
+    )
+  })
+})
+
+test_that("unevaluated formulas (currently) fail", {
+  df <- tibble(x = "x")
+  expect_error(
+    mutate(df, across(x, quote(~ paste("foo", .x))))
   )
 })
 
@@ -603,6 +642,102 @@ test_that("if_any() and if_all() wrapped deal with no inputs or single inputs", 
   )
 })
 
+test_that("expanded if_any() finds local data", {
+  limit <- 7
+  df <- data.frame(x = 1:10, y = 10:1)
+
+  expect_identical(
+    filter(df, if_any(everything(), ~ .x > limit)),
+    filter(df, x > limit | y > limit)
+  )
+})
+
+test_that("across() can use named selections", {
+  df <- data.frame(x = 1, y = 2)
+
+  # no fns
+  expect_equal(
+    df %>% summarise(across(c(a = x, b = y))),
+    data.frame(a = 1, b = 2)
+  )
+  expect_equal(
+    df %>% summarise(across(all_of(c(a = "x", b = "y")))),
+    data.frame(a = 1, b = 2)
+  )
+
+  # no fns, non expanded
+  expect_equal(
+    df %>% summarise((across(c(a = x, b = y)))),
+    data.frame(a = 1, b = 2)
+  )
+  expect_equal(
+    df %>% summarise((across(all_of(c(a = "x", b = "y"))))),
+    data.frame(a = 1, b = 2)
+  )
+
+  # one fn
+  expect_equal(
+    df %>% summarise(across(c(a = x, b = y), mean)),
+    data.frame(a = 1, b = 2)
+  )
+  expect_equal(
+    df %>% summarise(across(all_of(c(a = "x", b = "y")), mean)),
+    data.frame(a = 1, b = 2)
+  )
+
+  # one fn - non expanded
+  expect_equal(
+    df %>% summarise((across(c(a = x, b = y), mean))),
+    data.frame(a = 1, b = 2)
+  )
+  expect_equal(
+    df %>% summarise((across(all_of(c(a = "x", b = "y")), mean))),
+    data.frame(a = 1, b = 2)
+  )
+
+  # multiple fns
+  expect_equal(
+    df %>% summarise(across(c(a = x, b = y), list(mean = mean, sum = sum))),
+    data.frame(a_mean = 1, a_sum = 1, b_mean = 2, b_sum = 2)
+  )
+  expect_equal(
+    df %>% summarise(across(all_of(c(a = "x", b = "y")), list(mean = mean, sum = sum))),
+    data.frame(a_mean = 1, a_sum = 1, b_mean = 2, b_sum = 2)
+  )
+
+  # multiple fns - non expanded
+  expect_equal(
+    df %>% summarise((across(c(a = x, b = y), list(mean = mean, sum = sum)))),
+    data.frame(a_mean = 1, a_sum = 1, b_mean = 2, b_sum = 2)
+  )
+  expect_equal(
+    df %>% summarise((across(all_of(c(a = "x", b = "y")), list(mean = mean, sum = sum)))),
+    data.frame(a_mean = 1, a_sum = 1, b_mean = 2, b_sum = 2)
+  )
+})
+
+test_that("expr_subtitute() stops at lambdas (#5896)", {
+  expect_identical(
+    expr_substitute(expr(map(.x, ~mean(.x))), quote(.x), quote(a)),
+    expr(map(a, ~mean(.x)))
+  )
+  expect_identical(
+    expr_substitute(expr(map(.x, function(.x) mean(.x))), quote(.x), quote(a)),
+    expr(map(a, function(.x) mean(.x)))
+  )
+})
+
+test_that("expr_subtitute() keeps at double-sided formula (#5894)", {
+  expect_identical(
+    expr_substitute(expr(case_when(.x < 5 ~ 5, TRUE ~ .x)), quote(.x), quote(a)),
+    expr(case_when(a < 5 ~ 5, TRUE ~ a))
+  )
+
+  expect_identical(
+    expr_substitute(expr(case_when(. < 5 ~ 5, TRUE ~ .)), quote(.), quote(a)),
+    expr(case_when(a < 5 ~ 5, TRUE ~ a))
+  )
+})
 
 # c_across ----------------------------------------------------------------
 
@@ -610,4 +745,11 @@ test_that("selects and combines columns", {
   df <- data.frame(x = 1:2, y = 3:4)
   out <- df %>% summarise(z = list(c_across(x:y)))
   expect_equal(out$z, list(1:4))
+})
+
+test_that("key_deparse() collapses (#5883)", {
+  expect_equal(
+    length(key_deparse(quo(all_of(c("aaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbb", "cccccccccccccc", "ddddddddddddddddddd"))))),
+    1
+  )
 })

@@ -8,7 +8,9 @@
 #'
 #' `if_any()` and `if_all()` apply the same
 #' predicate function to a selection of columns and combine the
-#' results into a single logical vector.
+#' results into a single logical vector: `if_any()` is `TRUE` when
+#' the predicate is `TRUE` for *any* of the selected columns, `if_all()`
+#' is `TRUE` when the predicate is `TRUE` for *all* selected columns.
 #'
 #' `across()` supersedes the family of "scoped variants" like
 #' `summarise_at()`, `summarise_if()`, and `summarise_all()`.
@@ -287,13 +289,17 @@ across_setup <- function(cols,
       i = "The second argument `.fns` operates on each selected columns."
     ))
   }
-  vars <- tidyselect::eval_select(cols, data = mask$across_cols())
-  vars <- names(vars)
+  across_cols <- mask$across_cols()
+  vars <- tidyselect::eval_select(cols, data = across_cols)
+  names_vars <- names(vars)
+  vars <- names(across_cols)[vars]
 
   if (is.null(fns)) {
     if (!is.null(names)) {
-      glue_mask <- across_glue_mask(.caller_env, .col = vars, .fn = "1")
+      glue_mask <- across_glue_mask(.caller_env, .col = names_vars, .fn = "1")
       names <- vec_as_names(glue(names, .envir = glue_mask), repair = "check_unique")
+    } else {
+      names <- names_vars
     }
 
     value <- list(vars = vars, fns = fns, names = names)
@@ -326,8 +332,8 @@ across_setup <- function(cols,
   }
 
   glue_mask <- glue_mask <- across_glue_mask(.caller_env,
-    .col = rep(vars, each = length(fns)),
-    .fn  = rep(names_fns, length(vars))
+    .col = rep(names_vars, each = length(fns)),
+    .fn  = rep(names_fns , length(vars))
   )
   names <- vec_as_names(glue(names, .envir = glue_mask), repair = "check_unique")
 
@@ -373,7 +379,7 @@ c_across_setup <- function(cols, key) {
 # https://github.com/r-lib/tidyselect/issues/235
 key_deparse <- function(cols) {
   paste(
-    deparse(quo_get_expr(cols)),
+    paste0(deparse(quo_get_expr(cols)), collapse = "\n"),
     format(quo_get_env(cols))
   )
 }
@@ -550,7 +556,7 @@ expand_across <- function(quo) {
     var <- vars[[i]]
 
     for (j in seq_fns) {
-      fn_call <- as_across_fn_call(fns[[j]], var, env)
+      fn_call <- as_across_fn_call(fns[[j]], var, env, mask)
 
       name <- names[[k]]
       expressions[[k]] <- new_dplyr_quosure(
@@ -571,33 +577,30 @@ expand_across <- function(quo) {
 }
 
 # TODO: Take unevaluated `.fns` and inline calls to `function`. This
-# will enable support for R 4.1 lambdas. This plan is somewhat at odds
-# with the current UI of `across()` which takes a list of function. We
-# would need to intepret calls to `list()` specially. And then we
-# would miss calls to `list2()` etc. This is another way in which the
-# current UI is unsatisfactory from the viewpoint of optimisation.
-#
-# Note that the current implementation is not 100% correct in that
-# regard as we ignore the environment of formulas and instead use the
-# quosure environment. This means this doesn't work as expected:
-#
-# ```
-# local({
-#   prefix <- "foo"
-#   f <- ~ paste(prefix, .x)
-# })
-# mutate(data, across(sel, f))
-# ```
-#
-# If we inspected unevaluated calls instead, we would see a symbol `f`
-# and fall through the `as_function()` branch.
-as_across_fn_call <- function(fn, var, env) {
+# will enable support for R 4.1 lambdas. Note that unlike formulas,
+# only unevaluated `function` calls can be inlined. This will have
+# performance implications for lists of lambdas where formulas will
+# have better performance. It is possible that we will be able to
+# inline evaluated functions with strictness annotations.
+as_across_fn_call <- function(fn, var, env, mask) {
   if (is_formula(fn, lhs = FALSE)) {
     # Don't need to worry about arguments passed through `...`
     # because we cancel expansion in that case
-    fn <- expr_substitute(fn, quote(.), sym(var))
-    fn <- expr_substitute(fn, quote(.x), sym(var))
-    new_quosure(f_rhs(fn), env)
+    expr <- f_rhs(fn)
+    expr <- expr_substitute(expr, quote(.), sym(var))
+    expr <- expr_substitute(expr, quote(.x), sym(var))
+
+    # if the formula environment is the data mask
+    # it means the formula was unevaluated, and in that case
+    # we can use the original quosure environment
+    # otherwise, use the formula environment, as it was previously
+    # evaluated and might include data that is not reacha
+    f_env <- f_env(fn)
+    if (identical(f_env, mask)) {
+      f_env <- env
+    }
+
+    new_quosure(expr, f_env)
   } else {
     fn_call <- call2(as_function(fn), sym(var))
     new_quosure(fn_call, env)
