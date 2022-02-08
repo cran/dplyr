@@ -60,6 +60,7 @@ test_that("output preserves class & attributes where possible", {
 
 test_that("works with dbplyr", {
   skip_if_not_installed("dbplyr")
+  skip_if_not_installed("RSQLite")
   db <- dbplyr::memdb_frame(x = c(1, 1, 1, 2, 2))
   df1 <- db %>% count(x) %>% as_tibble()
   expect_equal(df1, tibble(x = c(1, 2), n = c(3, 2)))
@@ -69,10 +70,13 @@ test_that("works with dbplyr", {
 })
 
 test_that("can only explicitly chain together multiple tallies", {
-  df <- data.frame(g = c(1, 1, 2, 2), n = 1:4)
-  expect_snapshot(df %>% count(g, wt = n))
-  expect_snapshot(df %>% count(g, wt = n) %>% count(wt = n))
-  expect_snapshot(df %>% count(n))
+  expect_snapshot({
+    df <- data.frame(g = c(1, 1, 2, 2), n = 1:4)
+
+    df %>% count(g, wt = n)
+    df %>% count(g, wt = n) %>% count(wt = n)
+    df %>% count(n)
+  })
 })
 
 test_that("wt = n() is deprecated", {

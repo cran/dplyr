@@ -71,3 +71,69 @@ test_that("can re-rowwise", {
   rf2 <- rowwise(rf1, y)
   expect_equal(group_vars(rf2), "y")
 })
+
+test_that("new_rowwise_df() does not require `group_data=`", {
+  df <- new_rowwise_df(data.frame(x = 1:2))
+  expect_s3_class(df, "rowwise_df")
+  expect_equal(attr(df, "groups"), tibble(".rows" := vctrs::list_of(1L, 2L)))
+})
+
+test_that("new_rowwise_df() can add class and attributes (#5918)", {
+  df <- new_rowwise_df(tibble(x = 1:4), tibble(), class = "custom_rowwise_df", a = "b")
+  expect_s3_class(df, "custom_rowwise_df")
+  expect_equal(attr(df, "a"), "b")
+})
+
+test_that("validate_rowwise_df() gives useful errors", {
+  df1 <- rowwise(tibble(x = 1:4, g = rep(1:2, each = 2)), g)
+  groups <- attr(df1, "groups")
+  groups[[2]] <- 4:1
+  attr(df1, "groups") <- groups
+
+  df2 <- rowwise(tibble(x = 1:4, g = rep(1:2, each = 2)), g)
+  groups <- attr(df2, "groups")
+  names(groups) <- c("g", "not.rows")
+  attr(df2, "groups") <- groups
+
+  df3 <- df2
+  attr(df3, "groups") <- tibble()
+
+  df4 <- df3
+  attr(df4, "groups") <- NA
+
+  df7 <- rowwise(tibble(x = 1:10))
+  attr(df7, "groups")$.rows <- 11:20
+
+  df8 <- rowwise(tibble(x = 1:10))
+
+  df10 <- df7
+  attr(df10, "groups") <- tibble()
+
+  df11 <- df7
+  attr(df11, "groups") <- NULL
+
+  expect_snapshot({
+    (expect_error(validate_rowwise_df(df1)))
+    (expect_error(validate_rowwise_df(df2)))
+    (expect_error(validate_rowwise_df(df3)))
+    (expect_error(validate_rowwise_df(df4)))
+    (expect_error(validate_rowwise_df(df7)))
+    (expect_error(attr(df8, "groups")$.rows <- 1:8))
+    (expect_error(validate_rowwise_df(df10)))
+    (expect_error(validate_rowwise_df(df11)))
+
+    (expect_error(
+      new_rowwise_df(
+        tibble(x = 1:10),
+        tibble(".rows" := list(1:5, -1L))
+      )
+    ))
+
+    (expect_error(
+      new_rowwise_df(
+        tibble(x = 1:10),
+        1:10
+      )
+    ))
+  })
+})

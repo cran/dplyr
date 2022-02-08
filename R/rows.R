@@ -1,7 +1,7 @@
 #' Manipulate individual rows
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+#' `r lifecycle::badge("experimental")`
 #'
 #' These functions provide a framework for modifying rows in a table using
 #' a second table of data. The two tables are matched `by` a set of key
@@ -73,14 +73,13 @@ NULL
 #' @rdname rows
 #' @export
 rows_insert <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
-  # Need action = warn, because methods may have
-  # side effects that persist even after we abort
-  ellipsis::check_dots_used(action = warn)
+  lifecycle::signal_stage("experimental", "rows_insert()")
   UseMethod("rows_insert")
 }
 
 #' @export
 rows_insert.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
+  check_dots_empty()
   key <- rows_check_key(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   rows_df_in_place(in_place)
@@ -100,14 +99,13 @@ rows_insert.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place 
 #' @rdname rows
 #' @export
 rows_update <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
-  # Need action = warn, because methods may have
-  # side effects that persist even after we abort
-  ellipsis::check_dots_used(action = warn)
+  lifecycle::signal_stage("experimental", "rows_update()")
   UseMethod("rows_update", x)
 }
 
 #' @export
 rows_update.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
+  check_dots_empty()
   key <- rows_check_key(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   rows_df_in_place(in_place)
@@ -128,14 +126,13 @@ rows_update.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place 
 #' @rdname rows
 #' @export
 rows_patch <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
-  # Need action = warn, because methods may have
-  # side effects that persist even after we abort
-  ellipsis::check_dots_used(action = warn)
+  lifecycle::signal_stage("experimental", "rows_patch()")
   UseMethod("rows_patch", x)
 }
 
 #' @export
 rows_patch.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
+  check_dots_empty()
   key <- rows_check_key(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   rows_df_in_place(in_place)
@@ -146,7 +143,7 @@ rows_patch.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place =
 
   bad <- which(is.na(idx))
   if (has_length(bad)) {
-    abort("Attempting to patch missing rows.")
+    abort("Can't patch missing row.")
   }
 
   new_data <- map2(x[idx, names(y)], y, coalesce)
@@ -158,14 +155,13 @@ rows_patch.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place =
 #' @rdname rows
 #' @export
 rows_upsert <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
-  # Need action = warn, because methods may have
-  # side effects that persist even after we abort
-  ellipsis::check_dots_used(action = warn)
+  lifecycle::signal_stage("experimental", "rows_upsert()")
   UseMethod("rows_upsert", x)
 }
 
 #' @export
 rows_upsert.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
+  check_dots_empty()
   key <- rows_check_key(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   rows_df_in_place(in_place)
@@ -184,14 +180,13 @@ rows_upsert.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place 
 #' @rdname rows
 #' @export
 rows_delete <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
-  # Need action = warn, because methods may have
-  # side effects that persist even after we abort
-  ellipsis::check_dots_used(action = warn)
+  lifecycle::signal_stage("experimental", "rows_delete()")
   UseMethod("rows_delete", x)
 }
 
 #' @export
 rows_delete.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place = FALSE) {
+  check_dots_empty()
   key <- rows_check_key(by, x, y)
   y <- auto_copy(x, y, copy = copy)
   rows_df_in_place(in_place)
@@ -201,16 +196,15 @@ rows_delete.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place 
 
   extra_cols <- setdiff(names(y), key)
   if (has_length(extra_cols)) {
-    inform(glue("Ignoring extra columns: ", commas(tick_if_needed(extra_cols))),
-      class = c("dplyr_message_delete_extra_cols", "dplyr_message")
-    )
+    bullets <- glue("Ignoring extra columns: ", commas(tick_if_needed(extra_cols)))
+    inform(bullets, class = c("dplyr_message_delete_extra_cols", "dplyr_message"))
   }
 
   idx <- vctrs::vec_match(y[key], x[key])
 
   bad <- which(is.na(idx))
   if (has_length(bad)) {
-    abort("Attempting to delete missing rows.")
+    abort("Can't delete missing row.")
   }
 
   dplyr_row_slice(x, -idx)
@@ -218,43 +212,45 @@ rows_delete.data.frame <- function(x, y, by = NULL, ..., copy = FALSE, in_place 
 
 # helpers -----------------------------------------------------------------
 
-rows_check_key <- function(by, x, y) {
+rows_check_key <- function(by, x, y, error_call = caller_env()) {
   if (is.null(by)) {
     by <- names(y)[[1]]
-    inform(glue("Matching, by = \"{by}\""),
-      class = c("dplyr_message_matching_by", "dplyr_message")
-    )
+    msg <- glue("Matching, by = \"{by}\"")
+    inform(msg, class = c("dplyr_message_matching_by", "dplyr_message"))
   }
 
   if (!is.character(by) || length(by) == 0) {
-    abort("`by` must be a character vector.")
+    abort("`by` must be a character vector.", call = error_call)
   }
   # is_named(by) checks all(names2(by) != ""), we need any(...)
   if (any(names2(by) != "")) {
-    abort("`by` must be unnamed.")
+    abort("`by` must be unnamed.", call = error_call)
   }
 
   bad <- setdiff(colnames(y), colnames(x))
   if (has_length(bad)) {
-    abort("All columns in `y` must exist in `x`.")
+    abort("All columns in `y` must exist in `x`.", call = error_call)
   }
 
   by
 }
 
-rows_check_key_df <- function(df, by, df_name) {
+rows_check_key_df <- function(df, by, df_name, error_call = caller_env()) {
   y_miss <- setdiff(by, colnames(df))
   if (length(y_miss) > 0) {
-    abort(glue("All `by` columns must exist in `{df_name}`."))
+    msg <- glue("All `by` columns must exist in `{df_name}`.")
+    abort(msg, call = error_call)
   }
   if (vctrs::vec_duplicate_any(df[by])) {
-    abort(glue("`{df_name}` key values are not unique."))
+    msg <- glue("`{df_name}` key values must be unique.")
+    abort(msg, call = error_call)
   }
 }
 
-rows_df_in_place <- function(in_place) {
+rows_df_in_place <- function(in_place, error_call = caller_env()) {
   if (is_true(in_place)) {
-    abort("Data frames only support `in_place = FALSE`.")
+    msg <- "Data frames only support `in_place = FALSE`."
+    abort(msg, call = error_call)
   }
 }
 

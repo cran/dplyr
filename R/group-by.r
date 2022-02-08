@@ -8,6 +8,10 @@
 #' @family grouping functions
 #' @inheritParams arrange
 #' @param ... In `group_by()`, variables or computations to group by.
+#'   Computations are always done on the ungrouped data frame.
+#'   To perform computations on the grouped data, you need to use
+#'   a separate `mutate()` step before the `group_by()`.
+#'   Computations are not allowed in `nest_by()`.
 #'   In `ungroup()`, variables to remove from the grouping.
 #' @param .add When `FALSE`, the default, `group_by()` will
 #'   override existing groups. To add to the existing groups, use
@@ -57,10 +61,6 @@
 #'   ungroup() %>%
 #'   summarise(n = sum(n))
 #'
-#' # You can group by expressions: this is just short-hand for
-#' # a mutate() followed by a group_by()
-#' mtcars %>% group_by(vsam = vs + am)
-#'
 #' # By default, group_by() overrides existing grouping
 #' by_cyl %>%
 #'   group_by(vs, am) %>%
@@ -71,6 +71,24 @@
 #'   group_by(vs, am, .add = TRUE) %>%
 #'   group_vars()
 #'
+#' # You can group by expressions: this is a short-hand
+#' # for a mutate() followed by a group_by()
+#' mtcars %>%
+#'   group_by(vsam = vs + am)
+#'
+#' # The implicit mutate() step is always performed on the
+#' # ungrouped data. Here we get 3 groups:
+#' mtcars %>%
+#'   group_by(vs) %>%
+#'   group_by(hp_cut = cut(hp, 3))
+#'
+#' # If you want it to be performed by groups,
+#' # you have to use an explicit mutate() call.
+#' # Here we get 3 groups per value of vs
+#' mtcars %>%
+#'   group_by(vs) %>%
+#'   mutate(hp_cut = cut(hp, 3)) %>%
+#'   group_by(hp_cut)
 #'
 #' # when factors are involved and .drop = FALSE, groups can be empty
 #' tbl <- tibble(
@@ -104,7 +122,7 @@ ungroup.grouped_df <- function(x, ...) {
     as_tibble(x)
   } else {
     old_groups <- group_vars(x)
-    to_remove <- tidyselect::vars_select(names(x), ...)
+    to_remove <- fix_call(tidyselect::vars_select(names(x), ...))
 
     new_groups <- setdiff(old_groups, to_remove)
     group_by(x, !!!syms(new_groups))
@@ -113,13 +131,13 @@ ungroup.grouped_df <- function(x, ...) {
 
 #' @export
 ungroup.rowwise_df <- function(x, ...) {
-  ellipsis::check_dots_empty()
+  check_dots_empty()
   as_tibble(x)
 }
 
 #' @export
 ungroup.data.frame <- function(x, ...) {
-  ellipsis::check_dots_empty()
+  check_dots_empty()
   x
 }
 
@@ -139,7 +157,8 @@ group_by_prepare <- function(.data,
                              caller_env = caller_env(2),
                              .add = FALSE,
                              .dots = deprecated(),
-                             add = deprecated()) {
+                             add = deprecated(),
+                             error_call = caller_env()) {
 
   if (!missing(add)) {
     lifecycle::deprecate_warn("1.0.0", "group_by(add = )", "group_by(.add = )")
@@ -154,11 +173,9 @@ group_by_prepare <- function(.data,
   }
 
   # If any calls, use mutate to add new columns, then group by those
-  computed_columns <- add_computed_columns(
-    .data,
-    new_groups,
-    "group_by",
-    caller_env = caller_env
+  computed_columns <- add_computed_columns(.data, new_groups,
+    caller_env = caller_env,
+    error_call = error_call
   )
 
   out <- computed_columns$data
@@ -170,10 +187,11 @@ group_by_prepare <- function(.data,
 
   unknown <- setdiff(group_names, tbl_vars(out))
   if (length(unknown) > 0) {
-    abort(c(
+    bullets <- c(
       "Must group by variables found in `.data`.",
-      glue("Column `{unknown}` is not found.")
-    ))
+      x = glue("Column `{unknown}` is not found.")
+    )
+    abort(bullets, call = error_call)
   }
 
   list(
@@ -185,8 +203,8 @@ group_by_prepare <- function(.data,
 
 add_computed_columns <- function(.data,
                                  vars,
-                                 .fn = "group_by",
-                                 caller_env) {
+                                 caller_env,
+                                 error_call = caller_env()) {
   is_symbol <- map_lgl(vars, quo_is_variable_reference)
   needs_mutate <- have_name(vars) | !is_symbol
 
@@ -194,12 +212,12 @@ add_computed_columns <- function(.data,
     # TODO: use less of a hack
     if (inherits(.data, "data.frame")) {
       cols <- withCallingHandlers(
-        mutate_cols(ungroup(.data), !!!vars, caller_env = caller_env),
+        mutate_cols(
+          ungroup(.data), dplyr_quosures(!!!vars), caller_env = caller_env,
+          error_call = call("mutate") # this is a pretend `mutate()`
+        ),
         error = function(e) {
-          abort(c(
-            glue("Problem adding computed columns in `{.fn}()`."),
-            x = e$message
-          ), parent = e)
+          abort("Problem adding computed columns.", parent = e, call = error_call)
         }
       )
 

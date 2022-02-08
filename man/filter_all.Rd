@@ -36,7 +36,7 @@ a character vector of column names, a numeric vector of column
 positions, or \code{NULL}.}
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
 
 Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
 \code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
@@ -85,3 +85,4 @@ filter_if(mtcars, ~ all(floor(.) == .), all_vars(. != 0))
 is_int <- function(x) all(floor(x) == x)
 filter(mtcars, if_all(where(is_int), ~ .x != 0))
 }
+\keyword{internal}

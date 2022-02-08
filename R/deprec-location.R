@@ -1,7 +1,7 @@
 #' Print the location in memory of a data frame
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("deprecated")}
+#' `r lifecycle::badge("deprecated")`
 #'
 #' This is useful for understand how and when dplyr makes copies of data
 #' frames
@@ -26,7 +26,7 @@
 location <- function(df) {
   lifecycle::deprecate_warn("1.0.0", "location()", "lobst::ref()")
 
-  check_pkg("lobstr", "compute package locations")
+  check_installed("lobstr", "to compute package locations.")
 
   if (!is.data.frame(df)) {
     abort("`location()` is meant for data frames.")

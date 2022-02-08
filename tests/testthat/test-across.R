@@ -108,12 +108,76 @@ test_that("across() retains original ordering", {
 })
 
 test_that("across() gives meaningful messages", {
-  expect_snapshot(error = TRUE,
-    tibble(x = 1) %>%
-      summarise(res = across(where(is.numeric), 42))
-  )
-  expect_snapshot(error = TRUE, across())
-  expect_snapshot(error = TRUE, c_across())
+  expect_snapshot({
+    # expanding
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(across(where(is.numeric), 42))
+    ))
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(across(y, mean))
+    ))
+
+    # computing
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(res = across(where(is.numeric), 42))
+    ))
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(z  = across(y, mean))
+    ))
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(res = sum(if_any(where(is.numeric), 42)))
+    ))
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(res = sum(if_all(~mean(.x))))
+    ))
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(res = sum(if_any(~mean(.x))))
+    ))
+
+    (expect_error(across()))
+    (expect_error(c_across()))
+
+    # problem while computing
+    error_fn <- function(.) {
+      if (all(. > 10)) {
+        rlang::abort("too small", call = call("error_fn"))
+      } else {
+        42
+      }
+    }
+    (expect_error( # expanding
+      tibble(x = 1:10, y = 11:20) %>%
+        summarise(across(everything(), error_fn))
+    ))
+    (expect_error( # expanding
+      tibble(x = 1:10, y = 11:20) %>%
+        mutate(across(everything(), error_fn))
+    ))
+
+    (expect_error( # evaluating
+      tibble(x = 1:10, y = 11:20) %>%
+        summarise(force(across(everything(), error_fn)))
+    ))
+    (expect_error( # evaluating
+      tibble(x = 1:10, y = 11:20) %>%
+        mutate(force(across(everything(), error_fn)))
+    ))
+
+    # name issue
+    (expect_error(
+      tibble(x = 1) %>%
+        summarise(across(everything(), list(f = mean, f = mean)))
+    ))
+
+  })
+
 })
 
 test_that("monitoring cache - across() can be used twice in the same expression", {
@@ -437,7 +501,27 @@ test_that("across() correctly reset column", {
   expect_error(cur_column())
 })
 
-test_that("top_across() evaluates ... with promise semantics (#5813)", {
+test_that("across() can omit dots", {
+  df <- tibble(x = tibble(foo = 1), y = tibble(foo = 2))
+
+  # top
+  res <- mutate(df, across(
+    everything(),
+    list
+  ))
+  expect_equal(res$x[[1]]$foo, 1)
+  expect_equal(res$y[[1]]$foo, 2)
+
+  # not top
+  res <- mutate(df, force(across(
+    everything(),
+    list
+  )))
+  expect_equal(res$x[[1]]$foo, 1)
+  expect_equal(res$y[[1]]$foo, 2)
+})
+
+test_that("across() evaluates ... with promise semantics (#5813)", {
   df <- tibble(x = tibble(foo = 1), y = tibble(foo = 2))
 
   res <- mutate(df, across(
@@ -447,14 +531,6 @@ test_that("top_across() evaluates ... with promise semantics (#5813)", {
   ))
   expect_equal(res$x$foo, 2)
   expect_equal(res$y$foo, 3)
-
-  # Can omit dots
-  res <- mutate(df, across(
-    everything(),
-    list
-  ))
-  expect_equal(res$x[[1]]$foo, 1)
-  expect_equal(res$y[[1]]$foo, 2)
 
   # Dots are evaluated only once
   new_counter <- function() {
@@ -570,6 +646,19 @@ test_that("across() uses local formula environment (#5881)", {
       tibble(x = "x", x_f = "foo x")
     )
   })
+
+  expect_equal(
+    data.frame(x = 1) %>% mutate(across(1, list(f = local(~ . + 1)))),
+    data.frame(x = 1, x_f = 2)
+  )
+
+  expect_equal(
+    data.frame(x = 1) %>% mutate(across(1, local({
+      `_local_var` <- 1
+      ~ . + `_local_var`
+    }))),
+    data.frame(x = 2)
+  )
 })
 
 test_that("unevaluated formulas (currently) fail", {
@@ -739,17 +828,80 @@ test_that("expr_subtitute() keeps at double-sided formula (#5894)", {
   )
 })
 
+test_that("across() predicates operate on whole data", {
+  df <- tibble(
+    x = c(1, 1, 2),
+    g = c(1, 1, 2)
+  )
+
+  out <- df %>%
+    mutate(across(where(~ n_distinct(.x) > 1), ~ .x + 10))
+
+  exp <- tibble(
+    x = c(11, 11, 12),
+    g = c(11, 11, 12)
+  )
+
+  expect_equal(out, exp)
+
+
+  out <- df %>%
+    group_by(g) %>%
+    mutate(across(where(~ n_distinct(.x) > 1), ~ .x + 10))
+
+  exp <- tibble(
+    x = c(11, 11, 12),
+    g = c(1, 1, 2)
+  ) %>%
+    group_by(g)
+
+  expect_equal(out, exp)
+})
+
+test_that("expand_across() expands lambdas", {
+  quo <- quo(across(c(cyl, am), ~ identity(.x)))
+  quo <- new_dplyr_quosure(
+    quo,
+    name_given = "",
+    name_auto = "across()",
+    is_named = FALSE,
+    index = 1
+  )
+
+  DataMask$new(mtcars, current_env(), "mutate", call("caller"))
+
+  expect_equal(
+    map(expand_across(quo), quo_get_expr),
+    exprs(
+      cyl = identity(cyl),
+      am = identity(am)
+    )
+  )
+})
+
+test_that("expand_if_across() expands lambdas", {
+  quo <- quo(if_any(c(cyl, am), ~ . > 4))
+  quo <- new_dplyr_quosure(
+    quo,
+    name_given = "",
+    name_auto = "if_any()",
+    is_named = FALSE,
+    index = 1
+  )
+
+  DataMask$new(mtcars, current_env(), "mutate", call("caller"))
+
+  expect_equal(
+    map(expand_if_across(quo), quo_squash),
+    alist(`|`(cyl > 4, am > 4))
+  )
+})
+
+
 # c_across ----------------------------------------------------------------
 
 test_that("selects and combines columns", {
   df <- data.frame(x = 1:2, y = 3:4)
   out <- df %>% summarise(z = list(c_across(x:y)))
   expect_equal(out$z, list(1:4))
-})
-
-test_that("key_deparse() collapses (#5883)", {
-  expect_equal(
-    length(key_deparse(quo(all_of(c("aaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbb", "cccccccccccccc", "ddddddddddddddddddd"))))),
-    1
-  )
 })

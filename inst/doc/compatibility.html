@@ -176,7 +176,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2>dplyr 0.6.0</h2>
 <div id="database-code-moves-to-dbplyr" class="section level3">
 <h3>Database code moves to dbplyr</h3>
-<p>Almost all database related code has been moved out of dplyr and into a new package, <a href="https://github.com/tidyverse/dbplyr/">dbplyr</a>. This makes dplyr simpler, and will make it easier to release fixes for bugs that only affect databases. If you’ve implemented a database backend for dplyr, please read the <a href="https://github.com/tidyverse/dbplyr/blob/master/NEWS.md#backends">backend news</a> on the backend.</p>
+<p>Almost all database related code has been moved out of dplyr and into a new package, <a href="https://github.com/tidyverse/dbplyr/">dbplyr</a>. This makes dplyr simpler, and will make it easier to release fixes for bugs that only affect databases. If you’ve implemented a database backend for dplyr, please read the <a href="https://github.com/tidyverse/dbplyr/blob/main/NEWS.md#backends">backend news</a> on the backend.</p>
 <p>Depending on what generics you use, and what generics you provide methods for you, you may need to write some conditional code. To help make this easier we’ve written <code>wrap_dbplyr_obj()</code> which will write the helper code for you:</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wrap_dbplyr_obj</span>(<span class="st">&quot;build_sql&quot;</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -275,7 +275,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 <div id="for-package-authors" class="section level4">
 <h4>For package authors</h4>
-<p>For package authors, rlang provides a <a href="https://github.com/r-lib/rlang/blob/master/R/compat-lazyeval.R">compatibility file</a> that you can copy to your package. <code>compat_lazy()</code> and <code>compat_lazy_dots()</code> turn lazy-able objects into proper quosures. This helps providing an underscored version to your users for backward compatibility. For instance, here is how we defined the underscored version of <code>filter()</code> in dplyr 0.6:</p>
+<p>For package authors, rlang provides a <a href="https://github.com/r-lib/rlang/blob/main/R/compat-lazyeval.R">compatibility file</a> that you can copy to your package. <code>compat_lazy()</code> and <code>compat_lazy_dots()</code> turn lazy-able objects into proper quosures. This helps providing an underscored version to your users for backward compatibility. For instance, here is how we defined the underscored version of <code>filter()</code> in dplyr 0.6:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>filter_.tbl_df <span class="ot">&lt;-</span> <span class="cf">function</span>(.data, ..., <span class="at">.dots =</span> <span class="fu">list</span>()) {</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  dots <span class="ot">&lt;-</span> <span class="fu">compat_lazy_dots</span>(.dots, <span class="fu">caller_env</span>(), ...)</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(.data, <span class="sc">!!!</span> dots)</span>

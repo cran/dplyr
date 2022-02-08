@@ -13,30 +13,33 @@ if_any(.cols = everything(), .fns = NULL, ..., .names = NULL)
 if_all(.cols = everything(), .fns = NULL, ..., .names = NULL)
 }
 \arguments{
+\item{.cols, cols}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Columns to transform.
+Because \code{across()} is used within functions like \code{summarise()} and
+\code{mutate()}, you can't select or compute upon grouping variables.}
+
 \item{.fns}{Functions to apply to each of the selected columns.
 Possible values are:
 \itemize{
-\item \code{NULL}, to returns the columns untransformed.
 \item A function, e.g. \code{mean}.
 \item A purrr-style lambda, e.g. \code{~ mean(.x, na.rm = TRUE)}
 \item A list of functions/lambdas, e.g.
 \verb{list(mean = mean, n_miss = ~ sum(is.na(.x))}
+\item \code{NULL}: the default value, returns the selected columns in a data
+frame without applying a transformation. This is useful for when you want to
+use a function that takes a data frame.
 }
 
 Within these functions you can use \code{\link[=cur_column]{cur_column()}} and \code{\link[=cur_group]{cur_group()}}
 to access the current column and grouping keys respectively.}
 
-\item{...}{Additional arguments for the function calls in \code{.fns}.}
+\item{...}{Additional arguments for the function calls in \code{.fns}. Using these
+\code{...} is strongly discouraged because of issues of timing of evaluation.}
 
 \item{.names}{A glue specification that describes how to name the output
 columns. This can use \code{{.col}} to stand for the selected column name, and
 \code{{.fn}} to stand for the name of the function being applied. The default
 (\code{NULL}) is equivalent to \code{"{.col}"} for the single function case and
 \code{"{.col}_{.fn}"} for the case where a list is used for \code{.fns}.}
-
-\item{cols, .cols}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Columns to transform.
-Because \code{across()} is used within functions like \code{summarise()} and
-\code{mutate()}, you can't select or compute upon grouping variables.}
 }
 \value{
 \code{across()} returns a tibble with one column for each column in \code{.cols} and each function in \code{.fns}.
@@ -64,7 +67,7 @@ R code in dplyr verbs is generally evaluated once per group.
 Inside \code{across()} however, code is evaluated once for each
 combination of columns and groups. If the evaluation timing is
 important, for example if you're generating random variables, think
-about when it should happen and place your code in consequence.\if{html}{\out{<div class="r">}}\preformatted{gdf <-
+about when it should happen and place your code in consequence.\if{html}{\out{<div class="sourceCode r">}}\preformatted{gdf <-
   tibble(g = c(1, 1, 2, 3), v1 = 10:13, v2 = 20:23) \%>\%
   group_by(g)
 
@@ -73,7 +76,7 @@ set.seed(1)
 # Outside: 1 normal variate
 n <- rnorm(1)
 gdf \%>\% mutate(across(v1:v2, ~ .x + n))
-}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 x 3
+}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 × 3
 ## # Groups:   g [3]
 ##       g    v1    v2
 ##   <dbl> <dbl> <dbl>
@@ -81,9 +84,9 @@ gdf \%>\% mutate(across(v1:v2, ~ .x + n))
 ## 2     1 10.4   20.4
 ## 3     2 11.4   21.4
 ## 4     3 12.4   22.4
-}\if{html}{\out{<div class="r">}}\preformatted{# Inside a verb: 3 normal variates (ngroup)
+}\if{html}{\out{<div class="sourceCode r">}}\preformatted{# Inside a verb: 3 normal variates (ngroup)
 gdf \%>\% mutate(n = rnorm(1), across(v1:v2, ~ .x + n))
-}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 x 4
+}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 × 4
 ## # Groups:   g [3]
 ##       g    v1    v2      n
 ##   <dbl> <dbl> <dbl>  <dbl>
@@ -91,9 +94,9 @@ gdf \%>\% mutate(n = rnorm(1), across(v1:v2, ~ .x + n))
 ## 2     1  11.2  21.2  0.184
 ## 3     2  11.2  21.2 -0.836
 ## 4     3  14.6  24.6  1.60
-}\if{html}{\out{<div class="r">}}\preformatted{# Inside `across()`: 6 normal variates (ncol * ngroup)
+}\if{html}{\out{<div class="sourceCode r">}}\preformatted{# Inside `across()`: 6 normal variates (ncol * ngroup)
 gdf \%>\% mutate(across(v1:v2, ~ .x + rnorm(1)))
-}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 x 3
+}\if{html}{\out{</div>}}\preformatted{## # A tibble: 4 × 3
 ## # Groups:   g [3]
 ##       g    v1    v2
 ##   <dbl> <dbl> <dbl>
@@ -143,6 +146,17 @@ iris \%>\%
 iris \%>\%
   group_by(Species) \%>\%
   summarise(across(starts_with("Sepal"), list(mean, sd), .names = "{.col}.fn{.fn}"))
+
+# across() returns a data frame, which can be used as input of another function
+df <- data.frame(
+  x1  = c(1, 2, NA),
+  x2  = c(4, NA, 6),
+  y   = c("a", "b", "c")
+)
+df \%>\%
+  mutate(x_complete = complete.cases(across(starts_with("x"))))
+df \%>\%
+  filter(complete.cases(across(starts_with("x"))))
 
 # if_any() and if_all() ----------------------------------------------------
 iris \%>\%

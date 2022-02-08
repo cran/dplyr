@@ -18,12 +18,12 @@ library(dplyr, warn.conflicts = FALSE)
 
 ## -----------------------------------------------------------------------------
 starwars %>% 
-  summarise(across(where(is.character), ~ length(unique(.x))))
+  summarise(across(where(is.character), n_distinct))
 
 starwars %>% 
   group_by(species) %>% 
   filter(n() > 1) %>% 
-  summarise(across(c(sex, gender, homeworld), ~ length(unique(.x))))
+  summarise(across(c(sex, gender, homeworld), n_distinct))
 
 starwars %>% 
   group_by(homeworld) %>% 

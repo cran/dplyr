@@ -1,7 +1,7 @@
 #' Create a list of function calls
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("deprecated")}
+#' `r lifecycle::badge("deprecated")`
 #'
 #' `funs()` is deprecated; please use `list()` instead. We deprecated this
 #' function because it provided a unique way of specifying anonymous functions,
@@ -52,7 +52,8 @@ funs <- function(..., .args = list()) {
   dots <- enquos(...)
   default_env <- caller_env()
 
-  funs <- map(dots, function(quo) as_fun(quo, default_env, .args))
+  error_call <- current_env()
+  funs <- map(dots, function(quo) as_fun(quo, default_env, .args, error_call = error_call))
   new_funs(funs)
 }
 new_funs <- function(funs) {

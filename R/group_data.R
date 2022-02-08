@@ -60,7 +60,16 @@ group_data.rowwise_df <- function(.data) {
 
 #' @export
 group_data.grouped_df <- function(.data) {
-  attr(validate_grouped_df(.data), "groups")
+  error_call <- current_env()
+  withCallingHandlers(
+    validate_grouped_df(.data),
+    error = function(cnd) {
+      msg  <- glue("`.data` must be a valid <grouped_df> object.")
+      abort(msg, parent = cnd, call = error_call)
+    }
+  )
+
+  attr(.data, "groups")
 }
 
 # -------------------------------------------------------------------------
@@ -102,7 +111,7 @@ group_indices <- function(.data, ...) {
 group_indices.data.frame <- function(.data, ...) {
   if (dots_n(...) > 0) {
     lifecycle::deprecate_warn(
-      "1.0.0", "group_keys(... = )",
+      "1.0.0", "group_indices(... = )",
       details = "Please `group_by()` first"
     )
     .data <- group_by(.data, ...)

@@ -13,7 +13,6 @@
 #' the order of replacements. See the [forcats](https://forcats.tidyverse.org/)
 #' package for more tools for working with factors and their levels.
 #'
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("questioning")}
 #' `recode()` is questioning because the arguments are in the wrong order.
 #' We have `new <- old`, `mutate(df, new = old)`, and `rename(df, new = old)`
 #' but `recode(x, old = new)`. We don't yet know how to fix this problem, but
@@ -67,9 +66,7 @@
 #' recode(char_vec, a = "Apple", b = "Banana", .default = NA_character_)
 #'
 #' # Throws an error as NA is logical, not character.
-#' \dontrun{
-#' recode(char_vec, a = "Apple", b = "Banana", .default = NA)
-#' }
+#' try(recode(char_vec, a = "Apple", b = "Banana", .default = NA))
 #'
 #' # Use a named character vector for unquote splicing with !!!
 #' level_key <- c(a = "apple", b = "banana", c = "carrot")
@@ -130,7 +127,8 @@ recode.numeric <- function(.x, ..., .default = NULL, .missing = NULL) {
   } else if (all(!nms)) {
     vals <- seq_along(values)
   } else {
-    abort("Either all values must be named, or none must be named.")
+    msg <- "Either all values must be named, or none must be named."
+    abort(msg)
   }
 
   n <- length(.x)
@@ -155,7 +153,8 @@ recode.character <- function(.x, ..., .default = NULL, .missing = NULL) {
   values <- list2(...)
   if (!all(have_name(values))) {
     bad <- which(!have_name(values)) + 1
-    bad_pos_args(bad, "must be named, not unnamed.")
+    msg <- glue("{fmt_pos_args(bad)} must be named.")
+    abort(msg)
   }
 
   n <- length(.x)
@@ -183,10 +182,12 @@ recode.factor <- function(.x, ..., .default = NULL, .missing = NULL) {
 
   if (!all(have_name(values))) {
     bad <- which(!have_name(values)) + 1
-    bad_pos_args(bad, "must be named, not unnamed.")
+    msg <- glue("{fmt_pos_args(bad)} must be named.")
+    abort(msg)
   }
   if (!is.null(.missing)) {
-    bad_args(".missing", "is not supported for factors.")
+    msg <- glue("`.missing` is not supported for factors.")
+    abort(msg)
   }
 
   n <- length(levels(.x))
@@ -214,11 +215,11 @@ recode.factor <- function(.x, ..., .default = NULL, .missing = NULL) {
   }
 }
 
-find_template <- function(values, .default = NULL, .missing = NULL) {
+find_template <- function(values, .default = NULL, .missing = NULL, error_call = caller_env()) {
   x <- compact(c(values, .default, .missing))
 
   if (length(x) == 0) {
-    abort("No replacements provided.")
+    abort("No replacements provided.", call = error_call)
   }
 
   x[[1]]
@@ -228,11 +229,11 @@ validate_recode_default <- function(default, x, out, replaced) {
   default <- recode_default(x, default, out)
 
   if (is.null(default) && sum(replaced & !is.na(x)) < length(out[!is.na(x)])) {
-    warning(
-      "Unreplaced values treated as NA as .x is not compatible. ",
-      "Please specify replacements exhaustively or supply .default",
-      call. = FALSE
+    bullets <- c(
+      "Unreplaced values treated as NA as `.x` is not compatible. ",
+      "Please specify replacements exhaustively or supply `.default`."
     )
+    warn(bullets)
   }
 
   default

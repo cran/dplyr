@@ -35,7 +35,7 @@ returns \code{TRUE} are selected. This argument is passed to
 functions and strings representing function names.}
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
 
 Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
 \code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
@@ -72,3 +72,4 @@ distinct_all(df, round)
 # ->
 distinct(df, across(everything(), round))
 }
+\keyword{internal}

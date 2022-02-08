@@ -84,7 +84,7 @@ case_when(
 
 # case_when() evaluates all RHS expressions, and then constructs its
 # result by extracting the selected (via the LHS expressions) parts.
-# In particular NaN are produced in this case:
+# In particular NaNs are produced in this case:
 y <- seq(-2, 2, by = .5)
 case_when(
   y >= 0 ~ sqrt(y),
@@ -92,14 +92,12 @@ case_when(
 )
 
 # This throws an error as NA is logical not numeric
-\dontrun{
-case_when(
+try(case_when(
   x \%\% 35 == 0 ~ 35,
   x \%\% 5 == 0 ~ 5,
   x \%\% 7 == 0 ~ 7,
   TRUE ~ NA
-)
-}
+))
 
 # case_when is particularly useful inside mutate when you want to
 # create a new variable that relies on a complex combination of existing

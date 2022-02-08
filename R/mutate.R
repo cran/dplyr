@@ -62,12 +62,18 @@
 #' An object of the same type as `.data`. The output has the following
 #' properties:
 #'
-#' * Rows are not affected.
-#' * Existing columns will be preserved according to the `.keep` argument.
-#'   New columns will be placed according to the `.before` and `.after`
-#'   arguments. If `.keep = "none"` (as in `transmute()`), the output order
-#'   is determined only by `...`, not the order of existing columns.
-#' * Columns given value `NULL` will be removed
+#' * For `mutate()`:
+#'   * Columns from `.data` will be preserved according to the `.keep` argument.
+#'   * Existing columns that are modified by `...` will always be returned in
+#'     their original location.
+#'   * New columns created through `...` will be placed according to the
+#'     `.before` and `.after` arguments.
+#' * For `transmute()`:
+#'   * Columns created or modified through `...` will be returned in the order
+#'     specified by `...`.
+#'   * Unmodified grouping columns will be placed at the front.
+#' * The number of rows is not affected.
+#' * Columns given the value `NULL` will be removed.
 #' * Groups will be recomputed if a grouping variable is mutated.
 #' * Data frame attributes are preserved.
 #' @section Methods:
@@ -86,7 +92,7 @@
 #'  mutate(
 #'   mass2 = mass * 2,
 #'   mass2_squared = mass2 * mass2
-#' )
+#'  )
 #'
 #' # As well as adding new variables, you can use mutate() to
 #' # remove variables and modify existing variables.
@@ -95,7 +101,7 @@
 #'  mutate(
 #'   mass = NULL,
 #'   height = height * 0.0328084 # convert to feet
-#' )
+#'  )
 #'
 #' # Use across() with mutate() to apply a transformation
 #' # to multiple columns in a tibble.
@@ -151,60 +157,73 @@ mutate <- function(.data, ...) {
 }
 
 #' @rdname mutate
-#' @param .keep \Sexpr[results=rd]{lifecycle::badge("experimental")}
-#'   This is an experimental argument that allows you to control which columns
-#'   from `.data` are retained in the output:
+#' @param .keep `r lifecycle::badge("experimental")`
+#'   Control which columns from `.data` are retained in the output. Grouping
+#'   columns and columns created by `...` are always kept.
 #'
-#'   * `"all"`, the default, retains all variables.
-#'   * `"used"` keeps any variables used to make new variables; it's useful
-#'     for checking your work as it displays inputs and outputs side-by-side.
-#'   * `"unused"` keeps only existing variables **not** used to make new
-#'     variables.
-#'   * `"none"`, only keeps grouping keys (like [transmute()]).
-#'
-#'   Grouping variables are always kept, unconditional to `.keep`.
-#' @param .before,.after \Sexpr[results=rd]{lifecycle::badge("experimental")}
+#'   * `"all"` retains all columns from `.data`. This is the default.
+#'   * `"used"` retains only the columns used in `...` to create new
+#'     columns. This is useful for checking your work, as it displays inputs
+#'     and outputs side-by-side.
+#'   * `"unused"` retains only the columns _not_ used in `...` to create new
+#'     columns. This is useful if you generate new columns, but no longer need
+#'     the columns used to generate them.
+#'   * `"none"` doesn't retain any extra columns from `.data`. Only the grouping
+#'     variables and columns created by `...` are kept.
+#' @param .before,.after `r lifecycle::badge("experimental")`
 #'   <[`tidy-select`][dplyr_tidy_select]> Optionally, control where new columns
 #'   should appear (the default is to add to the right hand side). See
 #'   [relocate()] for more details.
 #' @export
-mutate.data.frame <- function(.data, ...,
+mutate.data.frame <- function(.data,
+                              ...,
                               .keep = c("all", "used", "unused", "none"),
-                              .before = NULL, .after = NULL) {
+                              .before = NULL,
+                              .after = NULL) {
   keep <- arg_match(.keep)
 
-  cols <- mutate_cols(.data, ..., caller_env = caller_env())
+  cols <- mutate_cols(.data, dplyr_quosures(...), caller_env = caller_env())
+  used <- attr(cols, "used")
+
   out <- dplyr_col_modify(.data, cols)
+
+  # Compact out `NULL` columns that got removed.
+  # These won't exist in `out`, but we don't want them to look "new".
+  # Note that `dplyr_col_modify()` makes it impossible to `NULL` a group column,
+  # which we rely on below.
+  cols <- compact_null(cols)
+
+  cols_data <- names(.data)
+  cols_group <- group_vars(.data)
+
+  cols_expr <- names(cols)
+  cols_expr_modified <- intersect(cols_expr, cols_data)
+  cols_expr_new <- setdiff(cols_expr, cols_expr_modified)
+
+  cols_used <- setdiff(cols_data, c(cols_group, cols_expr_modified, names(used)[!used]))
+  cols_unused <- setdiff(cols_data, c(cols_group, cols_expr_modified, names(used)[used]))
 
   .before <- enquo(.before)
   .after <- enquo(.after)
+
   if (!quo_is_null(.before) || !quo_is_null(.after)) {
     # Only change the order of new columns
-    new <- setdiff(names(cols), names(.data))
-    out <- relocate(out, !!new, .before = !!.before, .after = !!.after)
+    out <- relocate(out, all_of(cols_expr_new), .before = !!.before, .after = !!.after)
   }
 
+  cols_out <- names(out)
+
   if (keep == "all") {
-    out
-  } else if (keep == "unused") {
-    used <- attr(cols, "used")
-    unused <- names(used)[!used]
-    keep <- intersect(names(out), c(group_vars(.data), unused, names(cols)))
-    dplyr_col_select(out, keep)
+    cols_retain <- cols_out
   } else if (keep == "used") {
-    used <- attr(cols, "used")
-    used <- names(used)[used]
-    keep <- intersect(names(out), c(group_vars(.data), used, names(cols)))
-    dplyr_col_select(out, keep)
+    cols_retain <- setdiff(cols_out, cols_unused)
+  } else if (keep == "unused") {
+    cols_retain <- setdiff(cols_out, cols_used)
   } else if (keep == "none") {
-    keep <- c(
-      # ensure group vars present
-      setdiff(group_vars(.data), names(cols)),
-      # cols might contain NULLs
-      intersect(names(cols), names(out))
-    )
-    dplyr_col_select(out, keep)
+    cols_retain <- setdiff(cols_out, c(cols_used, cols_unused))
   }
+
+  dplyr_col_select(out, cols_retain)
 }
 
 #' @rdname mutate
@@ -216,42 +235,60 @@ transmute <- function(.data, ...) {
 #' @export
 transmute.data.frame <- function(.data, ...) {
   dots <- check_transmute_args(...)
-  mutate(.data, !!!dots, .keep = "none")
+  dots <- dplyr_quosures(!!!dots)
+
+  cols <- mutate_cols(.data, dots, caller_env = caller_env())
+
+  out <- dplyr_col_modify(.data, cols)
+
+  # Compact out `NULL` columns that got removed.
+  # These won't exist in `out`, but we don't want them to look "new".
+  # Note that `dplyr_col_modify()` makes it impossible to `NULL` a group column,
+  # which we rely on below.
+  cols <- compact_null(cols)
+
+  # Retain expression columns in order of their appearance
+  cols_expr <- names(cols)
+
+  # Retain untouched group variables up front
+  cols_group <- group_vars(.data)
+  cols_group <- setdiff(cols_group, cols_expr)
+
+  cols_retain <- c(cols_group, cols_expr)
+
+  dplyr_col_select(out, cols_retain)
 }
 
 # Helpers -----------------------------------------------------------------
 
-check_transmute_args <- function(..., .keep, .before, .after) {
+check_transmute_args <- function(..., .keep, .before, .after, error_call = caller_env()) {
   if (!missing(.keep)) {
-    abort("`transmute()` does not support the `.keep` argument")
+    abort("The `.keep` argument is not supported.", call = error_call)
   }
   if (!missing(.before)) {
-    abort("`transmute()` does not support the `.before` argument")
+    abort("The `.before` argument is not supported.", call = error_call)
   }
   if (!missing(.after)) {
-    abort("`transmute()` does not support the `.after` argument")
+    abort("The `.after` argument is not supported.", call = error_call)
   }
   enquos(...)
 }
 
-mutate_cols <- function(.data, ..., caller_env) {
-  mask <- DataMask$new(.data, caller_env)
+mutate_cols <- function(.data, dots, caller_env, error_call = caller_env()) {
+  error_call <- dplyr_error_call(error_call)
+
+  mask <- DataMask$new(.data, caller_env, "mutate", error_call = error_call)
   old_current_column <- context_peek_bare("column")
 
   on.exit(context_poke("column", old_current_column), add = TRUE)
-  on.exit(mask$forget("mutate"), add = TRUE)
+  on.exit(mask$forget(), add = TRUE)
 
   rows <- mask$get_rows()
-  dots <- dplyr_quosures(...)
-  if (length(dots) == 0L) {
-    return(NULL)
-  }
 
   new_columns <- set_names(list(), character())
 
   withCallingHandlers({
     for (i in seq_along(dots)) {
-      mask$across_cache_reset()
       context_poke("column", old_current_column)
 
       # get results from all the quosures that are expanded from ..i
@@ -295,13 +332,42 @@ mutate_cols <- function(.data, ..., caller_env) {
               # same error as would have been generated by mask$eval_all_mutate()
               group <- wrong[1L]
               mask$set_current_group(group)
-              abort(x_size = sizes[group], class = "dplyr:::mutate_incompatible_size")
+
+              abort(
+                class = c("dplyr:::mutate_incompatible_size", "dplyr:::internal_error"),
+                dplyr_error_data = list(result_size = sizes[group], expected_size = 1)
+              )
             }
           }
+        } else if (!quo_is_symbolic(quo) && !is.null(quo_get_expr(quo))) {
+          # constant, we still need both `result` and `chunks`
+          result <- quo_get_expr(quo)
+
+          result <- withCallingHandlers(
+            vec_recycle(result, vec_size(.data)),
+            error = function(cnd) {
+              abort(
+                class = c("dplyr:::mutate_constant_recycle_error", "dplyr:::internal_error"),
+                constant_size = vec_size(result), data_size = vec_size(.data)
+              )
+            }
+          )
+
+          chunks <- vec_chop(result, rows)
         }
 
         if (is.null(chunks)) {
-          chunks <- mask$eval_all_mutate(quo)
+          if (is.null(quo_data$column)) {
+            chunks <- mask$eval_all_mutate(quo)
+          } else {
+            chunks <- withCallingHandlers(
+              mask$eval_all_mutate(quo),
+              error = function(cnd) {
+                msg <- glue("Problem while computing column `{quo_data$name_auto}`.")
+                abort(msg, call = call("across"), parent = cnd)
+              }
+            )
+          }
         }
 
         if (is.null(chunks)) {
@@ -313,12 +379,8 @@ mutate_cols <- function(.data, ..., caller_env) {
           if (length(rows) == 1) {
             result <- chunks[[1]]
           } else {
-            result <- withCallingHandlers(
-              vec_unchop(chunks <- vec_cast_common(!!!chunks), rows),
-              vctrs_error_incompatible_type = function(cnd) {
-                abort(class = "dplyr:::error_mutate_incompatible_combine", parent = cnd)
-              }
-            )
+            chunks <- dplyr_vec_cast_common(chunks, quo_data$name_auto)
+            result <- vec_unchop(chunks, rows)
           }
         }
 
@@ -344,13 +406,21 @@ mutate_cols <- function(.data, ..., caller_env) {
         chunks <- quo_result$chunks
 
         if (!quo_data$is_named && is.data.frame(result)) {
-          new_columns[names(result)] <- result
-          mask$add_many(result, chunks)
+          types <- vec_ptype(result)
+          types_names <- names(types)
+          chunks_extracted <- .Call(dplyr_extract_chunks, chunks, types)
+
+          for (j in seq_along(types)) {
+            mask$add_one(types_names[j], chunks_extracted[[j]], result = result[[j]])
+          }
+
+          new_columns[types_names] <- result
         } else {
           # treat as a single output otherwise
           name <- quo_data$name_auto
+          mask$add_one(name = name, chunks = chunks, result = result)
+
           new_columns[[name]] <- result
-          mask$add_one(name, chunks)
         }
 
       }
@@ -359,63 +429,20 @@ mutate_cols <- function(.data, ..., caller_env) {
 
   },
   error = function(e) {
-    local_call_step(dots = dots, .index = i, .fn = "mutate", .dot_data = inherits(e, "rlang_error_data_pronoun_not_found"))
-    call_step_envir <- peek_call_step()
-    error_name <- call_step_envir$error_name
-    error_expression <- call_step_envir$error_expression
-
-    show_group_details <- TRUE
-    if (inherits(e, "dplyr:::mutate_incompatible_size")) {
-      size <- vec_size(rows[[mask$get_current_group()]])
-      x_size <- e$x_size
-      bullets <- c(
-        i = cnd_bullet_column_info(),
-        i = glue("`{error_name}` must be size {or_1(size)}, not {x_size}."),
-        i = cnd_bullet_rowwise_unlist()
-      )
-    } else if (inherits(e, "dplyr:::mutate_mixed_null")) {
-      show_group_details <- FALSE
-      bullets <- c(
-        i = cnd_bullet_column_info(),
-        x = glue("`{error_name}` must return compatible vectors across groups."),
-        i = "Cannot combine NULL and non NULL results.",
-        i = cnd_bullet_rowwise_unlist()
-      )
-    } else if (inherits(e, "dplyr:::mutate_not_vector")) {
-      bullets <- c(
-        i = cnd_bullet_column_info(),
-        x = glue("`{error_name}` must be a vector, not {friendly_type_of(e$result)}."),
-        i = cnd_bullet_rowwise_unlist()
-      )
-    } else if(inherits(e, "dplyr:::error_mutate_incompatible_combine")) {
-      show_group_details <- FALSE
-      bullets <- c(
-        i = cnd_bullet_column_info(),
-        x = glue("`{error_name}` must return compatible vectors across groups"),
-        i = cnd_bullet_combine_details(e$parent$x, e$parent$x_arg),
-        i = cnd_bullet_combine_details(e$parent$y, e$parent$y_arg)
-      )
-    } else {
-      bullets <- c(
-        i = cnd_bullet_column_info(),
-        x = conditionMessage(e)
-      )
-    }
+    local_error_context(dots = dots, .index = i, mask = mask)
 
     bullets <- c(
-      cnd_bullet_header(),
-      bullets,
-      i = if(show_group_details) cnd_bullet_cur_group_label()
+      cnd_bullet_header("computing"),
+      mutate_bullets(e)
     )
 
     abort(
       bullets,
-      class = c("dplyr:::mutate_error", "dplyr_error"),
-      error_name = error_name, error_expression = error_expression,
-      parent = e,
-      bullets = bullets
+      class = "dplyr:::mutate_error",
+      parent = skip_internal_condition(e),
+      bullets = bullets,
+      call = error_call
     )
-
   },
   warning = function(w) {
     # Check if there is an upstack calling handler that would muffle
@@ -425,12 +452,11 @@ mutate_cols <- function(.data, ..., caller_env) {
       maybe_restart("muffleWarning")
     }
 
-    local_call_step(dots = dots, .index = i, .fn = "mutate")
+    local_error_context(dots = dots, .index = i, mask = mask)
 
     warn(c(
-      cnd_bullet_header(),
-      i = cnd_bullet_column_info(),
-      i = conditionMessage(w),
+      cnd_bullet_header("computing"),
+      i = cnd_header(w),
       i = cnd_bullet_cur_group_label(what = "warning")
     ))
 
@@ -444,6 +470,60 @@ mutate_cols <- function(.data, ..., caller_env) {
   names(used) <- mask$current_vars()
   attr(new_columns, "used") <- used
   new_columns
+}
+
+mutate_bullets <- function(cnd, ...) {
+  UseMethod("mutate_bullets")
+}
+#' @export
+mutate_bullets.default <- function(cnd, ...) {
+  c(i = cnd_bullet_cur_group_label())
+}
+#' @export
+`mutate_bullets.dplyr:::mutate_incompatible_size` <- function(cnd, ...) {
+  error_context <- peek_error_context()
+  error_name <- error_context$error_name
+
+  result_size <- cnd$dplyr_error_data$result_size
+  expected_size <- cnd$dplyr_error_data$expected_size
+  c(
+    x = glue("`{error_name}` must be size {or_1(expected_size)}, not {result_size}."),
+    i = cnd_bullet_rowwise_unlist(),
+    i = cnd_bullet_cur_group_label()
+  )
+}
+#' @export
+`mutate_bullets.dplyr:::mutate_mixed_null` <- function(cnd, ...) {
+  error_name <- peek_error_context()$error_name
+  c(
+    x = glue("`{error_name}` must return compatible vectors across groups."),
+    x = "Can't combine NULL and non NULL results.",
+    i = cnd_bullet_rowwise_unlist()
+  )
+}
+#' @export
+`mutate_bullets.dplyr:::mutate_not_vector` <- function(cnd, ...) {
+  error_name <- peek_error_context()$error_name
+  result <- cnd$dplyr_error_data$result
+  c(
+    x = glue("`{error_name}` must be a vector, not {friendly_type_of(result)}."),
+    i = cnd_bullet_rowwise_unlist(),
+    i = cnd_bullet_cur_group_label()
+  )
+}
+#' @export
+`mutate_bullets.dplyr:::error_incompatible_combine` <- function(cnd, ...) {
+  # the details are included in the parent error
+  c()
+}
+#' @export
+`mutate_bullets.dplyr:::mutate_constant_recycle_error` <- function(cnd, ...) {
+  error_name <- peek_error_context()$error_name
+  constant_size <- cnd$constant_size
+  data_size <- cnd$data_size
+  c(
+    glue("Inlined constant `{error_name}` must be size {or_1(data_size)}, not {constant_size}.")
+  )
 }
 
 check_muffled_warning <- function(cnd) {

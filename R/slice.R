@@ -35,9 +35,13 @@
 #'   proportion of rows to select. If neither are supplied, `n = 1` will be
 #'   used.
 #'
+#'   If a negative value of `n` or `prop` is provided, the specified number or
+#'   proportion of rows will be removed.
+#'
 #'   If `n` is greater than the number of rows in the group (or `prop > 1`),
 #'   the result will be silently truncated to the group size. If the
-#'   `prop`ortion of a group size is not an integer, it is rounded down.
+#'   `prop`ortion of a group size does not yield an integer number of rows, the
+#'   absolute value of `prop*nrow(.data)` is rounded down.
 #' @return
 #' An object of the same type as `.data`. The output has the following
 #' properties:
@@ -117,7 +121,7 @@ slice <- function(.data, ..., .preserve = FALSE) {
 
 #' @export
 slice.data.frame <- function(.data, ..., .preserve = FALSE) {
-  loc <- slice_rows(.data, ...)
+  loc <- slice_rows(.data, ..., caller_env = caller_env(), error_call = current_env())
   dplyr_row_slice(.data, loc, preserve = .preserve)
 }
 
@@ -129,13 +133,17 @@ slice_head <- function(.data, ..., n, prop) {
 
 #' @export
 slice_head.data.frame <- function(.data, ..., n, prop) {
-  ellipsis::check_dots_empty()
-  size <- check_slice_size(n, prop, "slice_head")
-  idx <- switch(size$type,
-    n =    function(n) seq2(1, min(size$n, n)),
-    prop = function(n) seq2(1, min(size$prop * n, n))
-  )
+  check_slice_dots(..., n = n, prop = prop)
+  size <- get_slice_size(n = n, prop = prop)
+  idx <- function(n) {
+    to <- size(n)
+    if (to > n) {
+      to <- n
+    }
+    seq2(1, to)
+  }
 
+  dplyr_local_error_call()
   slice(.data, idx(dplyr::n()))
 }
 
@@ -147,12 +155,17 @@ slice_tail <- function(.data, ..., n, prop) {
 
 #' @export
 slice_tail.data.frame <- function(.data, ..., n, prop) {
-  ellipsis::check_dots_empty()
-  size <- check_slice_size(n, prop, "slice_tail")
-  idx <- switch(size$type,
-    n =    function(n) seq2(max(n - size$n + 1, 1), n),
-    prop = function(n) seq2(max(ceiling(n - size$prop * n) + 1, 1), n)
-  )
+  check_slice_dots(..., n = n, prop = prop)
+  size <- get_slice_size(n = n, prop = prop)
+  idx <- function(n) {
+    from <- n - size(n) + 1
+    if (from < 1L) {
+      from <- 1L
+    }
+    seq2(from, n)
+  }
+
+  dplyr_local_error_call()
   slice(.data, idx(dplyr::n()))
 }
 
@@ -168,24 +181,25 @@ slice_min <- function(.data, order_by, ..., n, prop, with_ties = TRUE) {
 
 #' @export
 slice_min.data.frame <- function(.data, order_by, ..., n, prop, with_ties = TRUE) {
-  if (missing(order_by)) {
-    abort("argument `order_by` is missing, with no default.")
+  check_required(order_by)
+
+  check_slice_dots(..., n = n, prop = prop)
+  size <- get_slice_size(n = n, prop = prop)
+  if (with_ties) {
+    idx <- function(x, n) head(order(x), smaller_ranks(x, size(n)))
+  } else {
+    idx <- function(x, n) head(order(x), size(n))
   }
 
-  ellipsis::check_dots_empty()
-  size <- check_slice_size(n, prop, "slice_min")
-  if (with_ties) {
-    idx <- switch(size$type,
-      n =    function(x, n) head(order(x), smaller_ranks(x, size$n)),
-      prop = function(x, n) head(order(x), smaller_ranks(x, size$prop * n))
-    )
-  } else {
-    idx <- switch(size$type,
-      n =    function(x, n) head(order(x), size$n),
-      prop = function(x, n) head(order(x), size$prop * n)
-    )
-  }
-  slice(.data, idx({{ order_by }}, dplyr::n()))
+  dplyr_local_error_call()
+  slice(.data, local({
+    order_by <- {{ order_by }}
+    n <- dplyr::n()
+
+    x <- fix_call(vec_assert(order_by, size = n, arg = "order_by"), NULL)
+    idx(x, n)
+  }))
+
 }
 
 #' @export
@@ -196,28 +210,25 @@ slice_max <- function(.data, order_by, ..., n, prop, with_ties = TRUE) {
 
 #' @export
 slice_max.data.frame <- function(.data, order_by, ..., n, prop, with_ties = TRUE) {
-  if (missing(order_by)) {
-    abort("argument `order_by` is missing, with no default.")
-  }
-  ellipsis::check_dots_empty()
-  size <- check_slice_size(n, prop, "slice_max")
+  check_required(order_by)
+
+  check_slice_dots(..., n = n, prop = prop)
+  size <- get_slice_size(n = n, prop = prop)
   if (with_ties) {
-    idx <- switch(size$type,
-      n =    function(x, n) head(
-        order(x, decreasing = TRUE), smaller_ranks(desc(x), size$n)
-      ),
-      prop = function(x, n) head(
-        order(x, decreasing = TRUE), smaller_ranks(desc(x), size$prop * n)
-      )
+    idx <- function(x, n) head(
+        order(x, decreasing = TRUE), smaller_ranks(desc(x), size(n))
     )
   } else {
-    idx <- switch(size$type,
-      n =    function(x, n) head(order(x, decreasing = TRUE), size$n),
-      prop = function(x, n) head(order(x, decreasing = TRUE), size$prop * n)
-    )
+    idx <- function(x, n) head(order(x, decreasing = TRUE), size(n))
   }
 
-  slice(.data, idx({{ order_by }}, dplyr::n()))
+  dplyr_local_error_call()
+  slice(.data, local({
+    order_by <- {{ order_by }}
+    n <- dplyr::n()
+    order_by <- fix_call(vec_assert(order_by, size = n, arg = "order_by"), NULL)
+    idx(order_by, n)
+  }))
 }
 
 #' @export
@@ -233,102 +244,209 @@ slice_sample <- function(.data, ..., n, prop, weight_by = NULL, replace = FALSE)
 
 #' @export
 slice_sample.data.frame <- function(.data, ..., n, prop, weight_by = NULL, replace = FALSE) {
-  size <- check_slice_size(n, prop, "slice_sample")
-  ellipsis::check_dots_empty()
-  idx <- switch(size$type,
-    n =    function(x, n) sample_int(n, size$n, replace = replace, wt = x),
-    prop = function(x, n) sample_int(n, size$prop * n, replace = replace, wt = x),
-  )
-  slice(.data, idx({{ weight_by }}, dplyr::n()))
+  check_slice_dots(..., n = n, prop = prop)
+  size <- get_slice_size(n = n, prop = prop, allow_negative = FALSE)
+
+  dplyr_local_error_call()
+  slice(.data, local({
+    weight_by <- {{ weight_by }}
+
+    n <- dplyr::n()
+    if (!is.null(weight_by)) {
+      weight_by <- fix_call(vec_assert(weight_by, size = n, arg = "weight_by"), NULL)
+    }
+    sample_int(n, size(n), replace = replace, wt = weight_by)
+  }))
 }
 
 # helpers -----------------------------------------------------------------
 
+slice_rows <- function(.data, ..., caller_env, error_call = caller_env()) {
+  error_call <- dplyr_error_call(error_call)
 
-slice_rows <- function(.data, ...) {
   dots <- enquos(...)
   if (is_empty(dots)) {
     return(TRUE)
   }
+  mask <- DataMask$new(.data, caller_env, "slice", error_call = error_call)
+  on.exit(mask$forget(), add = TRUE)
 
-  mask <- DataMask$new(.data, caller_env())
-  on.exit(mask$forget("slice"), add = TRUE)
-
-  rows <- mask$get_rows()
-
-  quo <- quo(c(!!!dots))
-  chunks <- mask$eval_all(quo)
-
-  slice_indices <- new_list(length(rows))
-
-  for (group in seq_along(rows)) {
-    current_rows <- rows[[group]]
-    res <- chunks[[group]]
-
-    if (is.logical(res) && all(is.na(res))) {
-      res <- integer()
-    } else if (is.numeric(res)) {
-      res <- vec_cast(res, integer())
-    } else if (!is.integer(res)) {
-      abort("`slice()` expressions should return indices (positive or negative integers).")
-    }
-
-    if (length(res) == 0L) {
-      # nothing to do
-    } else if (all(res >= 0, na.rm = TRUE)) {
-      res <- res[!is.na(res) & res <= length(current_rows) & res > 0]
-    } else if (all(res <= 0, na.rm = TRUE)) {
-      res <- setdiff(seq_along(current_rows), -res)
-    } else {
-      abort("`slice()` expressions should return either all positive or all negative.")
-    }
-
-    slice_indices[[group]] <- current_rows[res]
-  }
+  chunks <- slice_eval(mask, dots, error_call = error_call)
+  slice_indices <- slice_combine(chunks, mask = mask, error_call = error_call)
 
   vec_c(!!!slice_indices, .ptype = integer())
 }
 
-check_constant <- function(x, name, fn) {
+
+is_slice_call <- function(error_call) {
+  is_slice <- TRUE
+  if (is_environment(error_call) && !identical(error_call$.Generic, "slice")) {
+    is_slice <- FALSE
+  }
+  is_slice
+}
+
+slice_eval <- function(mask, dots, error_call = caller_env()) {
+  index <- 0L
+  impl <- function(...) {
+    n <- ...length2()
+    out <- vector("list", n)
+
+    for (i in seq_len(n)) {
+      index <<- i
+      out[[i]] <- ...elt2(i)
+    }
+
+    index <<- 0L
+
+    fix_call(
+      vec_c(!!!out),
+      call = NULL
+    )
+  }
+
+  withCallingHandlers(
+    mask$eval_all(quo(impl(!!!dots))),
+    error = function(cnd) {
+      if (index && is_slice_call(error_call)) {
+        local_error_context(dots = dots, .index = index, mask = mask)
+        header <- cnd_bullet_header("evaluating")
+      } else {
+        header <- "Problem while computing indices."
+      }
+
+      bullets <- c(header, i = cnd_bullet_cur_group_label())
+      abort(bullets, call = error_call, parent = cnd)
+    }
+  )
+}
+
+slice_combine <- function(chunks, mask, error_call = caller_env()) {
+  rows <- mask$get_rows()
+  slice_indices <- new_list(length(rows))
+
+  withCallingHandlers(
+    for (group in seq_along(rows)) {
+      current_rows <- rows[[group]]
+      res <- chunks[[group]]
+
+      if (is.logical(res) && all(is.na(res))) {
+        res <- integer()
+      } else if (is.numeric(res)) {
+        if (is.matrix(res) && ncol(res) == 1) {
+          res <- as.vector(res)
+        }
+        res <- fix_call(vec_cast(res, integer()), NULL)
+      } else {
+        bullets <- c(
+          glue("Invalid result of type <{vec_ptype_full(res)}>."),
+          i = "Indices must be positive or negative integers."
+        )
+        abort(bullets, call = NULL)
+      }
+
+      if (length(res) == 0L) {
+        # nothing to do
+      } else if (all(res >= 0, na.rm = TRUE)) {
+        res <- res[!is.na(res) & res <= length(current_rows) & res > 0]
+      } else if (all(res <= 0, na.rm = TRUE)) {
+        res <- setdiff(seq_along(current_rows), -res)
+      } else {
+        mask$set_current_group(group)
+        n_positive <- sum(res >= 0, na.rm = TRUE)
+        n_negative <- sum(res <= 0, na.rm = TRUE)
+        bullets <- c(
+          "Indices must be all positive or all negative.",
+          i = glue("Got {n_positive} positives, {n_negative} negatives.")
+        )
+        abort(bullets, call = NULL)
+      }
+
+      slice_indices[[group]] <- current_rows[res]
+    }, error = function(cnd) {
+    mask$set_current_group(group)
+    bullets <- c(
+      "Problem while computing indices.",
+      i = cnd_bullet_cur_group_label()
+    )
+    abort(bullets, call = error_call, parent = cnd)
+  })
+
+  slice_indices
+}
+
+check_constant <- function(x, name, error_call = caller_env()) {
   withCallingHandlers(force(x), error = function(e) {
-    abort(c(
-      glue("`{name}` must be a constant in `{fn}()`."),
-      x = conditionMessage(e)
-    ), parent = e)
+    bullets <- c(
+      glue("`{name}` must be a constant.")
+    )
+    abort(bullets, parent = e, call = error_call)
   })
 }
 
-check_slice_size <- function(n, prop, .slice_fn = "check_slice_size") {
+check_slice_dots <- function(..., n, prop, error_call = caller_env()) {
+  # special case to capture e.g. slice_head(2)
+  if (missing(n) && missing(prop)) {
+    # capture as quosure so that we can label
+    dots <- enquos(...)
+
+    if (length(dots) == 1L && names2(dots)[1] == "") {
+      slice_call <- error_call$.Generic
+      bullets <- c(
+        "`n` must be explicitly named.",
+        i = glue("Did you mean `{slice_call}(n = {as_label(dots[[1]])})`?")
+      )
+      abort(bullets, call = error_call)
+    }
+  }
+
+  # otherwise, we have either `n` or `prop` so ... must be empty
+  check_dots_empty(call = error_call)
+}
+
+check_slice_n_prop <- function(n, prop, error_call = caller_env()) {
   if (missing(n) && missing(prop)) {
     list(type = "n", n = 1L)
   } else if (!missing(n) && missing(prop)) {
-    n <- check_constant(n, "n", .slice_fn)
-    if (!is.numeric(n) || length(n) != 1) {
-      abort("`n` must be a single number.")
+    n <- check_constant(n, "n", error_call = error_call)
+    if (!is.numeric(n) || length(n) != 1 || is.na(n)) {
+      abort("`n` must be a single number.", call = error_call)
     }
-    if (is.na(n) || n < 0) {
-      abort("`n` must be a non-missing positive number.")
-    }
-
     list(type = "n", n = n)
   } else if (!missing(prop) && missing(n)) {
-    prop <- check_constant(prop, "prop", .slice_fn)
-    if (!is.numeric(prop) || length(prop) != 1) {
-      abort("`prop` must be a single number")
-    }
-    if (is.na(prop) || prop < 0) {
-      abort("`prop` must be a non-missing positive number.")
+    prop <- check_constant(prop, "prop", error_call = error_call)
+    if (!is.numeric(prop) || length(prop) != 1 || is.na(prop)) {
+      abort("`prop` must be a single number.", call = error_call)
     }
     list(type = "prop", prop = prop)
   } else {
-    abort("Must supply exactly one of `n` and `prop` arguments.")
+    abort("Must supply `n` or `prop`, but not both.", call = error_call)
+  }
+}
+
+get_slice_size <- function(n, prop, allow_negative = TRUE, error_call = caller_env()) {
+  slice_input <- check_slice_n_prop(n, prop, error_call = error_call)
+
+  if (slice_input$type == "n") {
+    if (slice_input$n > 0) {
+      function(n) floor(slice_input$n)
+    } else if (allow_negative) {
+      function(n) ceiling(n + slice_input$n)
+    } else {
+      abort("`n` must be positive.", call = error_call)
+    }
+  } else if (slice_input$type == "prop") {
+    if (slice_input$prop > 0) {
+      function(n) floor(slice_input$prop * n)
+    } else if (allow_negative) {
+      function(n) ceiling(n + slice_input$prop * n)
+    } else {
+      abort("`prop` must be positive.", call = error_call)
+    }
   }
 }
 
 sample_int <- function(n, size, replace = FALSE, wt = NULL) {
-  if (!replace) {
-    size <- min(size, n)
-  }
   if (size == 0L) {
     integer(0)
   } else {

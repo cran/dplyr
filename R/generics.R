@@ -1,7 +1,7 @@
 #' Extending dplyr with new data frame subclasses
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+#' `r lifecycle::badge("experimental")`
 #'
 #' These three functions, along with `names<-` and 1d numeric `[`
 #' (i.e. `x[loc]`) methods, provide a minimal interface for extending dplyr
@@ -87,7 +87,7 @@ NULL
 #' @param i A numeric or logical vector that indexes the rows of `.data`.
 dplyr_row_slice <- function(data, i, ...) {
   if (!is.numeric(i) && !is.logical(i)) {
-    abort("`i` must be an numeric or logical vector.")
+    abort("`i` must be a numeric or logical vector.")
   }
 
   UseMethod("dplyr_row_slice")
@@ -212,38 +212,35 @@ dplyr_reconstruct.rowwise_df <- function(data, template) {
   rowwise_df(data, group_vars)
 }
 
-dplyr_col_select <- function(.data, loc, names = NULL) {
+dplyr_col_select <- function(.data, loc, names = NULL, error_call = caller_env()) {
   loc <- vec_as_location(loc, n = ncol(.data), names = names(.data))
 
   out <- .data[loc]
   if (!inherits(out, "data.frame")) {
-    abort(c(
+    classes_data <- glue_collapse(class(.data), sep = "/")
+    classes_out  <- glue_collapse(class(out), sep = "/")
+    bullets <- c(
       "Can't reconstruct data frame.",
-      x = glue("The `[` method for class <{classes_data}> must return a data frame.",
-        classes_data = glue_collapse(class(.data), sep = "/")
-      ),
-      i = glue("It returned a <{classes_out}>.",
-        classes_out = glue_collapse(class(out), sep = "/")
-      )
-    ))
+      x = glue("The `[` method for class <{classes_data}> must return a data frame."),
+      i = glue("It returned a <{classes_out}>.")
+    )
+    abort(bullets, call = error_call)
   }
   if (length(out) != length(loc)) {
-    abort(c(
+    classes_data <- glue_collapse(class(.data), sep = "/")
+    classes_out  <- glue_collapse(class(out), sep = "/")
+    s <- function(x) if (length(x) == 1) "" else "s"
+    bullets <- c(
       "Can't reconstruct data frame.",
-      x = glue("The `[` method for class <{classes_data}> must return a data frame with {length(loc)} column{s}.",
-        classes_data = glue_collapse(class(.data), sep = "/"),
-        s = if(length(loc) == 1) "" else "s"
-      ),
-      i = glue("It returned a <{classes_out}> of {length(out)} column{s}.",
-        classes_out = glue_collapse(class(out), sep = "/"),
-        s = if(length(out) == 1) "" else "s"
-      )
-    ))
+      x = glue("The `[` method for class <{classes_data}> must return a data frame with {length(loc)} column{s(loc)}."),
+      i = glue("It returned a <{classes_out}> of {length(out)} column{s(out)}.")
+    )
+    abort(bullets, call = error_call)
   }
 
-  # Patch base data frames to restore extra attributes that `[.data.frame` drops.
+  # Patch base data frames and data.table (#6171) to restore extra attributes that `[.data.frame` drops.
   # We require `[` methods to keep extra attributes for all data frame subclasses.
-  if (identical(class(.data), "data.frame")) {
+  if (identical(class(.data), "data.frame") || identical(class(.data), c("data.table", "data.frame"))) {
     out <- dplyr_reconstruct(out, .data)
   }
 

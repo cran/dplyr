@@ -47,6 +47,18 @@ test_that("cur_data() gives current data without groups, cur_data_all() includes
   )
 })
 
+test_that("cur_data()/cur_data_all() keeps list columns as lists in rowwise_df (#5901)", {
+  df <- tibble(x = list(tibble(a = 1), tibble(a = 2))) %>%
+    rowwise()
+
+  expect_true(
+    all(summarise(df, test = vec_is_list(cur_data()$x))$test)
+  )
+  expect_true(
+    all(summarise(df, test = vec_is_list(cur_data_all()$x))$test)
+  )
+})
+
 test_that("cur_group_rows() retrieves row position in original data", {
   df <- tibble(x = c("b", "a", "b"), y = 1:3)
   gf <- group_by(df, x)
@@ -77,13 +89,16 @@ test_that("cur_data() and cur_data_all() work sequentially", {
 })
 
 test_that("give useful error messages when not applicable", {
-  expect_snapshot(error = TRUE, n())
+  expect_snapshot({
+    (expect_error(n()))
 
-  expect_snapshot(error = TRUE, cur_data())
-  expect_snapshot(error = TRUE, cur_data_all())
+    (expect_error(cur_data()))
+    (expect_error(cur_data_all()))
 
-  expect_snapshot(error = TRUE, cur_column())
-  expect_snapshot(error = TRUE, cur_group())
-  expect_snapshot(error = TRUE, cur_group_id())
-  expect_snapshot(error = TRUE, cur_group_rows())
+    (expect_error(cur_column()))
+    (expect_error(cur_group()))
+    (expect_error(cur_group_id()))
+    (expect_error(cur_group_rows()))
+  })
+
 })

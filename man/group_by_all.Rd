@@ -57,7 +57,7 @@ returns \code{TRUE} are selected. This argument is passed to
 functions and strings representing function names.}
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
 
 Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
 \code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
@@ -100,3 +100,4 @@ group_by_if(iris, is.factor, as.character)
 # ->
 iris \%>\% group_by(across(where(is.factor), as.character))
 }
+\keyword{internal}

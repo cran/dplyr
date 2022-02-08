@@ -1,7 +1,7 @@
 #' Nest by one or more variables
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+#' `r lifecycle::badge("experimental")`
 #'
 #' `nest_by()` is closely related to [group_by()]. However, instead of storing
 #' the group structure in the metadata, it is made explicit in the data,
@@ -65,15 +65,17 @@
 #' models
 #'
 #' models %>% summarise(rsq = summary(model)$r.squared)
+#' @examplesIf requireNamespace("broom", quietly = TRUE)
+#'
 #' # This is particularly elegant with the broom functions
-#' if (requireNamespace("broom", quietly = TRUE)) {
-#'   models %>% summarise(broom::glance(model))
-#'   models %>% summarise(broom::tidy(model))
-#' }
+#' models %>% summarise(broom::glance(model))
+#' models %>% summarise(broom::tidy(model))
+#' @examples
 #'
 #' # Note that you can also summarise to unnest the data
 #' models %>% summarise(data)
 nest_by <- function(.data, ..., .key = "data", .keep = FALSE) {
+  lifecycle::signal_stage("experimental", "nest_by()")
   UseMethod("nest_by")
 }
 
@@ -86,10 +88,11 @@ nest_by.data.frame <- function(.data, ..., .key = "data", .keep = FALSE) {
 #' @export
 nest_by.grouped_df <- function(.data, ..., .key = "data", .keep = FALSE) {
   if (!missing(...)) {
-    abort(c(
+    bullets <- c(
       "Can't re-group while nesting",
       i = "Either `ungroup()` first or don't supply arguments to `nest_by()"
-    ))
+    )
+    abort(bullets)
   }
 
   vars <- group_vars(.data)

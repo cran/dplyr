@@ -22,7 +22,7 @@ The default returns the last column (on the assumption that's the
 column you've created most recently).
 
 This argument is taken by expression and supports
-\link[rlang:nse-force]{quasiquotation} (you can unquote column
+\link[rlang:topic-inject]{quasiquotation} (you can unquote column
 names and column locations).}
 
 \item{name}{An optional parameter that specifies the column to be used
@@ -52,14 +52,14 @@ The following methods are currently available in loaded packages:
 mtcars \%>\% pull(-1)
 mtcars \%>\% pull(1)
 mtcars \%>\% pull(cyl)
+\dontshow{if (requireNamespace("dbplyr", quietly = TRUE) && requireNamespace("RSQLite", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 
 # Also works for remote sources
-if (requireNamespace("dbplyr", quietly = TRUE)) {
 df <- dbplyr::memdb_frame(x = 1:10, y = 10:1, .name = "pull-ex")
 df \%>\%
   mutate(z = x * y) \%>\%
   pull()
-}
+\dontshow{\}) # examplesIf}
 
 # Pull a named vector
 starwars \%>\% pull(height, name)

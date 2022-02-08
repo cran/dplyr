@@ -40,11 +40,12 @@ a character vector of column names, a numeric vector of column
 positions, or \code{NULL}.}
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
 
 \code{rename_if()}, \code{rename_at()}, and \code{rename_all()} have been superseded by
 \code{rename_with()}. The matching select statements have been superseded by the
-combination of a \code{select()} + \code{rename_with()}.
+combination of a \code{select()} + \code{rename_with()}. Any predicate functions passed
+as arguments to \code{select()} or \code{rename_with()} must be wrapped in \code{\link[=where]{where()}}.
 
 These functions were superseded because \code{mutate_if()} and friends were
 superseded by \code{across()}. \code{select_if()} and \code{rename_if()} already use tidy

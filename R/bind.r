@@ -68,13 +68,12 @@
 #'
 #' # Columns don't need to match when row-binding
 #' bind_rows(tibble(x = 1:3), tibble(y = 1:4))
-#' \dontrun{
-#' # Rows do need to match when column-binding
-#' bind_cols(tibble(x = 1:3), tibble(y = 1:2))
 #'
-#' # even with 0 columns
-#' bind_cols(tibble(x = 1:3), tibble())
-#' }
+#' # Row sizes must be compatible when column-binding
+#' try(bind_cols(tibble(x = 1:3), tibble(y = 1:2)))
+#'
+#' # Even with 0 columns
+#' try(bind_cols(tibble(x = 1:3), tibble()))
 #'
 #' bind_cols(one, two)
 #' bind_cols(list(one, two))
@@ -102,19 +101,20 @@ bind_rows <- function(..., .id = NULL) {
   for (i in seq_along(dots)) {
     .x <- dots[[i]]
     if (!is.data.frame(.x) && !vec_is(.x)) {
-      abort(glue("Argument {i} must be a data frame or a named atomic vector."))
+      msg <- glue("Argument {i} must be a data frame or a named atomic vector.")
+      abort(msg)
     }
 
     if (is.null(names(.x))) {
-      abort(glue("Argument {i} must have names."))
+      msg <- glue("Argument {i} must have names.")
+      abort(msg)
     }
   }
 
   if (!is_null(.id)) {
     if (!is_string(.id)) {
-      bad_args(".id", "must be a scalar string, ",
-        "not {friendly_type_of(.id)} of length {length(.id)}."
-      )
+      msg <- glue("`.id` must be a scalar string, not {friendly_type_of(.id)} of length {length(.id)}.")
+      abort(msg)
     }
     if (!is_named(dots)) {
       names(dots) <- seq_along(dots)
@@ -136,7 +136,7 @@ bind_rows <- function(..., .id = NULL) {
   if (is.null(.id)) {
     names(dots) <- NULL
   }
-  out <- vec_rbind(!!!dots, .names_to = .id)
+  out <- fix_call(vec_rbind(!!!dots, .names_to = .id))
   if (length(dots)) {
     if (is.data.frame(first)) {
       out <- dplyr_reconstruct(out, first)
@@ -156,10 +156,9 @@ bind_cols <- function(..., .name_repair = c("unique", "universal", "check_unique
   dots <- discard(dots, is.null)
 
   # Strip names off of data frame components so that vec_cbind() unpacks them
-  is_data_frame <- map_lgl(dots, is.data.frame)
-  names(dots)[is_data_frame] <- ""
+  names2(dots)[map_lgl(dots, is.data.frame)] <- ""
 
-  out <- vec_cbind(!!!dots, .name_repair = .name_repair)
+  out <- fix_call(vec_cbind(!!!dots, .name_repair = .name_repair))
   if (!any(map_lgl(dots, is.data.frame))) {
     out <- as_tibble(out)
   }

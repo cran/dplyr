@@ -12,6 +12,10 @@ lazy data frame (e.g. from dbplyr or dtplyr). See \emph{Methods}, below, for
 more details.}
 
 \item{...}{In \code{group_by()}, variables or computations to group by.
+Computations are always done on the ungrouped data frame.
+To perform computations on the grouped data, you need to use
+a separate \code{mutate()} step before the \code{group_by()}.
+Computations are not allowed in \code{nest_by()}.
 In \code{ungroup()}, variables to remove from the grouping.}
 
 \item{.key}{Name of the list column}
@@ -32,7 +36,7 @@ The first columns are the grouping variables, followed by a list column of tibbl
 with matching rows of the remaining columns.
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 \code{nest_by()} is closely related to \code{\link[=group_by]{group_by()}}. However, instead of storing
 the group structure in the metadata, it is made explicit in the data,
@@ -77,11 +81,12 @@ models <- mtcars \%>\%
 models
 
 models \%>\% summarise(rsq = summary(model)$r.squared)
+\dontshow{if (requireNamespace("broom", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+
 # This is particularly elegant with the broom functions
-if (requireNamespace("broom", quietly = TRUE)) {
-  models \%>\% summarise(broom::glance(model))
-  models \%>\% summarise(broom::tidy(model))
-}
+models \%>\% summarise(broom::glance(model))
+models \%>\% summarise(broom::tidy(model))
+\dontshow{\}) # examplesIf}
 
 # Note that you can also summarise to unnest the data
 models \%>\% summarise(data)

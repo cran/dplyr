@@ -1,11 +1,12 @@
 #' Select and rename a selection of variables
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("superseded")}
+#' `r lifecycle::badge("superseded")`
 #'
 #' `rename_if()`, `rename_at()`, and `rename_all()` have been superseded by
 #' `rename_with()`. The matching select statements have been superseded by the
-#' combination of a `select()` + `rename_with()`.
+#' combination of a `select()` + `rename_with()`. Any predicate functions passed
+#' as arguments to `select()` or `rename_with()` must be wrapped in [where()].
 #'
 #' These functions were superseded because `mutate_if()` and friends were
 #' superseded by `across()`. `select_if()` and `rename_if()` already use tidy
@@ -50,7 +51,7 @@
 #'   rename_with(toupper)
 #' @export
 select_all <- function(.tbl, .funs = list(), ...) {
-  lifecycle::signal_superseded("1.0.0", "select_all()")
+  lifecycle::signal_stage("superseded", "select_all()")
   funs <- as_fun_list(.funs, caller_env(), ..., .caller = "select_all")
   vars <- tbl_vars(.tbl)
   syms <- vars_select_syms(vars, funs, .tbl)
@@ -59,7 +60,7 @@ select_all <- function(.tbl, .funs = list(), ...) {
 #' @rdname select_all
 #' @export
 rename_all <- function(.tbl, .funs = list(), ...) {
-  lifecycle::signal_superseded("1.0.0", "rename_with()")
+  lifecycle::signal_stage("superseded", "rename_with()")
   funs <- as_fun_list(.funs, caller_env(), ..., .caller = "rename_all")
   vars <- tbl_vars(.tbl)
   syms <- vars_select_syms(vars, funs, .tbl, strict = TRUE)
@@ -106,9 +107,10 @@ rename_at <- function(.tbl, .vars, .funs = list(), ...) {
   rename(.tbl, !!!syms)
 }
 
-vars_select_syms <- function(vars, funs, tbl, strict = FALSE) {
+vars_select_syms <- function(vars, funs, tbl, strict = FALSE, error_call = caller_env()) {
   if (length(funs) > 1) {
-    bad_args(".funs", "must contain one renaming function, not {length(funs)}.")
+    msg <- glue("`.funs` must contain one renaming function, not {length(funs)}.")
+    abort(msg, call = error_call)
   } else if (length(funs) == 1) {
     fun <- funs[[1]]
     if (is_quosure(fun)) {
@@ -122,7 +124,8 @@ vars_select_syms <- function(vars, funs, tbl, strict = FALSE) {
   } else if (!strict) {
     syms <- syms(vars)
   } else {
-    bad_args(".funs", "must specify a renaming function.")
+    msg <- glue("`.funs` must specify a renaming function.")
+    abort(msg, call = error_call)
   }
 
   group_vars <- group_vars(tbl)

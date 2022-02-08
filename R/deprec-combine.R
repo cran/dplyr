@@ -1,7 +1,7 @@
 #' Combine vectors
 #'
 #' @description
-#' \Sexpr[results=rd, stage=render]{lifecycle::badge("deprecated")}
+#' `r lifecycle::badge("deprecated")`
 #'
 #' `combine()` is deprecated in favour of [vctrs::vec_c()]. `combine()`
 #' attempted to automatically guess whether you wanted [c()] or [unlist()],
@@ -33,6 +33,6 @@ combine <- function(...) {
   if (length(args) == 0) {
     logical()
   } else {
-    vec_c(!!!args)
+    fix_call(vec_c(!!!args))
   }
 }

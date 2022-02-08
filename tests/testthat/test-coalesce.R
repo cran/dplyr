@@ -19,8 +19,10 @@ test_that("finds non-missing values in multiple positions", {
 })
 
 test_that("coalesce() gives meaningful error messages", {
-  expect_snapshot(error = TRUE, coalesce(1:2, 1:3))
-  expect_snapshot(error = TRUE, coalesce(1:2, letters[1:2]))
+  expect_snapshot({
+    (expect_error(coalesce(1:2, 1:3)))
+    (expect_error(coalesce(1:2, letters[1:2])))
+  })
 })
 
 test_that("coalesce() supports data frames (#5326)", {
@@ -46,4 +48,10 @@ test_that("coalesce() supports data frames (#5326)", {
   )
 
   expect_error(coalesce(as.matrix(mtcars), as.matrix(mtcars)), "matrices")
+})
+
+test_that("coalesce() supports one-dimensional arrays (#5557)", {
+  x <- array(1:10)
+  out <- coalesce(x, 0)
+  expect_equal(out, x)
 })

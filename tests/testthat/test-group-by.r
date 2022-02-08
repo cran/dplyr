@@ -1,6 +1,6 @@
 df <- data.frame(x = rep(1:3, each = 10), y = rep(1:6, each = 5))
 
-test_that("group_by with .add = TRUE adds groups", {
+test_that("group_by() with .add = TRUE adds groups", {
   add_groups1 <- function(tbl) group_by(tbl, x, y, .add = TRUE)
   add_groups2 <- function(tbl) group_by(group_by(tbl, x, .add = TRUE), y, .add = TRUE)
 
@@ -8,8 +8,39 @@ test_that("group_by with .add = TRUE adds groups", {
   expect_equal(group_vars(add_groups2(df)), c("x", "y"))
 })
 
+test_that("group_by(<grouped df>, <computation>) computes the expressions on the ungrouped data frame (#5938)", {
+  df <- data.frame(
+    x = 1:4,
+    g = rep(1:2, each = 2)
+  )
+
+  count <- 0
+  out <- df %>% group_by(g) %>% group_by(big = { count <<- count + 1; x > mean(x) })
+  expect_equal(out$big, c(FALSE, FALSE, TRUE, TRUE))
+  expect_equal(count, 1L)
+  expect_equal(group_vars(out), c("big"))
+
+  count <- 0
+  out <- df %>% group_by(g) %>% group_by(big = { count <<- count + 1; x > mean(x) }, .add = TRUE)
+  expect_equal(out$big, c(FALSE, FALSE, TRUE, TRUE))
+  expect_equal(count, 1L)
+  expect_equal(group_vars(out), c("g", "big"))
+
+  count <- 0
+  out <- df %>% group_by(g) %>% mutate(big = { count <<- count + 1; x > mean(x)}) %>% group_by(big)
+  expect_equal(out$big, c(FALSE, TRUE, FALSE, TRUE))
+  expect_equal(count, 2L)
+  expect_equal(group_vars(out), c("big"))
+
+  count <- 0
+  out <- df %>% group_by(g) %>% mutate(big = { count <<- count + 1; x > mean(x)}) %>% group_by(big, .add = TRUE)
+  expect_equal(out$big, c(FALSE, TRUE, FALSE, TRUE))
+  expect_equal(count, 2L)
+  expect_equal(group_vars(out), c("g", "big"))
+})
+
 test_that("add = TRUE is deprecated", {
-  rlang::scoped_options(lifecycle_verbosity = "warning")
+  rlang::local_options(lifecycle_verbosity = "warning")
 
   df <- tibble(x = 1, y = 2)
 
@@ -41,7 +72,7 @@ test_that("grouping by constant adds column (#410)", {
 })
 
 test_that(".dots is soft deprecated", {
-  rlang::scoped_options(lifecycle_verbosity = "warning")
+  rlang::local_options(lifecycle_verbosity = "warning")
 
   df <- tibble(x = 1, y = 1)
   expect_warning(gf <- group_by(df, .dots = "x"), "deprecated")
@@ -70,7 +101,7 @@ test_that("local group_by preserves variable types", {
   }
 })
 
-test_that("mutate does not loose variables (#144)", {
+test_that("mutate does not lose variables (#144)", {
   df <- tibble(a = rep(1:4, 2), b = rep(1:4, each = 2), x = runif(8))
   by_ab <- group_by(df, a, b)
   by_a <- summarise(by_ab, x = sum(x), .groups = "drop_last")
@@ -564,11 +595,14 @@ test_that("group_by() propagates caller env", {
 # Errors ------------------------------------------------------------------
 
 test_that("group_by() and ungroup() give meaningful error messages", {
-  df <- tibble(x = 1, y = 2)
+  expect_snapshot({
+    df <- tibble(x = 1, y = 2)
 
-  expect_snapshot(error = TRUE, df %>% group_by(unknown))
-  expect_snapshot(error = TRUE, df %>% ungroup(x))
-  expect_snapshot(error = TRUE, df %>% group_by(x, y) %>% ungroup(z))
+    (expect_error(df %>% group_by(unknown)))
+    (expect_error(df %>% ungroup(x)))
+    (expect_error(df %>% group_by(x, y) %>% ungroup(z)))
 
-  expect_snapshot(error = TRUE, df %>% group_by(z = a + 1))
+    (expect_error(df %>% group_by(z = a + 1)))
+  })
+
 })

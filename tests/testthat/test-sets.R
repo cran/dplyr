@@ -90,19 +90,47 @@ test_that("set equality", {
   expect_false(setequal(df2, df1))
 })
 
+test_that("set operations enforce empty ... (#5891)", {
+  a <- tibble(var = 1:3)
+  b <- tibble(var = 2:4)
+  c <- tibble(var = c(1, 3, 4, 5))
+
+  expect_error(intersect(a, b, c))
+  expect_error(setdiff(a, b, c))
+  expect_error(setequal(a, b, c))
+  expect_error(union(a, b, c))
+  expect_error(union_all(a, b, c))
+})
 
 # Errors ------------------------------------------------------------------
 
 test_that("set operation give useful error message. #903", {
-  alfa <- tibble(
-    land = c("Sverige", "Norway", "Danmark", "Island", "GB"),
-    data = rnorm(length(land))
-  )
-  beta <- tibble(
-    land = c("Norge", "Danmark", "Island", "Storbritannien"),
-    data2 = rnorm(length(land))
-  )
-  expect_snapshot(error = TRUE, intersect(alfa, beta))
-  expect_snapshot(error = TRUE, union(alfa, beta))
-  expect_snapshot(error = TRUE, setdiff(alfa, beta))
+  expect_snapshot({
+    alfa <- tibble(
+      land = c("Sverige", "Norway", "Danmark", "Island", "GB"),
+      data = rnorm(length(land))
+    )
+    beta <- tibble(
+      land = c("Norge", "Danmark", "Island", "Storbritannien"),
+      data2 = rnorm(length(land))
+    )
+    gamma <- tibble(land = 1:2, data = 1:2)
+    (expect_error(
+      intersect(alfa, beta)
+    ))
+    (expect_error(
+      intersect(alfa, 1)
+    ))
+    (expect_error(
+      intersect(alfa, gamma)
+    ))
+
+    (expect_error(
+      union(alfa, beta)
+    ))
+    (expect_error(
+      setdiff(alfa, beta)
+    ))
+  })
+
 })

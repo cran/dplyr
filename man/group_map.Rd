@@ -41,7 +41,7 @@ that identifies the group
 }
 }
 \description{
-\Sexpr[results=rd, stage=render]{lifecycle::badge("experimental")}
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 
 \code{group_map()}, \code{group_modify()} and \code{group_walk()} are purrr-style functions that can
 be used to iterate on grouped tibbles.
@@ -75,18 +75,18 @@ mtcars \%>\%
 mtcars \%>\%
   group_by(cyl) \%>\%
   group_modify(~ head(.x, 2L))
+\dontshow{if (requireNamespace("broom", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 
-if (requireNamespace("broom", quietly = TRUE)) {
-  # a list of tibbles
-  iris \%>\%
-    group_by(Species) \%>\%
-    group_map(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
+# a list of tibbles
+iris \%>\%
+  group_by(Species) \%>\%
+  group_map(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
 
-  # a restructured grouped tibble
-  iris \%>\%
-    group_by(Species) \%>\%
-    group_modify(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
-}
+# a restructured grouped tibble
+iris \%>\%
+  group_by(Species) \%>\%
+  group_modify(~ broom::tidy(lm(Petal.Length ~ Sepal.Length, data = .x)))
+\dontshow{\}) # examplesIf}
 
 # a list of vectors
 iris \%>\%

@@ -202,7 +202,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; [1] 0.0 0.0 0.5 0.5 0.5</span></span></code></pre></div>
 <p>These are useful if you want to select (for example) the top 10% of records within each group. For example:</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(players, <span class="fu">cume_dist</span>(<span class="fu">desc</span>(G)) <span class="sc">&lt;</span> <span class="fl">0.1</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1,057 x 7</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1,057 × 7</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # Groups:   playerID [964]</span></span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H</span></span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;</span></span>
@@ -214,16 +214,17 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Finally, <code>ntile()</code> divides the data up into <code>n</code> evenly sized buckets. It’s a coarse ranking, and it can be used in with <code>mutate()</code> to divide the data into buckets for further summary. For example, we could use <code>ntile()</code> to divide the players within a team into four ranked groups, and calculate the average number of games within each group.</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>by_team_player <span class="ot">&lt;-</span> <span class="fu">group_by</span>(batting, teamID, playerID)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>by_team <span class="ot">&lt;-</span> <span class="fu">summarise</span>(by_team_player, <span class="at">G =</span> <span class="fu">sum</span>(G))</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;teamID&#39;. You can override using the `.groups` argument.</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>by_team_quartile <span class="ot">&lt;-</span> <span class="fu">group_by</span>(by_team, <span class="at">quartile =</span> <span class="fu">ntile</span>(G, <span class="dv">4</span>))</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise</span>(by_team_quartile, <span class="fu">mean</span>(G))</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 x 2</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   quartile `mean(G)`</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;dbl&gt;</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1        1      22.9</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2        2      92.3</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3        3     256. </span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4        4     974.</span></span></code></pre></div>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; `summarise()` has grouped output by &#39;teamID&#39;. You can override using the</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; `.groups` argument.</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>by_team_quartile <span class="ot">&lt;-</span> <span class="fu">group_by</span>(by_team, <span class="at">quartile =</span> <span class="fu">ntile</span>(G, <span class="dv">4</span>))</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise</span>(by_team_quartile, <span class="fu">mean</span>(G))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 4 × 2</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   quartile `mean(G)`</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;      &lt;int&gt;     &lt;dbl&gt;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1        1      22.9</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2        2      92.3</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3        3     256. </span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4        4     974.</span></span></code></pre></div>
 <p>All ranking functions rank from lowest to highest so that small input values get small ranks. Use <code>desc()</code> to rank from highest to lowest.</p>
 </div>
 <div id="lead-and-lag" class="section level2">
@@ -291,7 +292,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>You can also use this idea to select the records with the highest (<code>x == max(x)</code>) or lowest value (<code>x == min(x)</code>) for a field, but the ranking functions give you more control over ties, and allow you to select any number of records.</p>
 <p>Recycled aggregates are also useful in conjunction with <code>mutate()</code>. For example, with the batting data, we could compute the “career year”, the number of years a player has played since they entered the league:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(players, <span class="at">career_year =</span> yearID <span class="sc">-</span> <span class="fu">min</span>(yearID) <span class="sc">+</span> <span class="dv">1</span>)</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20,087 x 8</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20,087 × 8</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # Groups:   playerID [1,359]</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H career_year</span></span>
 <span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;       &lt;dbl&gt;</span></span>
@@ -302,7 +303,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 20,083 more rows</span></span></code></pre></div>
 <p>Or, as in the introductory example, we could compute a z-score:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(players, <span class="at">G_z =</span> (G <span class="sc">-</span> <span class="fu">mean</span>(G)) <span class="sc">/</span> <span class="fu">sd</span>(G))</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20,087 x 8</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20,087 × 8</span></span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # Groups:   playerID [1,359]</span></span>
 <span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   playerID  yearID teamID     G    AB     R     H    G_z</span></span>
 <span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;      &lt;int&gt; &lt;fct&gt;  &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;int&gt;  &lt;dbl&gt;</span></span>

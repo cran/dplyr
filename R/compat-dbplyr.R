@@ -10,13 +10,11 @@
 #'
 #' @keywords internal
 #' @export
-#' @examples
-#' if (requireNamespace("dbplyr", quietly = TRUE)) {
+#' @examplesIf requireNamespace("dbplyr", quietly = TRUE)
 #' wrap_dbplyr_obj("build_sql")
 #' wrap_dbplyr_obj("base_agg")
-#' }
 check_dbplyr <- function() {
-  check_pkg("dbplyr", "communicate with database backends", install = FALSE)
+  check_installed("dbplyr", "to communicate with database backends.")
 }
 
 #' @export
@@ -69,9 +67,8 @@ sql <- function(...) {
 #' @export
 #' @examples
 #' # Identifiers are escaped with "
-#' if (requireNamespace("dbplyr", quietly = TRUE)) {
-#'   ident("x")
-#' }
+#' @examplesIf requireNamespace("dbplyr", quietly = TRUE)
+#' ident("x")
 ident <- function(...) {
   check_dbplyr()
   dbplyr::ident(...)

@@ -41,14 +41,12 @@ struct symbols {
   static SEXP current_expression;
   static SEXP rows;
   static SEXP caller;
-  static SEXP all_vars;
+  static SEXP current_data;
   static SEXP dot_drop;
-  static SEXP abort_glue;
+  static SEXP dplyr_internal_error;
   static SEXP dot_indices;
   static SEXP chops;
   static SEXP mask;
-  static SEXP rm;
-  static SEXP envir;
   static SEXP vec_is_list;
   static SEXP new_env;
   static SEXP dot_data;
@@ -79,6 +77,7 @@ SEXP as_data_pronoun(SEXP x);
 SEXP new_data_mask(SEXP bottom, SEXP top);
 SEXP str_as_symbol(SEXP);
 SEXP quo_get_expr(SEXP quo);
+void env_unbind(SEXP, SEXP);
 }
 
 namespace vctrs {
@@ -102,18 +101,19 @@ SEXP dplyr_cumall(SEXP x);
 SEXP dplyr_cumany(SEXP x);
 SEXP dplyr_cummean(SEXP x);
 SEXP dplyr_validate_grouped_df(SEXP df, SEXP s_check_bounds);
+SEXP dplyr_validate_rowwise_df(SEXP df);
 SEXP dplyr_mask_eval_all(SEXP quo, SEXP env_private);
 SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private);
 SEXP dplyr_mask_eval_all_mutate(SEXP quo, SEXP env_private);
 SEXP dplyr_mask_eval_all_filter(SEXP quos, SEXP env_private, SEXP s_n, SEXP env_filter);
-SEXP dplyr_summarise_recycle_chunks(SEXP chunks, SEXP rows, SEXP ptypes);
+SEXP dplyr_summarise_recycle_chunks(SEXP chunks, SEXP rows, SEXP ptypes, SEXP results);
 SEXP dplyr_group_indices(SEXP data, SEXP rows);
 SEXP dplyr_group_keys(SEXP group_data);
 SEXP dplyr_reduce_lgl_or(SEXP, SEXP);
 SEXP dplyr_reduce_lgl_and(SEXP, SEXP);
 
 SEXP dplyr_mask_remove(SEXP env_private, SEXP s_name);
-SEXP dplyr_mask_add(SEXP env_private, SEXP s_name, SEXP chunks);
+SEXP dplyr_mask_add(SEXP env_private, SEXP s_name, SEXP ptype, SEXP chunks);
 
 SEXP dplyr_lazy_vec_chop(SEXP data, SEXP rows);
 SEXP dplyr_data_masks_setup(SEXP chops, SEXP data, SEXP rows);
@@ -142,20 +142,14 @@ int* p_current_group = INTEGER(current_group)
   SEXP error_names = PROTECT(Rf_allocVector(STRSXP, n));             \
   Rf_setAttrib(error_data, R_NamesSymbol, error_names);
 
-#define DPLYR_ERROR_MESG_INIT(n)                               \
-  SEXP error_message = PROTECT(Rf_allocVector(STRSXP, n));     \
-
 #define DPLYR_ERROR_SET(i, name, value)                        \
   SET_VECTOR_ELT(error_data, i, value);                        \
   SET_STRING_ELT(error_names, i, Rf_mkChar(name));
 
-#define DPLYR_ERROR_MSG_SET(i, msg)                        \
-  SET_STRING_ELT(error_message, i, Rf_mkChar(msg));                          \
-
 #define DPLYR_ERROR_THROW(klass)                                    \
   SEXP error_class = PROTECT(Rf_mkString(klass));              \
-  SEXP error_call = PROTECT(Rf_lang4(dplyr::symbols::abort_glue, error_message, error_data, error_class)); \
+  SEXP error_call = PROTECT(Rf_lang3(dplyr::symbols::dplyr_internal_error, error_class, error_data)); \
   Rf_eval(error_call, dplyr::envs::ns_dplyr);                  \
-  UNPROTECT(5) ; // for rchk
+  UNPROTECT(4) ; // for rchk
 
 #endif

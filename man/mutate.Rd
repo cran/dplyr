@@ -35,21 +35,22 @@ if ungrouped).
 \item A data frame or tibble, to create multiple columns in the output.
 }}
 
-\item{.keep}{\Sexpr[results=rd]{lifecycle::badge("experimental")}
-This is an experimental argument that allows you to control which columns
-from \code{.data} are retained in the output:
+\item{.keep}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+Control which columns from \code{.data} are retained in the output. Grouping
+columns and columns created by \code{...} are always kept.
 \itemize{
-\item \code{"all"}, the default, retains all variables.
-\item \code{"used"} keeps any variables used to make new variables; it's useful
-for checking your work as it displays inputs and outputs side-by-side.
-\item \code{"unused"} keeps only existing variables \strong{not} used to make new
-variables.
-\item \code{"none"}, only keeps grouping keys (like \code{\link[=transmute]{transmute()}}).
-}
+\item \code{"all"} retains all columns from \code{.data}. This is the default.
+\item \code{"used"} retains only the columns used in \code{...} to create new
+columns. This is useful for checking your work, as it displays inputs
+and outputs side-by-side.
+\item \code{"unused"} retains only the columns \emph{not} used in \code{...} to create new
+columns. This is useful if you generate new columns, but no longer need
+the columns used to generate them.
+\item \code{"none"} doesn't retain any extra columns from \code{.data}. Only the grouping
+variables and columns created by \code{...} are kept.
+}}
 
-Grouping variables are always kept, unconditional to \code{.keep}.}
-
-\item{.before, .after}{\Sexpr[results=rd]{lifecycle::badge("experimental")}
+\item{.before, .after}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 <\code{\link[=dplyr_tidy_select]{tidy-select}}> Optionally, control where new columns
 should appear (the default is to add to the right hand side). See
 \code{\link[=relocate]{relocate()}} for more details.}
@@ -58,12 +59,22 @@ should appear (the default is to add to the right hand side). See
 An object of the same type as \code{.data}. The output has the following
 properties:
 \itemize{
-\item Rows are not affected.
-\item Existing columns will be preserved according to the \code{.keep} argument.
-New columns will be placed according to the \code{.before} and \code{.after}
-arguments. If \code{.keep = "none"} (as in \code{transmute()}), the output order
-is determined only by \code{...}, not the order of existing columns.
-\item Columns given value \code{NULL} will be removed
+\item For \code{mutate()}:
+\itemize{
+\item Columns from \code{.data} will be preserved according to the \code{.keep} argument.
+\item Existing columns that are modified by \code{...} will always be returned in
+their original location.
+\item New columns created through \code{...} will be placed according to the
+\code{.before} and \code{.after} arguments.
+}
+\item For \code{transmute()}:
+\itemize{
+\item Columns created or modified through \code{...} will be returned in the order
+specified by \code{...}.
+\item Unmodified grouping columns will be placed at the front.
+}
+\item The number of rows is not affected.
+\item Columns given the value \code{NULL} will be removed.
 \item Groups will be recomputed if a grouping variable is mutated.
 \item Data frame attributes are preserved.
 }
@@ -128,7 +139,7 @@ starwars \%>\%
  mutate(
   mass2 = mass * 2,
   mass2_squared = mass2 * mass2
-)
+ )
 
 # As well as adding new variables, you can use mutate() to
 # remove variables and modify existing variables.
@@ -137,7 +148,7 @@ starwars \%>\%
  mutate(
   mass = NULL,
   height = height * 0.0328084 # convert to feet
-)
+ )
 
 # Use across() with mutate() to apply a transformation
 # to multiple columns in a tibble.
