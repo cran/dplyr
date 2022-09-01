@@ -1,7 +1,7 @@
 Type: Package
 Package: dplyr
 Title: A Grammar of Data Manipulation
-Version: 1.0.9
+Version: 1.0.10
 Authors@R: 
     c(person(given = "Hadley",
              family = "Wickham",
@@ -38,11 +38,11 @@ Suggests: bench, broom, callr, covr, DBI, dbplyr (>= 1.4.3), ggplot2,
 VignetteBuilder: knitr
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 Config/testthat/edition: 3
 Config/Needs/website: tidyverse, shiny, pkgdown, tidyverse/tidytemplate
 NeedsCompilation: yes
-Packaged: 2022-04-27 14:20:55 UTC; davis
+Packaged: 2022-08-31 18:31:04 UTC; hadleywickham
 Author: Hadley Wickham [aut, cre] (<https://orcid.org/0000-0003-4757-117X>),
   Romain François [aut] (<https://orcid.org/0000-0002-2444-4226>),
   Lionel Henry [aut],
@@ -50,4 +50,4 @@ Author: Hadley Wickham [aut, cre] (<https://orcid.org/0000-0003-4757-117X>),
   RStudio [cph, fnd]
 Maintainer: Hadley Wickham <hadley@rstudio.com>
 Repository: CRAN
-Date/Publication: 2022-04-28 13:30:02 UTC
+Date/Publication: 2022-09-01 09:20:06 UTC
