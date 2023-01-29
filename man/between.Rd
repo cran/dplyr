@@ -2,19 +2,26 @@
 % Please edit documentation in R/funs.R
 \name{between}
 \alias{between}
-\title{Do values in a numeric vector fall in specified range?}
+\title{Detect where values fall in a specified range}
 \usage{
 between(x, left, right)
 }
 \arguments{
-\item{x}{A numeric vector of values}
+\item{x}{A vector}
 
-\item{left, right}{Boundary values (must be scalars).}
+\item{left, right}{Boundary values. Both \code{left} and \code{right} are recycled to
+the size of \code{x}.}
+}
+\value{
+A logical vector the same size as \code{x}.
 }
 \description{
-This is a shortcut for \code{x >= left & x <= right}, implemented
-efficiently in C++ for local values, and translated to the
-appropriate SQL for remote tables.
+This is a shortcut for \code{x >= left & x <= right}, implemented for local
+vectors and translated to the appropriate SQL for remote tables.
+}
+\details{
+\code{x}, \code{left}, and \code{right} are all cast to their common type before the
+comparison is made.
 }
 \examples{
 between(1:12, 7, 9)
@@ -22,6 +29,10 @@ between(1:12, 7, 9)
 x <- rnorm(1e2)
 x[between(x, -1, 1)]
 
-## Or on a tibble using filter
+# On a tibble using `filter()`
 filter(starwars, between(height, 100, 150))
+}
+\seealso{
+\code{\link[=join_by]{join_by()}} if you are looking for documentation for the \code{between()} overlap
+join helper.
 }

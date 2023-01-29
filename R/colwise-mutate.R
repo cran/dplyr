@@ -4,7 +4,8 @@
 #' `r lifecycle::badge("superseded")`
 #'
 #' Scoped verbs (`_if`, `_at`, `_all`) have been superseded by the use of
-#' [across()] in an existing verb. See `vignette("colwise")` for details.
+#' [pick()] or [across()] in an existing verb. See `vignette("colwise")` for
+#' details.
 #'
 #' The [scoped] variants of [summarise()] make it easy to apply the same
 #' transformation to multiple variables.
@@ -73,11 +74,6 @@
 #' If a variable in `.vars` is named, a new column by that name will be created.
 #'
 #' Name collisions in the new columns are disambiguated using a unique suffix.
-#'
-#' @section Life cycle:
-#'
-#' The functions are maturing, because the naming scheme and the
-#' disambiguation algorithm are subject to change in dplyr 0.9.0.
 #'
 #' @examples
 #' # The _at() variants directly support strings:
@@ -152,7 +148,8 @@ summarize_at <- summarise_at
 #' `r lifecycle::badge("superseded")`
 #'
 #' Scoped verbs (`_if`, `_at`, `_all`) have been superseded by the use of
-#' [across()] in an existing verb. See `vignette("colwise")` for details.
+#' [pick()] or [across()] in an existing verb. See `vignette("colwise")` for
+#' details.
 #'
 #' The [scoped] variants of [mutate()] and [transmute()] make it easy to apply
 #' the same transformation to multiple variables. There are three variants:
@@ -194,7 +191,6 @@ summarize_at <- summarise_at
 #'   `transmute_if()`.
 #'
 #' @inheritSection summarise_all Naming
-#' @inheritSection summarise_all Life cycle
 #'
 #' @examples
 #' iris <- as_tibble(iris)
@@ -307,17 +303,17 @@ manip_all <- function(.tbl, .funs, .quo, .env, ..., .include_group_vars = FALSE,
   } else {
     syms <- syms(tbl_nongroup_vars(.tbl))
   }
-  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call)
+  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call, .user_env = caller_env(2))
   manip_apply_syms(funs, syms, .tbl)
 }
 manip_if <- function(.tbl, .predicate, .funs, .quo, .env, ..., .include_group_vars = FALSE, .caller, error_call = caller_env()) {
   vars <- tbl_if_syms(.tbl, .predicate, .env, .include_group_vars = .include_group_vars, error_call = error_call)
-  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call)
+  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call, .user_env = caller_env(2))
   manip_apply_syms(funs, vars, .tbl)
 }
 manip_at <- function(.tbl, .vars, .funs, .quo, .env, ..., .include_group_vars = FALSE, .caller, error_call = caller_env()) {
   syms <- tbl_at_syms(.tbl, .vars, .include_group_vars = .include_group_vars, error_call = error_call)
-  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call)
+  funs <- as_fun_list(.funs, .env, ..., .caller = .caller, error_call = error_call, .user_env = caller_env(2))
   manip_apply_syms(funs, syms, .tbl)
 }
 

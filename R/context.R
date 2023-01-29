@@ -1,15 +1,11 @@
-#' Context dependent expressions
+#' Information about the "current" group or variable
 #'
 #' @description
 #' These functions return information about the "current" group or "current"
-#' variable, so only work inside specific contexts like `summarise()` and
-#' `mutate()`
+#' variable, so only work inside specific contexts like [summarise()] and
+#' [mutate()].
 #'
 #' * `n()` gives the current group size.
-#' * `cur_data()` gives the current data for the current group (excluding
-#'   grouping variables).
-#' * `cur_data_all()` gives the current data for the current group (including
-#'   grouping variables)
 #' * `cur_group()` gives the group keys, a tibble with one row and one column
 #'   for each grouping variable.
 #' * `cur_group_id()` gives a unique numeric identifier for the current group.
@@ -19,14 +15,19 @@
 #' See [group_data()] for equivalent functions that return values for all
 #' groups.
 #'
+#' See [pick()] for a way to select a subset of columns using tidyselect syntax
+#' while inside `summarise()` or `mutate()`.
+#'
 #' @section data.table:
 #' If you're familiar with data.table:
 #'
-#' * `cur_data()` <-> `.SD`
 #' * `cur_group_id()` <-> `.GRP`
 #' * `cur_group()` <-> `.BY`
 #' * `cur_group_rows()` <-> `.I`
 #'
+#' See [pick()] for an equivalent to `.SD`.
+#'
+#' @name context
 #' @examples
 #' df <- tibble(
 #'   g = sample(rep(letters[1:3], 1:3)),
@@ -38,41 +39,22 @@
 #' gf %>% summarise(n = n())
 #'
 #' gf %>% mutate(id = cur_group_id())
-#' gf %>% summarise(row = cur_group_rows())
+#' gf %>% reframe(row = cur_group_rows())
 #' gf %>% summarise(data = list(cur_group()))
-#' gf %>% summarise(data = list(cur_data()))
-#' gf %>% summarise(data = list(cur_data_all()))
 #'
 #' gf %>% mutate(across(everything(), ~ paste(cur_column(), round(.x, 2))))
-#' @name context
 NULL
 
 #' @rdname context
 #' @export
 n <- function() {
-  length(peek_mask("n")$current_rows())
-}
-
-#' @rdname context
-#' @export
-cur_data <- function() {
-  mask <- peek_mask("cur_data")
-  vars <- mask$current_non_group_vars()
-  mask$pick(vars)
-}
-
-#' @rdname context
-#' @export
-cur_data_all <- function() {
-  mask <- peek_mask("cur_data_all")
-  vars <- mask$current_vars()
-  mask$pick(vars)
+  length(peek_mask()$current_rows())
 }
 
 #' @rdname context
 #' @export
 cur_group <- function() {
-  peek_mask("cur_group()")$current_key()
+  peek_mask()$current_key()
 }
 
 #' @rdname context
@@ -81,32 +63,70 @@ cur_group_id <- function() {
   # [] to get a copy because the current group is dealt with internally
   # if we don't get a copy, code like this won't give correct result:
   # summarise(id = cur_group_id())
-  peek_mask("cur_group_id")$get_current_group()[]
+  peek_mask()$get_current_group()[]
 }
 
 #' @rdname context
 #' @export
 cur_group_rows <- function() {
-  peek_mask("cur_group_rows")$current_rows()
+  peek_mask()$current_rows()
 }
 
-#' @importFrom pillar format_glimpse
 group_labels_details <- function(keys) {
-  glue_collapse(map2_chr(keys, names(keys), function(x, name) {
-    glue("{name} = {value}", value = format_glimpse(x))
-  }), ", ")
+  keys <- map_chr(keys, pillar::format_glimpse)
+  labels <- vec_paste0(names(keys), " = ", keys)
+  labels <- cli_collapse(labels, last = ", ")
+  cli::format_inline("{.code {labels}}")
 }
 
-cur_group_label <- function() {
-  mask <- peek_mask("cur_group_label")
-  data <- mask$full_data()
-  if(is_grouped_df(data) && nrow(data) > 0) {
-    glue("group {id}: {label}", id = cur_group_id(), label = group_labels_details(cur_group()))
-  } else if (inherits(data, "rowwise_df") && nrow(data) > 0) {
-    paste0("row ", cur_group_id())
+cur_group_label <- function(type = mask_type(),
+                            id = cur_group_id(),
+                            group = cur_group()) {
+  switch(
+    type,
+    ungrouped = "",
+    grouped = glue("group {id}: {label}", label = group_labels_details(group)),
+    rowwise = glue("row {id}"),
+    stop_mask_type(type)
+  )
+}
+
+cur_group_data <- function(mask_type) {
+  switch(
+    mask_type,
+    ungrouped = list(),
+    grouped = list(id = cur_group_id(), group = cur_group()),
+    rowwise = list(id = cur_group_id()),
+    stop_mask_type(mask_type)
+  )
+}
+
+stop_mask_type <- function(type) {
+  cli::cli_abort(
+    "Unexpected mask type {.val {type}}.",
+    .internal = TRUE
+  )
+}
+
+cnd_data <- function(cnd, ctxt, mask, call) {
+  mask_type <- mask_type(mask)
+  has_group_data <- has_active_group_context(mask)
+
+  if (has_group_data) {
+    group_data <- cur_group_data(mask_type)
   } else {
-    ""
+    group_data <- NULL
   }
+
+  list(
+    cnd = cnd,
+    name = ctxt$error_name,
+    expr = ctxt$error_expression,
+    type = mask_type,
+    has_group_data = has_group_data,
+    group_data = group_data,
+    call = call
+  )
 }
 
 #' @rdname context
@@ -126,25 +146,31 @@ context_poke <- function(name, value) {
 context_peek_bare <- function(name) {
   context_env[[name]]
 }
-context_peek <- function(name, fun, location = "dplyr verbs") {
+context_peek <- function(name, location, call = caller_env()) {
   context_peek_bare(name) %||%
-    abort(glue("Must be used inside {location}."), call = call(fun))
+    abort(glue("Must only be used inside {location}."), call = call)
 }
 context_local <- function(name, value, frame = caller_env()) {
   old <- context_poke(name, value)
+
+  # FIXME: Pass `after = TRUE` once we depend on R 3.5. Currently this
+  # doesn't restore in the correct order (FIFO) when context-local
+  # functions are called multiple times within the same frame.
   expr <- expr(on.exit(context_poke(!!name, !!old), add = TRUE))
   eval_bare(expr, frame)
+
+  value
 }
 
-peek_column <- function() {
-  context_peek("column", "cur_column", "`across()`")
+peek_column <- function(call = caller_env()) {
+  context_peek("column", "`across()`", call)
 }
 local_column <- function(x, frame = caller_env()) {
   context_local("column", x, frame = frame)
 }
 
-peek_mask <- function(fun = "peek_mask") {
-  context_peek("mask", fun)
+peek_mask <- function(call = caller_env()) {
+  context_peek("mask", "data-masking verbs like `mutate()`, `filter()`, and `group_by()`", call)
 }
 local_mask <- function(x, frame = caller_env()) {
   context_local("mask", x, frame = frame)

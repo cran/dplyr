@@ -1,3 +1,15 @@
+# all_equal is deprecated
+
+    Code
+      all_equal(mtcars, mtcars)
+    Condition
+      Warning:
+      `all_equal()` was deprecated in dplyr 1.1.0.
+      i Please use `all.equal()` instead.
+      i And manually order the rows/cols as needed
+    Output
+      [1] TRUE
+
 # data frames not equal if missing row
 
     Code

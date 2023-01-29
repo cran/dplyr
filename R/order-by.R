@@ -37,15 +37,14 @@ order_by <- function(order_by, call) {
       )
       abort(bullets)
     } else {
-      type <- friendly_type_of(expr)
+      type <- obj_type_friendly(expr)
       msg <- glue("`call` must be a function call, not { type }.")
       abort(msg)
     }
   }
 
-  fn <- set_expr(quo, node_car(expr))
-  args <- node_cdr(expr)
-  args <- map(args, new_quosure, quo_get_env(quo))
+  fn <- set_expr(quo, expr[[1]])
+  args <- map(expr[-1], new_quosure, quo_get_env(quo))
 
   expr <- expr(with_order(!!order_by, !!fn, !!!args))
   eval_tidy(expr)
@@ -61,9 +60,13 @@ order_by <- function(order_by, call) {
 #' @keywords internal
 #' @export
 with_order <- function(order_by, fun, x, ...) {
-  ord <- vec_order(order_by)
-  undo <- vec_match(seq_along(order_by), ord)
+  vec_assert(order_by, size = vec_size(x), arg = "order_by")
 
-  out <- fun(vec_slice(x, ord), ...)
-  vec_slice(out, undo)
+  o <- vec_order_radix(order_by)
+  x <- vec_slice(x, o)
+
+  out <- fun(x, ...)
+
+  o <- vec_order_radix(o)
+  vec_slice(out, o)
 }

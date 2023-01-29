@@ -1,6 +1,12 @@
-
-as_fun_list <- function(.funs, .env, ..., .caller, .caller_arg = "...", error_call = caller_env()) {
+as_fun_list <- function(.funs,
+                        .env,
+                        ...,
+                        .caller,
+                        .caller_arg = "...",
+                        error_call = caller_env(),
+                        .user_env = caller_env(2)) {
   args <- list2(...)
+  force(.user_env)
 
   if (is_fun_list(.funs)) {
     if (!is_empty(args)) {
@@ -26,13 +32,15 @@ as_fun_list <- function(.funs, .env, ..., .caller, .caller_arg = "...", error_ca
       if (is_quosure(.x)) {
         what <- paste0(
           "dplyr::", .caller, "(", .caller_arg, " = ",
-          "'can\\'t contain quosures.')"
+          "'can\\'t contain quosures')"
         )
 
         lifecycle::deprecate_warn(
           "0.8.3", what,
           details = "Please use a one-sided formula, a function, or a function name.",
-          env = .env
+          always = TRUE,
+          env = .env,
+          user_env = .user_env
         )
         .x <- new_formula(NULL, quo_squash(.x), quo_get_env(.x))
       }
@@ -120,4 +128,11 @@ print.fun_list <- function(x, ..., width = getOption("width")) {
   cat(paste0("$ ", names, ": ", code, collapse = "\n"))
   cat("\n")
   invisible(x)
+}
+
+deparse_trunc <- function(x, width = getOption("width")) {
+  text <- deparse(x, width.cutoff = width)
+  if (length(text) == 1 && nchar(text) < width) return(text)
+
+  paste0(substr(text[1], 1, width - 3), "...")
 }

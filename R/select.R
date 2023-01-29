@@ -1,13 +1,11 @@
-#' Subset columns using their names and types
+#' Keep or drop columns using their names and types
 #'
 #' @description
 #'
 #' Select (and optionally rename) variables in a data frame, using a concise
 #' mini-language that makes it easy to refer to variables based on their name
 #' (e.g. `a:f` selects all columns from `a` on the left to `f` on the
-#' right). You can also use predicate functions like [is.numeric] to select
-#' variables based on their properties.
-#'
+#' right) or type (e.g. `where(is.numeric)` selects all numeric columns).
 #'
 #' ## Overview of selection features
 #'
@@ -44,10 +42,8 @@
 #'   knitr::knit_child("man/rmd/select.Rmd"),
 #'   tibble.print_min = 4,
 #'   tibble.max_extra_cols = 8,
-#'   digits = 2,
-#'   crayon.enabled = FALSE,
-#'   cli.unicode = FALSE,
-#'   width = 80
+#'   pillar.min_title_chars = 20,
+#'   digits = 2
 #' )
 #' cat(result, sep = "\n")
 #' ```
@@ -66,13 +62,17 @@ select.list <- function(.data, ...) {
 select.data.frame <- function(.data, ...) {
   error_call <- dplyr_error_call()
 
-  loc <- tidyselect_fix_call(
-    tidyselect::eval_select(expr(c(...)), .data),
-    call = error_call
+  loc <- tidyselect::eval_select(
+    expr(c(...)),
+    data = .data,
+    error_call = error_call
   )
   loc <- ensure_group_vars(loc, .data, notify = TRUE)
 
-  dplyr_col_select(.data, loc, names(loc))
+  out <- dplyr_col_select(.data, loc)
+  out <- set_names(out, names(loc))
+
+  out
 }
 
 

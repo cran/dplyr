@@ -51,7 +51,8 @@ even when not needed, name the input (see examples for details).
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#superseded}{\figure{lifecycle-superseded.svg}{options: alt='[Superseded]'}}}{\strong{[Superseded]}}
 
 Scoped verbs (\verb{_if}, \verb{_at}, \verb{_all}) have been superseded by the use of
-\code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for details.
+\code{\link[=pick]{pick()}} or \code{\link[=across]{across()}} in an existing verb. See \code{vignette("colwise")} for
+details.
 
 The \link{scoped} variants of \code{\link[=mutate]{mutate()}} and \code{\link[=transmute]{transmute()}} make it easy to apply
 the same transformation to multiple variables. There are three variants:
@@ -112,13 +113,6 @@ Similarly, \code{\link[=vars]{vars()}} accepts named and unnamed arguments.
 If a variable in \code{.vars} is named, a new column by that name will be created.
 
 Name collisions in the new columns are disambiguated using a unique suffix.
-}
-
-\section{Life cycle}{
-
-
-The functions are maturing, because the naming scheme and the
-disambiguation algorithm are subject to change in dplyr 0.9.0.
 }
 
 \examples{

@@ -2,7 +2,7 @@
 % Please edit documentation in R/distinct.R
 \name{distinct}
 \alias{distinct}
-\title{Subset distinct/unique rows}
+\title{Keep distinct/unique rows}
 \usage{
 distinct(.data, ..., .keep_all = FALSE)
 }
@@ -14,7 +14,7 @@ more details.}
 \item{...}{<\code{\link[=dplyr_data_masking]{data-masking}}> Optional variables to use
 when determining uniqueness. If there are multiple rows for a given
 combination of inputs, only the first row will be preserved. If omitted,
-will use all variables.}
+will use all variables in the data frame.}
 
 \item{.keep_all}{If \code{TRUE}, keep all variables in \code{.data}.
 If a combination of \code{...} is not distinct, this keeps the
@@ -32,7 +32,7 @@ Otherwise, \code{distinct()} first calls \code{mutate()} to create new columns.
 }
 }
 \description{
-Select only unique/distinct rows from a data frame. This is similar
+Keep only unique/distinct rows from a data frame. This is similar
 to \code{\link[=unique.data.frame]{unique.data.frame()}} but considerably faster.
 }
 \section{Methods}{
@@ -64,16 +64,22 @@ distinct(df, y, .keep_all = TRUE)
 # You can also use distinct on computed variables
 distinct(df, diff = abs(x - y))
 
-# use across() to access select()-style semantics
-distinct(starwars, across(contains("color")))
+# Use `pick()` to select columns with tidy-select
+distinct(starwars, pick(contains("color")))
 
 # Grouping -------------------------------------------------
-# The same behaviour applies for grouped data frames,
-# except that the grouping variables are always included
+
 df <- tibble(
-  g = c(1, 1, 2, 2),
-  x = c(1, 1, 2, 1)
-) \%>\% group_by(g)
+  g = c(1, 1, 2, 2, 2),
+  x = c(1, 1, 2, 1, 2),
+  y = c(3, 2, 1, 3, 1)
+)
+df <- df \%>\% group_by(g)
+
+# With grouped data frames, distinctness is computed within each group
 df \%>\% distinct(x)
 
+# When `...` are omitted, `distinct()` still computes distinctness using
+# all variables in the data frame
+df \%>\% distinct()
 }

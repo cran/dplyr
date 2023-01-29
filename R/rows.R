@@ -1,7 +1,6 @@
 #' Manipulate individual rows
 #'
 #' @description
-#' `r lifecycle::badge("experimental")`
 #'
 #' These functions provide a framework for modifying rows in a table using a
 #' second table of data. The two tables are matched `by` a set of key variables
@@ -19,6 +18,20 @@
 #'   key value in `y` already exists in `x`. Key values in `y` must be unique.
 #' * `rows_delete()` deletes rows (like `DELETE`). By default, key values in `y`
 #'   must exist in `x`.
+#'
+#' @section Methods:
+#' These function are **generic**s, which means that packages can provide
+#' implementations (methods) for other classes. See the documentation of
+#' individual methods for extra arguments and differences in behaviour.
+#'
+#' Methods available in currently loaded packages:
+#'
+#' * `rows_insert()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_insert")}.
+#' * `rows_append()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_append")}.
+#' * `rows_update()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_update")}.
+#' * `rows_patch()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_patch")}.
+#' * `rows_upsert()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_upsert")}.
+#' * `rows_delete()`: \Sexpr[stage=render,results=rd]{dplyr:::methods_rd("rows_delete")}.
 #'
 #' @inheritParams left_join
 #' @param x,y A pair of data frames or data frame extensions (e.g. a tibble).
@@ -114,7 +127,6 @@ rows_insert <- function(x,
                         conflict = c("error", "ignore"),
                         copy = FALSE,
                         in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_insert()")
   UseMethod("rows_insert")
 }
 
@@ -133,11 +145,14 @@ rows_insert.data.frame <- function(x,
 
   by <- rows_check_by(by, y)
 
-  rows_check_containment(x, y)
+  rows_check_x_contains_y(x, y)
+  rows_check_contains_by(x, by, "x")
+  rows_check_contains_by(y, by, "y")
+
   y <- rows_cast_y(y, x)
 
-  x_key <- rows_select_key(x, by, "x")
-  y_key <- rows_select_key(y, by, "y")
+  x_key <- dplyr_col_select(x, by)
+  y_key <- dplyr_col_select(y, by)
 
   keep <- rows_check_y_conflict(x_key, y_key, conflict)
 
@@ -155,7 +170,6 @@ rows_append <- function(x,
                         ...,
                         copy = FALSE,
                         in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_append()")
   UseMethod("rows_append")
 }
 
@@ -170,7 +184,7 @@ rows_append.data.frame <- function(x,
 
   y <- auto_copy(x, y, copy = copy)
 
-  rows_check_containment(x, y)
+  rows_check_x_contains_y(x, y)
   y <- rows_cast_y(y, x)
 
   rows_bind(x, y)
@@ -185,7 +199,6 @@ rows_update <- function(x,
                         unmatched = c("error", "ignore"),
                         copy = FALSE,
                         in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_update()")
   UseMethod("rows_update", x)
 }
 
@@ -204,18 +217,23 @@ rows_update.data.frame <- function(x,
 
   by <- rows_check_by(by, y)
 
-  rows_check_containment(x, y)
+  rows_check_x_contains_y(x, y)
+  rows_check_contains_by(x, by, "x")
+  rows_check_contains_by(y, by, "y")
 
-  x_key <- rows_select_key(x, by, "x")
-  y_key <- rows_select_key(y, by, "y", unique = TRUE)
+  x_key <- dplyr_col_select(x, by)
+  y_key <- dplyr_col_select(y, by)
+
+  rows_check_unique(y_key, "y")
+
   args <- vec_cast_common(x = x_key, y = y_key)
   x_key <- args$x
   y_key <- args$y
 
   values_names <- setdiff(names(y), names(y_key))
 
-  x_values <- x[values_names]
-  y_values <- y[values_names]
+  x_values <- dplyr_col_select(x, values_names)
+  y_values <- dplyr_col_select(y, values_names)
   y_values <- rows_cast_y(y_values, x_values)
 
   keep <- rows_check_y_unmatched(x_key, y_key, unmatched)
@@ -250,7 +268,6 @@ rows_patch <- function(x,
                        unmatched = c("error", "ignore"),
                        copy = FALSE,
                        in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_patch()")
   UseMethod("rows_patch", x)
 }
 
@@ -269,18 +286,23 @@ rows_patch.data.frame <- function(x,
 
   by <- rows_check_by(by, y)
 
-  rows_check_containment(x, y)
+  rows_check_x_contains_y(x, y)
+  rows_check_contains_by(x, by, "x")
+  rows_check_contains_by(y, by, "y")
 
-  x_key <- rows_select_key(x, by, "x")
-  y_key <- rows_select_key(y, by, "y", unique = TRUE)
+  x_key <- dplyr_col_select(x, by)
+  y_key <- dplyr_col_select(y, by)
+
+  rows_check_unique(y_key, "y")
+
   args <- vec_cast_common(x = x_key, y = y_key)
   x_key <- args$x
   y_key <- args$y
 
   values_names <- setdiff(names(y), names(y_key))
 
-  x_values <- x[values_names]
-  y_values <- y[values_names]
+  x_values <- dplyr_col_select(x, values_names)
+  y_values <- dplyr_col_select(y, values_names)
   y_values <- rows_cast_y(y_values, x_values)
 
   keep <- rows_check_y_unmatched(x_key, y_key, unmatched)
@@ -321,7 +343,6 @@ rows_upsert <- function(x,
                         ...,
                         copy = FALSE,
                         in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_upsert()")
   UseMethod("rows_upsert", x)
 }
 
@@ -339,18 +360,23 @@ rows_upsert.data.frame <- function(x,
 
   by <- rows_check_by(by, y)
 
-  rows_check_containment(x, y)
+  rows_check_x_contains_y(x, y)
+  rows_check_contains_by(x, by, "x")
+  rows_check_contains_by(y, by, "y")
 
-  x_key <- rows_select_key(x, by, "x")
-  y_key <- rows_select_key(y, by, "y", unique = TRUE)
+  x_key <- dplyr_col_select(x, by)
+  y_key <- dplyr_col_select(y, by)
+
+  rows_check_unique(y_key, "y")
+
   args <- vec_cast_common(x = x_key, y = y_key)
   x_key <- args$x
   y_key <- args$y
 
   values_names <- setdiff(names(y), names(y_key))
 
-  x_values <- x[values_names]
-  y_values <- y[values_names]
+  x_values <- dplyr_col_select(x, values_names)
+  y_values <- dplyr_col_select(y, values_names)
   y_values <- rows_cast_y(y_values, x_values)
 
   loc <- vec_match(x_key, y_key)
@@ -387,7 +413,6 @@ rows_delete <- function(x,
                         unmatched = c("error", "ignore"),
                         copy = FALSE,
                         in_place = FALSE) {
-  lifecycle::signal_stage("experimental", "rows_delete()")
   UseMethod("rows_delete", x)
 }
 
@@ -406,8 +431,12 @@ rows_delete.data.frame <- function(x,
 
   by <- rows_check_by(by, y)
 
-  x_key <- rows_select_key(x, by, "x")
-  y_key <- rows_select_key(y, by, "y")
+  rows_check_contains_by(x, by, "x")
+  rows_check_contains_by(y, by, "y")
+
+  x_key <- dplyr_col_select(x, by)
+  y_key <- dplyr_col_select(y, by)
+
   args <- vec_cast_common(x = x_key, y = y_key)
   x_key <- args$x
   y_key <- args$y
@@ -463,7 +492,7 @@ rows_check_by <- function(by, y, ..., error_call = caller_env()) {
   by
 }
 
-rows_check_containment <- function(x, y, ..., error_call = caller_env()) {
+rows_check_x_contains_y <- function(x, y, ..., error_call = caller_env()) {
   check_dots_empty()
 
   bad <- setdiff(names(y), names(x))
@@ -486,43 +515,42 @@ rows_cast_y <- function(y, x, ..., call = caller_env()) {
   vec_cast(x = y, to = x, x_arg = "y", to_arg = "x", call = call)
 }
 
-rows_select_key <- function(x,
-                            by,
-                            arg,
-                            ...,
-                            unique = FALSE,
-                            error_call = caller_env()) {
+rows_check_contains_by <- function(x, by, arg, ..., error_call = caller_env()) {
   check_dots_empty()
 
   missing <- setdiff(by, names(x))
 
-  if (!is_empty(missing)) {
-    missing <- err_vars(missing)
-
-    message <- c(
-      "All columns specified through `by` must exist in `x` and `y`.",
-      i = glue("The following columns are missing from `{arg}`: {missing}.")
-    )
-
-    abort(message, call = error_call)
+  if (is_empty(missing)) {
+    return(invisible())
   }
 
-  out <- x[by]
+  missing <- err_vars(missing)
 
-  if (unique && vec_duplicate_any(out)) {
-    duplicated <- vec_duplicate_detect(out)
-    duplicated <- which(duplicated)
-    duplicated <- err_locs(duplicated)
+  message <- c(
+    "All columns specified through `by` must exist in `x` and `y`.",
+    i = glue("The following columns are missing from `{arg}`: {missing}.")
+  )
 
-    message <- c(
-      glue("`{arg}` key values must be unique."),
-      i = glue("The following rows contain duplicate key values: {duplicated}.")
-    )
+  abort(message, call = error_call)
+}
 
-    abort(message, call = error_call)
+rows_check_unique <- function(x, arg, ..., error_call = caller_env()) {
+  check_dots_empty()
+
+  if (!vec_duplicate_any(x)) {
+    return(invisible())
   }
 
-  out
+  duplicated <- vec_duplicate_detect(x)
+  duplicated <- which(duplicated)
+  duplicated <- err_locs(duplicated)
+
+  message <- c(
+    glue("`{arg}` key values must be unique."),
+    i = glue("The following rows contain duplicate key values: {duplicated}.")
+  )
+
+  abort(message, call = error_call)
 }
 
 rows_check_y_conflict <- function(x_key,

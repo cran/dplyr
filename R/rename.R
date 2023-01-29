@@ -31,6 +31,16 @@
 #' iris <- as_tibble(iris) # so it prints a little nicer
 #' rename(iris, petal_length = Petal.Length)
 #'
+#' # Rename using a named vector and `all_of()`
+#' lookup <- c(pl = "Petal.Length", sl = "Sepal.Length")
+#' rename(iris, all_of(lookup))
+#'
+#' # If your named vector might contain names that don't exist in the data,
+#' # use `any_of()` instead
+#' lookup <- c(lookup, new = "unknown")
+#' try(rename(iris, all_of(lookup)))
+#' rename(iris, any_of(lookup))
+#'
 #' rename_with(iris, toupper)
 #' rename_with(iris, toupper, starts_with("Petal"))
 #' rename_with(iris, ~ tolower(gsub(".", "_", .x, fixed = TRUE)))
@@ -63,10 +73,25 @@ rename_with <- function(.data, .fn, .cols = everything(), ...) {
 #' @export
 rename_with.data.frame <- function(.data, .fn, .cols = everything(), ...) {
   .fn <- as_function(.fn)
-  cols <- tidyselect::eval_select(enquo(.cols), .data)
+  cols <- tidyselect::eval_select(enquo(.cols), .data, allow_rename = FALSE)
 
   names <- names(.data)
-  names[cols] <- .fn(names[cols], ...)
+
+  sel <- vec_slice(names, cols)
+  new <- .fn(sel, ...)
+
+  if (!is_character(new)) {
+    cli::cli_abort(
+      "{.arg .fn} must return a character vector, not {.obj_type_friendly {new}}."
+    )
+  }
+  if (length(new) != length(sel)) {
+    cli::cli_abort(
+      "{.arg .fn} must return a vector of length {length(sel)}, not {length(new)}."
+    )
+  }
+
+  names <- vec_assign(names, cols, new)
   names <- vec_as_names(names, repair = "check_unique")
 
   set_names(.data, names)

@@ -44,13 +44,13 @@ summarise(mtcars, cyl = !! call)
 quo(!! sym)
 quo(!! call)
 
-rlang::as_quosure(sym)
-rlang::as_quosure(call)
+rlang::as_quosure(sym, env = rlang::global_env())
+rlang::as_quosure(call, env = rlang::global_env())
 
 ## -----------------------------------------------------------------------------
 f <- ~cyl
 f
-rlang::as_quosure(f)
+rlang::as_quosure(f, env = rlang::global_env())
 
 ## -----------------------------------------------------------------------------
 rlang::sym("cyl")
@@ -67,7 +67,7 @@ quo((!!fun)(!!! syms))
 call <- rlang::call2("my_call", !!! syms)
 call
 
-rlang::as_quosure(call)
+rlang::as_quosure(call, env = rlang::global_env())
 
 # Or equivalently:
 quo(!! rlang::call2("my_call", !!! syms))

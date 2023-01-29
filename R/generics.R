@@ -54,7 +54,6 @@
 #'
 #' * `mutate()` generates a list of new column value (using `NULL` to indicate
 #'   when columns should be deleted), then passes that to `dplyr_col_modify()`.
-#'   `transmute()` does the same then uses 1d `[` to select the columns.
 #'
 #' * `summarise()` works similarly to `mutate()` but the data modified by
 #'   `dplyr_col_modify()` comes from `group_data()`.
@@ -141,7 +140,7 @@ dplyr_col_modify.data.frame <- function(data, cols) {
   cols <- vec_recycle_common(!!!cols, .size = nrow(data))
 
   # Transform to list to avoid stripping inner names with `[[<-`
-  out <- as.list(dplyr_vec_data(data))
+  out <- as.list(vec_data(data))
 
   nms <- as_utf8_character(names2(cols))
   names(out) <- as_utf8_character(names2(out))
@@ -212,7 +211,7 @@ dplyr_reconstruct.rowwise_df <- function(data, template) {
   rowwise_df(data, group_vars)
 }
 
-dplyr_col_select <- function(.data, loc, names = NULL, error_call = caller_env()) {
+dplyr_col_select <- function(.data, loc, error_call = caller_env()) {
   loc <- vec_as_location(loc, n = ncol(.data), names = names(.data))
 
   out <- .data[loc]
@@ -242,10 +241,6 @@ dplyr_col_select <- function(.data, loc, names = NULL, error_call = caller_env()
   # We require `[` methods to keep extra attributes for all data frame subclasses.
   if (identical(class(.data), "data.frame") || identical(class(.data), c("data.table", "data.frame"))) {
     out <- dplyr_reconstruct(out, .data)
-  }
-
-  if (!is.null(names)) {
-    names(out) <- names
   }
 
   out

@@ -1,13 +1,13 @@
-#' Subset distinct/unique rows
+#' Keep distinct/unique rows
 #'
-#' Select only unique/distinct rows from a data frame. This is similar
+#' Keep only unique/distinct rows from a data frame. This is similar
 #' to [unique.data.frame()] but considerably faster.
 #'
 #' @inheritParams arrange
 #' @param ... <[`data-masking`][dplyr_data_masking]> Optional variables to use
 #'   when determining uniqueness. If there are multiple rows for a given
 #'   combination of inputs, only the first row will be preserved. If omitted,
-#'   will use all variables.
+#'   will use all variables in the data frame.
 #' @param .keep_all If `TRUE`, keep all variables in `.data`.
 #'   If a combination of `...` is not distinct, this keeps the
 #'   first row of values.
@@ -47,18 +47,24 @@
 #' # You can also use distinct on computed variables
 #' distinct(df, diff = abs(x - y))
 #'
-#' # use across() to access select()-style semantics
-#' distinct(starwars, across(contains("color")))
+#' # Use `pick()` to select columns with tidy-select
+#' distinct(starwars, pick(contains("color")))
 #'
 #' # Grouping -------------------------------------------------
-#' # The same behaviour applies for grouped data frames,
-#' # except that the grouping variables are always included
+#'
 #' df <- tibble(
-#'   g = c(1, 1, 2, 2),
-#'   x = c(1, 1, 2, 1)
-#' ) %>% group_by(g)
+#'   g = c(1, 1, 2, 2, 2),
+#'   x = c(1, 1, 2, 1, 2),
+#'   y = c(3, 2, 1, 3, 1)
+#' )
+#' df <- df %>% group_by(g)
+#'
+#' # With grouped data frames, distinctness is computed within each group
 #' df %>% distinct(x)
 #'
+#' # When `...` are omitted, `distinct()` still computes distinctness using
+#' # all variables in the data frame
+#' df %>% distinct()
 distinct <- function(.data, ..., .keep_all = FALSE) {
   UseMethod("distinct")
 }
@@ -88,10 +94,7 @@ distinct_prepare <- function(.data,
   }
 
   # If any calls, use mutate to add new columns, then distinct on those
-  computed_columns <- add_computed_columns(.data, vars,
-    caller_env = caller_env,
-    error_call = error_call
-  )
+  computed_columns <- add_computed_columns(.data, vars, error_call = error_call)
   .data <- computed_columns$data
   distinct_vars <- computed_columns$added_names
 
@@ -106,16 +109,18 @@ distinct_prepare <- function(.data,
     abort(bullets, call = error_call)
   }
 
-  # Always include grouping variables preserving input order
-  out_vars <- intersect(names(.data), c(distinct_vars, group_vars))
+  # Only keep unique vars
+  distinct_vars <- unique(distinct_vars)
+  # Missing grouping variables are added to the front
+  new_vars <- c(setdiff(group_vars, distinct_vars), distinct_vars)
 
   if (.keep_all) {
     keep <- seq_along(.data)
   } else {
-    keep <- out_vars
+    keep <- new_vars
   }
 
-  list(data = .data, vars = out_vars, keep = keep)
+  list(data = .data, vars = new_vars, keep = keep)
 }
 
 #' @export
@@ -128,40 +133,11 @@ distinct.data.frame <- function(.data, ..., .keep_all = FALSE) {
     caller_env = caller_env()
   )
 
-  # out <- as_tibble(prep$data)
   out <- prep$data
-  loc <- vec_unique_loc(as_tibble(out)[prep$vars])
 
-  dplyr_row_slice(out[prep$keep], loc)
-}
+  cols <- dplyr_col_select(out, prep$vars)
+  loc <- vec_unique_loc(cols)
 
-
-#' Efficiently count the number of unique values in a set of vectors
-#'
-#' This is a faster and more concise equivalent of `length(unique(x))`
-#'
-#' @param \dots vectors of values
-#' @param na.rm if `TRUE` missing values don't count
-#' @examples
-#' x <- sample(1:10, 1e5, rep = TRUE)
-#' length(unique(x))
-#' n_distinct(x)
-#' @export
-n_distinct <- function(..., na.rm = FALSE) {
-  args <- list2(...)
-
-  size <- vec_size_common(!!!args)
-
-  data <- vec_recycle_common(!!!args, .size = size)
-
-  nms <- vec_rep("", length(data))
-  data <- set_names(data, nms)
-
-  data <- new_data_frame(data, n = size)
-
-  if (isTRUE(na.rm)){
-    data <- vec_slice(data, !reduce(map(data, vec_equal_na), `|`))
-  }
-
-  vec_unique_count(data)
+  out <- dplyr_col_select(out, prep$keep)
+  dplyr_row_slice(out, loc)
 }

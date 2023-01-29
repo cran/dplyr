@@ -2,7 +2,7 @@
 % Please edit documentation in R/select.R
 \name{select}
 \alias{select}
-\title{Subset columns using their names and types}
+\title{Keep or drop columns using their names and types}
 \usage{
 select(.data, ...)
 }
@@ -31,8 +31,7 @@ order. Columns will be renamed if \code{new_name = old_name} form is used.
 Select (and optionally rename) variables in a data frame, using a concise
 mini-language that makes it easy to refer to variables based on their name
 (e.g. \code{a:f} selects all columns from \code{a} on the left to \code{f} on the
-right). You can also use predicate functions like \link{is.numeric} to select
-variables based on their properties.
+right) or type (e.g. \code{where(is.numeric)} selects all numeric columns).
 \subsection{Overview of selection features}{
 
 Tidyverse selections implement a dialect of R where operators make
@@ -50,9 +49,10 @@ columns:
 \itemize{
 \item \code{\link[tidyselect:everything]{everything()}}: Matches all variables.
 \item \code{\link[tidyselect:everything]{last_col()}}: Select last variable, possibly with an offset.
+\item \code{\link[=group_cols]{group_cols()}}: Select all grouping columns.
 }
 
-These helpers select variables by matching patterns in their names:
+Other helpers select variables by matching patterns in their names:
 \itemize{
 \item \code{\link[tidyselect:starts_with]{starts_with()}}: Starts with a prefix.
 \item \code{\link[tidyselect:starts_with]{ends_with()}}: Ends with a suffix.
@@ -61,7 +61,7 @@ These helpers select variables by matching patterns in their names:
 \item \code{\link[tidyselect:starts_with]{num_range()}}: Matches a numerical range like x01, x02, x03.
 }
 
-These helpers select variables from a character vector:
+Or from variables stored in a character vector:
 \itemize{
 \item \code{\link[tidyselect:all_of]{all_of()}}: Matches variable names in a character vector. All
 names must be present, otherwise an out-of-bounds error is
@@ -70,7 +70,7 @@ thrown.
 for names that don't exist.
 }
 
-This helper selects variables with a function:
+Or using a predicate function:
 \itemize{
 \item \code{\link[tidyselect:where]{where()}}: Applies a function to all variables and selects those
 for which the function returns \code{TRUE}.
@@ -172,15 +172,14 @@ The \code{!} operator negates a selection:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{starwars \%>\% select(!(name:mass))
 #> # A tibble: 87 x 11
-#>   hair_color skin_c~1 eye_c~2 birth~3 sex   gender homew~4 species films vehic~5
-#>   <chr>      <chr>    <chr>     <dbl> <chr> <chr>  <chr>   <chr>   <lis> <list> 
-#> 1 blond      fair     blue       19   male  mascu~ Tatooi~ Human   <chr> <chr>  
-#> 2 <NA>       gold     yellow    112   none  mascu~ Tatooi~ Droid   <chr> <chr>  
-#> 3 <NA>       white, ~ red        33   none  mascu~ Naboo   Droid   <chr> <chr>  
-#> 4 none       white    yellow     41.9 male  mascu~ Tatooi~ Human   <chr> <chr>  
-#> # ... with 83 more rows, 1 more variable: starships <list>, and abbreviated
-#> #   variable names 1: skin_color, 2: eye_color, 3: birth_year, 4: homeworld,
-#> #   5: vehicles
+#>   hair_color skin_color  eye_color birth_year sex   gender    homeworld species
+#>   <chr>      <chr>       <chr>          <dbl> <chr> <chr>     <chr>     <chr>  
+#> 1 blond      fair        blue            19   male  masculine Tatooine  Human  
+#> 2 <NA>       gold        yellow         112   none  masculine Tatooine  Droid  
+#> 3 <NA>       white, blue red             33   none  masculine Naboo     Droid  
+#> 4 none       white       yellow          41.9 male  masculine Tatooine  Human  
+#> # ... with 83 more rows, and 3 more variables: films <list>, vehicles <list>,
+#> #   starships <list>
 
 iris \%>\% select(!c(Sepal.Length, Petal.Length))
 #> # A tibble: 150 x 3
@@ -247,6 +246,7 @@ Other single table verbs:
 \code{\link{arrange}()},
 \code{\link{filter}()},
 \code{\link{mutate}()},
+\code{\link{reframe}()},
 \code{\link{rename}()},
 \code{\link{slice}()},
 \code{\link{summarise}()}

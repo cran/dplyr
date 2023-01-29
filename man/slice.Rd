@@ -9,17 +9,35 @@
 \alias{slice_sample}
 \title{Subset rows using their positions}
 \usage{
-slice(.data, ..., .preserve = FALSE)
+slice(.data, ..., .by = NULL, .preserve = FALSE)
 
-slice_head(.data, ..., n, prop)
+slice_head(.data, ..., n, prop, by = NULL)
 
-slice_tail(.data, ..., n, prop)
+slice_tail(.data, ..., n, prop, by = NULL)
 
-slice_min(.data, order_by, ..., n, prop, with_ties = TRUE)
+slice_min(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+)
 
-slice_max(.data, order_by, ..., n, prop, with_ties = TRUE)
+slice_max(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+)
 
-slice_sample(.data, ..., n, prop, weight_by = NULL, replace = FALSE)
+slice_sample(.data, ..., n, prop, by = NULL, weight_by = NULL, replace = FALSE)
 }
 \arguments{
 \item{.data}{A data frame, data frame extension (e.g. a tibble), or a
@@ -33,7 +51,13 @@ Provide either positive values to keep, or negative values to drop.
 The values provided must be either all positive or all negative.
 Indices beyond the number of rows in the input are silently ignored.
 
-For \code{slice_helpers()}, these arguments are passed on to methods.}
+For \verb{slice_*()}, these arguments are passed on to methods.}
+
+\item{.by, by}{\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
+
+<\code{\link[=dplyr_tidy_select]{tidy-select}}> Optionally, a selection of columns to
+group by for just this operation, functioning as an alternative to \code{\link[=group_by]{group_by()}}. For
+details and examples, see \link[=dplyr_by]{?dplyr_by}.}
 
 \item{.preserve}{Relevant when the \code{.data} input is grouped.
 If \code{.preserve = FALSE} (the default), the grouping structure
@@ -41,25 +65,31 @@ is recalculated based on the resulting data, otherwise the grouping is kept as i
 
 \item{n, prop}{Provide either \code{n}, the number of rows, or \code{prop}, the
 proportion of rows to select. If neither are supplied, \code{n = 1} will be
-used.
+used. If \code{n} is greater than the number of rows in the group
+(or \code{prop > 1}), the result will be silently truncated to the group size.
+\code{prop} will be rounded towards zero to generate an integer number of
+rows.
 
-If a negative value of \code{n} or \code{prop} is provided, the specified number or
-proportion of rows will be removed.
+A negative value of \code{n} or \code{prop} will be subtracted from the group
+size. For example, \code{n = -2} with a group of 5 rows will select 5 - 2 = 3
+rows; \code{prop = -0.25} with 8 rows will select 8 * (1 - 0.25) = 6 rows.}
 
-If \code{n} is greater than the number of rows in the group (or \code{prop > 1}),
-the result will be silently truncated to the group size. If the
-\code{prop}ortion of a group size does not yield an integer number of rows, the
-absolute value of \code{prop*nrow(.data)} is rounded down.}
-
-\item{order_by}{Variable or function of variables to order by.}
+\item{order_by}{<\code{\link[=dplyr_data_masking]{data-masking}}> Variable or function
+of variables to order by. To order by multiple variables, wrap them in a
+data frame or tibble.}
 
 \item{with_ties}{Should ties be kept together? The default, \code{TRUE},
 may return more rows than you request. Use \code{FALSE} to ignore ties,
 and return the first \code{n} rows.}
 
-\item{weight_by}{Sampling weights. This must evaluate to a vector of
-non-negative numbers the same length as the input. Weights are
-automatically standardised to sum to 1.}
+\item{na_rm}{Should missing values in \code{order_by} be removed from the result?
+If \code{FALSE}, \code{NA} values are sorted to the end (like in \code{\link[=arrange]{arrange()}}), so
+they will only be included if there are insufficient non-missing values to
+reach \code{n}/\code{prop}.}
+
+\item{weight_by}{<\code{\link[=dplyr_data_masking]{data-masking}}> Sampling weights.
+This must evaluate to a vector of non-negative numbers the same length as
+the input. Weights are automatically standardised to sum to 1.}
 
 \item{replace}{Should sampling be performed with (\code{TRUE}) or without
 (\code{FALSE}, the default) replacement.}
@@ -112,6 +142,7 @@ Methods available in currently loaded packages:
 }
 
 \examples{
+# Similar to head(mtcars, 1):
 mtcars \%>\% slice(1L)
 # Similar to tail(mtcars, 1):
 mtcars \%>\% slice(n())
@@ -128,9 +159,12 @@ mtcars \%>\% slice_min(mpg, n = 5)
 mtcars \%>\% slice_max(mpg, n = 5)
 
 # slice_min() and slice_max() may return more rows than requested
-# in the presence of ties. Use with_ties = FALSE to suppress
+# in the presence of ties.
 mtcars \%>\% slice_min(cyl, n = 1)
+# Use with_ties = FALSE to return exactly n matches
 mtcars \%>\% slice_min(cyl, n = 1, with_ties = FALSE)
+# Or use additional variables to break the tie:
+mtcars \%>\% slice_min(tibble(cyl, mpg), n = 1)
 
 # slice_sample() allows you to random select with or without replacement
 mtcars \%>\% slice_sample(n = 5)
@@ -168,6 +202,7 @@ Other single table verbs:
 \code{\link{arrange}()},
 \code{\link{filter}()},
 \code{\link{mutate}()},
+\code{\link{reframe}()},
 \code{\link{rename}()},
 \code{\link{select}()},
 \code{\link{summarise}()}

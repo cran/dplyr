@@ -6,13 +6,30 @@
       `mutate_if()` ignored the following grouping variables:
       * Column `Species`
 
+# colwise verbs deprecate quosures (#4330)
+
+    Code
+      (expect_warning(mutate_at(mtcars, vars(mpg), quo(mean(.)))))
+    Output
+      <warning/lifecycle_warning_deprecated>
+      Warning:
+      The `...` argument of `mutate_at()` can't contain quosures as of dplyr 0.8.3.
+      i Please use a one-sided formula, a function, or a function name.
+    Code
+      (expect_warning(summarise_at(mtcars, vars(mpg), quo(mean(.)))))
+    Output
+      <warning/lifecycle_warning_deprecated>
+      Warning:
+      The `...` argument of `summarise_at()` can't contain quosures as of dplyr 0.8.3.
+      i Please use a one-sided formula, a function, or a function name.
+
 # colwise mutate gives meaningful error messages
 
     Code
       (expect_error(mutate_at(tibble(), "test", ~1)))
     Output
       <error/vctrs_error_subscript_oob>
-      Error in `mutate_at()`:
+      Error in `tbl_at_vars()`:
       ! Can't subset columns that don't exist.
       x Column `test` doesn't exist.
     Code
@@ -21,7 +38,7 @@
       (expect_error(summarise_at(tbl, vars(gr1), mean)))
     Output
       <error/vctrs_error_subscript_oob>
-      Error in `summarise_at()`:
+      Error in `tbl_at_vars()`:
       ! Can't subset columns that don't exist.
       x Column `gr1` doesn't exist.
     Code
@@ -29,7 +46,7 @@
     Output
       <error/dplyr:::mutate_error>
       Error in `mutate()`:
-      ! Problem while computing `mpg = .Primitive("length")(mpg, 0, 0)`.
+      i In argument: `mpg = .Primitive("length")(mpg, 0, 0)`.
       Caused by error:
       ! 3 arguments passed to 'length' which requires 1
     Code
@@ -37,7 +54,7 @@
     Output
       <error/dplyr:::mutate_error>
       Error in `mutate()`:
-      ! Problem while computing `mpg = (function (x, ...) ...`.
+      i In argument: `mpg = (function (x, ...) ...`.
       Caused by error in `mean.default()`:
       ! formal argument "na.rm" matched by multiple actual arguments
 

@@ -17,11 +17,26 @@ void dplyr_lazy_vec_chop_grouped(SEXP chops_env, SEXP rows, SEXP data, bool roww
     SEXP prom = PROTECT(Rf_allocSExp(PROMSXP));
     SET_PRENV(prom, R_EmptyEnv);
     SEXP column = p_data[i];
-    if (rowwise && vctrs::vec_is_list(column) && Rf_length(column) > 0) {
-      SET_PRCODE(prom, column);
+
+    if (rowwise && vctrs::vec_is_list(column)) {
+      if (Rf_length(column) == 0) {
+        SEXP ptype = PROTECT(Rf_getAttrib(column, Rf_install("ptype")));
+        column = PROTECT(Rf_allocVector(VECSXP, 1));
+        if (ptype != R_NilValue) {
+          SET_VECTOR_ELT(column, 0, ptype);
+        } else {
+          // i.e. `vec_ptype_finalise(unspecified())` (#6369)
+          SET_VECTOR_ELT(column, 0, Rf_allocVector(LGLSXP, 1));
+        }
+        SET_PRCODE(prom, column);
+        UNPROTECT(2);
+      } else {
+        SET_PRCODE(prom, column);
+      }
     } else {
       SET_PRCODE(prom, Rf_lang3(dplyr::functions::vec_chop, column, rows));
     }
+
     SET_PRVALUE(prom, R_UnboundValue);
 
     Rf_defineVar(rlang::str_as_symbol(p_names[i]), prom, chops_env);
@@ -51,7 +66,10 @@ void dplyr_lazy_vec_chop_ungrouped(SEXP chops_env, SEXP data) {
   UNPROTECT(1);
 }
 
-SEXP dplyr_lazy_vec_chop(SEXP data, SEXP rows) {
+SEXP dplyr_lazy_vec_chop(SEXP data, SEXP rows, SEXP ffi_grouped, SEXP ffi_rowwise) {
+  bool grouped = static_cast<bool>(LOGICAL_ELT(ffi_grouped, 0));
+  bool rowwise = static_cast<bool>(LOGICAL_ELT(ffi_rowwise, 0));
+
   // a first environment to hide `.indices` and `.current_group`
   // this is for example used by funs::
   SEXP indices_env = PROTECT(new_environment(2, R_EmptyEnv));
@@ -60,9 +78,9 @@ SEXP dplyr_lazy_vec_chop(SEXP data, SEXP rows) {
 
   // then an environment to hold the chops of the columns
   SEXP chops_env = PROTECT(new_environment(XLENGTH(data), indices_env));
-  if (Rf_inherits(data, "grouped_df")) {
+  if (grouped) {
     dplyr_lazy_vec_chop_grouped(chops_env, rows, data, false);
-  } else if (Rf_inherits(data, "rowwise_df")) {
+  } else if (rowwise) {
     dplyr_lazy_vec_chop_grouped(chops_env, rows, data, true);
   } else {
     dplyr_lazy_vec_chop_ungrouped(chops_env, data);
