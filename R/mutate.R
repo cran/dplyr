@@ -46,7 +46,7 @@
 #'
 #' @export
 #' @inheritParams arrange
-#' @param ... <[`data-masking`][dplyr_data_masking]> Name-value pairs.
+#' @param ... <[`data-masking`][rlang::args_data_masking]> Name-value pairs.
 #'   The name gives the name of the column in the output.
 #'
 #'   The value can be:
@@ -141,7 +141,7 @@
 #' # Refer to column names stored as strings with the `.data` pronoun:
 #' vars <- c("mass", "height")
 #' mutate(starwars, prod = .data[[vars[[1]]]] * .data[[vars[[2]]]])
-#' # Learn more in ?dplyr_data_masking
+#' # Learn more in ?rlang::args_data_masking
 mutate <- function(.data, ...) {
   UseMethod("mutate")
 }
@@ -174,7 +174,7 @@ mutate.data.frame <- function(.data,
                               .keep = c("all", "used", "unused", "none"),
                               .before = NULL,
                               .after = NULL) {
-  keep <- arg_match(.keep)
+  keep <- arg_match0(.keep, values = c("all", "used", "unused", "none"))
 
   by <- compute_by({{ .by }}, .data, by_arg = ".by", data_arg = ".data")
 
@@ -337,7 +337,7 @@ mutate_col <- function(dot, data, mask, new_columns) {
         chunks <- mask$resolve(name)
       }
 
-      if (mask$is_rowwise() && vec_is_list(result)) {
+      if (mask$is_rowwise() && obj_is_list(result)) {
         sizes <- list_sizes(result)
         wrong <- which(sizes != 1)
         if (length(wrong)) {
@@ -382,7 +382,8 @@ mutate_col <- function(dot, data, mask, new_columns) {
         chunks <- withCallingHandlers(
           mask$eval_all_mutate(quo),
           error = function(cnd) {
-            msg <- glue("Can't compute column `{quo_data$name_auto}`.")
+            name <- dplyr_quosure_name(quo_data)
+            msg <- glue("Can't compute column `{name}`.")
             abort(msg, call = call("across"), parent = cnd)
           }
         )
@@ -398,7 +399,8 @@ mutate_col <- function(dot, data, mask, new_columns) {
       if (length(rows) == 1) {
         result <- chunks[[1]]
       } else {
-        chunks <- dplyr_vec_cast_common(chunks, quo_data$name_auto)
+        # `name` specified lazily
+        chunks <- dplyr_vec_cast_common(chunks, name = dplyr_quosure_name(quo_data))
         result <- list_unchop(chunks, indices = rows)
       }
     }
@@ -414,7 +416,7 @@ mutate_col <- function(dot, data, mask, new_columns) {
     quo_result <- quosures_results[[k]]
     if (is.null(quo_result)) {
       if (quo_data$is_named) {
-        name <- quo_data$name_given
+        name <- dplyr_quosure_name(quo_data)
         new_columns[[name]] <- zap()
         mask$remove(name)
       }
@@ -436,7 +438,7 @@ mutate_col <- function(dot, data, mask, new_columns) {
       new_columns[types_names] <- result
     } else {
       # treat as a single output otherwise
-      name <- quo_data$name_auto
+      name <- dplyr_quosure_name(quo_data)
       mask$add_one(name = name, chunks = chunks, result = result)
 
       new_columns[[name]] <- result

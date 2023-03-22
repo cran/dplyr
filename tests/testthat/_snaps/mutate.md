@@ -47,6 +47,62 @@
       ! `y` must be size 1, not 10.
       i Did you mean: `y = list(.env$y)` ?
 
+# can't overwrite column active bindings (#6666)
+
+    Code
+      mutate(df, y = {
+        x <<- 2
+        x
+      })
+    Condition
+      Error in `mutate()`:
+      i In argument: `y = { ... }`.
+      Caused by error:
+      ! unused argument (base::quote(2))
+
+---
+
+    Code
+      mutate(df, .by = g, y = {
+        x <<- 2
+        x
+      })
+    Condition
+      Error in `mutate()`:
+      i In argument: `y = { ... }`.
+      i In group 1: `g = 1`.
+      Caused by error:
+      ! unused argument (base::quote(2))
+
+---
+
+    Code
+      mutate(gdf, y = {
+        x <<- 2
+        x
+      })
+    Condition
+      Error in `mutate()`:
+      i In argument: `y = { ... }`.
+      i In group 1: `g = 1`.
+      Caused by error:
+      ! unused argument (base::quote(2))
+
+# can't share local variables across expressions (#6666)
+
+    Code
+      mutate(df, x2 = {
+        foo <- x
+        x
+      }, y2 = {
+        foo
+      })
+    Condition
+      Error in `mutate()`:
+      i In argument: `y2 = { ... }`.
+      Caused by error:
+      ! object 'foo' not found
+
 # rowwise mutate un-lists existing size-1 list-columns (#6302)
 
     Code
@@ -290,4 +346,20 @@
       i In group 1: `cyl = 4`.
       Caused by error:
       ! `1:3` must be size 11 or 1, not 3.
+
+# `mutate()` doesn't allow data frames with missing or empty names (#6758)
+
+    Code
+      mutate(df1)
+    Condition
+      Error in `mutate()`:
+      ! Can't transform a data frame with `NA` or `""` names.
+
+---
+
+    Code
+      mutate(df2)
+    Condition
+      Error in `mutate()`:
+      ! Can't transform a data frame with `NA` or `""` names.
 

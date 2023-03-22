@@ -120,6 +120,85 @@ test_that("mutate() supports constants (#6056, #6305)", {
   })
 })
 
+test_that("can't overwrite column active bindings (#6666)", {
+  skip_if(getRversion() < "3.6.3", message = "Active binding error changed")
+
+  df <- tibble(g = 1:2, x = 3:4)
+  gdf <- group_by(df, g)
+
+  # The error seen here comes from trying to `<-` to an active binding when
+  # the active binding function has 0 arguments.
+  expect_snapshot(error = TRUE, {
+    mutate(df, y = {
+      x <<- 2
+      x
+    })
+  })
+  expect_snapshot(error = TRUE, {
+    mutate(df, .by = g, y = {
+      x <<- 2
+      x
+    })
+  })
+  expect_snapshot(error = TRUE, {
+    mutate(gdf, y = {
+      x <<- 2
+      x
+    })
+  })
+})
+
+test_that("assigning with `<-` doesn't affect the mask (#6666)", {
+  df <- tibble(g = 1:2, x = 3:4)
+  gdf <- group_by(df, g)
+
+  out <- mutate(df, .by = g, y = {
+    x <- x + 2L
+    x
+  })
+  expect_identical(out$x, c(3L, 4L))
+  expect_identical(out$y, c(5L, 6L))
+
+  out <- mutate(gdf, y = {
+    x <- x + 2L
+    x
+  })
+  expect_identical(out$x, c(3L, 4L))
+  expect_identical(out$y, c(5L, 6L))
+})
+
+test_that("`across()` inline expansions that use `<-` don't affect the mask (#6666)", {
+  df <- tibble(g = 1:2, x = 3:4)
+
+  out <- df %>%
+    mutate(
+      across(x, function(col) {
+        col <- col + 2L
+        col
+      }),
+      .by = g
+    )
+
+  expect_identical(out$x, c(5L, 6L))
+})
+
+test_that("can't share local variables across expressions (#6666)", {
+  df <- tibble(x = 1:2, y = 3:4)
+
+  expect_snapshot(error = TRUE, {
+    mutate(
+      df,
+      x2 = {
+        foo <- x
+        x
+      },
+      y2 = {
+        foo
+      }
+    )
+  })
+})
+
 # column types ------------------------------------------------------------
 
 test_that("glue() is supported", {
@@ -333,6 +412,7 @@ test_that("mutate keeps zero length groups", {
 
 test_that("no utf8 invasion (#722)", {
   skip_if_not(l10n_info()$"UTF-8")
+  skip_if_not_installed("lobstr")
   source("utf-8.txt", local = TRUE, encoding = "UTF-8")
 })
 
@@ -396,6 +476,38 @@ test_that("DataMask$add() forces chunks (#4677)", {
       log_e_bf01 = log(bf01)
     )
   expect_equal(df$log_e_bf01, log(1 / 0.244))
+})
+
+test_that("DataMask uses fresh copies of group id / size variables (#6762)", {
+  df <- tibble(x = 1:2)
+
+  fn <- function() {
+    df <- tibble(a = 1)
+    # Otherwise, this nested `mutate()` can modify the same
+    # id/size variable as the outer one, which causes havoc
+    mutate(df, b = a + 1)
+  }
+
+  out <- mutate(df, y = {fn(); x})
+
+  expect_identical(out$x, 1:2)
+  expect_identical(out$y, 1:2)
+})
+
+test_that("mutate() correctly auto-names expressions (#6741)", {
+  df <- tibble(a = 1L)
+
+  expect_identical(mutate(df, -a), tibble(a = 1L, "-a" = -1L))
+
+  foo <- "foobar"
+  expect_identical(mutate(df, foo), tibble(a = 1L, foo = "foobar"))
+
+  a <- 2L
+  expect_identical(mutate(df, a), tibble(a = 1L))
+
+  df <- tibble(a = 1L, "a + 1" = 5L)
+  a <- 2L
+  expect_identical(mutate(df, a + 1), tibble(a = 1L, "a + 1" = 2))
 })
 
 # .by -------------------------------------------------------------------------
@@ -757,5 +869,17 @@ test_that("mutate() errors refer to expressions if not named", {
   expect_snapshot({
     (expect_error(mutate(mtcars, 1:3)))
     (expect_error(mutate(group_by(mtcars, cyl), 1:3)))
+  })
+})
+
+test_that("`mutate()` doesn't allow data frames with missing or empty names (#6758)", {
+  df1 <- new_data_frame(set_names(list(1), ""))
+  df2 <- new_data_frame(set_names(list(1), NA_character_))
+
+  expect_snapshot(error = TRUE, {
+    mutate(df1)
+  })
+  expect_snapshot(error = TRUE, {
+    mutate(df2)
   })
 })

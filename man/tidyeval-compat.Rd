@@ -2,6 +2,7 @@
 % Please edit documentation in R/utils-tidy-eval.R
 \name{tidyeval-compat}
 \alias{tidyeval-compat}
+\alias{.data}
 \alias{expr}
 \alias{enquo}
 \alias{enquos}
@@ -19,8 +20,8 @@
 \description{
 These tidy eval functions are no longer for normal usage, but are still
 exported from dplyr for backward compatibility.
-See \code{\link[=dplyr_data_masking]{?dplyr_data_masking}} and \code{vignette("programming")}
-for the latest recommendations.
+See \code{\link[rlang:args_data_masking]{?rlang::args_data_masking}} and
+\code{vignette("programming")} for the latest recommendations.
 \itemize{
 \item \link[rlang:expr]{expr()}
 \item \link[rlang:enquo]{enquo()}

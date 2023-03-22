@@ -1,3 +1,44 @@
+# can't overwrite column active bindings (#6666)
+
+    Code
+      summarise(df, y = {
+        x <<- x + 2L
+        mean(x)
+      })
+    Condition
+      Error in `summarise()`:
+      i In argument: `y = { ... }`.
+      Caused by error:
+      ! unused argument (base::quote(3:6))
+
+---
+
+    Code
+      summarise(df, .by = g, y = {
+        x <<- x + 2L
+        mean(x)
+      })
+    Condition
+      Error in `summarise()`:
+      i In argument: `y = { ... }`.
+      i In group 1: `g = 1`.
+      Caused by error:
+      ! unused argument (base::quote(3:4))
+
+---
+
+    Code
+      summarise(gdf, y = {
+        x <<- x + 2L
+        mean(x)
+      })
+    Condition
+      Error in `summarise()`:
+      i In argument: `y = { ... }`.
+      i In group 1: `g = 1`.
+      Caused by error:
+      ! unused argument (base::quote(3:4))
+
 # can't use `.by` with `.groups`
 
     Code
@@ -21,6 +62,22 @@
     Condition
       Error in `summarise()`:
       ! Can't supply `.by` when `.data` is a rowwise data frame.
+
+# `summarise()` doesn't allow data frames with missing or empty names (#6758)
+
+    Code
+      summarise(df1)
+    Condition
+      Error in `summarise()`:
+      ! Can't transform a data frame with `NA` or `""` names.
+
+---
+
+    Code
+      summarise(df2)
+    Condition
+      Error in `summarise()`:
+      ! Can't transform a data frame with `NA` or `""` names.
 
 # summarise() gives meaningful errors
 
@@ -153,23 +210,6 @@
       Caused by error:
       ! `x` must return compatible vectors across groups.
       x Can't combine NULL and non NULL results.
-    Code
-      (expect_error(summarise(mtcars, a = mean(not_there))))
-    Output
-      <error/rlang_error>
-      Error in `summarise()`:
-      i In argument: `a = mean(not_there)`.
-      Caused by error in `mean()`:
-      ! object 'not_there' not found
-    Code
-      (expect_error(summarise(group_by(mtcars, cyl), a = mean(not_there))))
-    Output
-      <error/rlang_error>
-      Error in `summarise()`:
-      i In argument: `a = mean(not_there)`.
-      i In group 1: `cyl = 4`.
-      Caused by error in `mean()`:
-      ! object 'not_there' not found
     Code
       (expect_error(summarise(tibble(a = 1), c = .data$b)))
     Output

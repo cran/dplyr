@@ -48,7 +48,7 @@ NULL
 #' @rdname context
 #' @export
 n <- function() {
-  length(peek_mask()$current_rows())
+  peek_mask()$get_current_group_size()
 }
 
 #' @rdname context
@@ -60,10 +60,7 @@ cur_group <- function() {
 #' @rdname context
 #' @export
 cur_group_id <- function() {
-  # [] to get a copy because the current group is dealt with internally
-  # if we don't get a copy, code like this won't give correct result:
-  # summarise(id = cur_group_id())
-  peek_mask()$get_current_group()[]
+  peek_mask()$get_current_group_id()
 }
 
 #' @rdname context
@@ -121,7 +118,7 @@ cnd_data <- function(cnd, ctxt, mask, call) {
   list(
     cnd = cnd,
     name = ctxt$error_name,
-    expr = ctxt$error_expression,
+    quo = ctxt$error_quo,
     type = mask_type,
     has_group_data = has_group_data,
     group_data = group_data,

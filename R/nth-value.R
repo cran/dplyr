@@ -83,11 +83,11 @@
 nth <- function(x, n, order_by = NULL, default = NULL, na_rm = FALSE) {
   size <- vec_size(x)
 
-  vec_assert(n, size = 1L, arg = "n")
-  n <- vec_cast(n, to = integer(), x_arg = "n")
+  vec_check_size(n, size = 1L)
+  n <- vec_cast(n, to = integer())
 
   if (!is.null(order_by)) {
-    vec_assert(order_by, size = size, arg = "order_by")
+    vec_check_size(order_by, size = size)
   }
 
   default <- check_nth_default(default, x = x)
@@ -103,6 +103,10 @@ nth <- function(x, n, order_by = NULL, default = NULL, na_rm = FALSE) {
     if (!is.null(order_by)) {
       order_by <- vec_slice(order_by, not_missing)
     }
+  }
+
+  if (is.na(n)) {
+    abort("`n` can't be `NA`.")
   }
 
   if (n < 0L) {
@@ -137,7 +141,7 @@ last <- function(x, order_by = NULL, default = NULL, na_rm = FALSE) {
 check_nth_default <- function(default, x, ..., error_call = caller_env()) {
   check_dots_empty0(...)
 
-  if (vec_is_list(x)) {
+  if (obj_is_list(x)) {
     # Very special behavior for lists, since we use `[[` on them.
     # Valid to use any `default` here (even non-vectors).
     # And `default = NULL` is the correct default `default` for lists.
@@ -148,7 +152,7 @@ check_nth_default <- function(default, x, ..., error_call = caller_env()) {
     return(vec_init(x))
   }
 
-  vec_assert(default, size = 1L, arg = "default", call = error_call)
+  vec_check_size(default, size = 1L, call = error_call)
 
   default <- vec_cast(
     x = default,
@@ -165,9 +169,11 @@ vec_slice2 <- function(x, i) {
   # Our unimplemented vctrs equivalent of `[[`
   # https://github.com/r-lib/vctrs/pull/1228/
 
-  i <- vec_as_location2(i, vec_size(x))
+  # A real implementation would use this, but it is too slow right now
+  # and we know `i` is a valid integer index (#6682)
+  # i <- vec_as_location2(i, vec_size(x))
 
-  if (vec_is_list(x)) {
+  if (obj_is_list(x)) {
     out <- .subset2(x, i)
   } else {
     out <- vec_slice(x, i)

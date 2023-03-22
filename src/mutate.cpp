@@ -30,6 +30,7 @@ SEXP dplyr_mask_eval_all_mutate(SEXP quo, SEXP env_private) {
 
   const SEXP* p_rows = VECTOR_PTR_RO(rows);
   for (R_xlen_t i = 0; i < ngroups; i++) {
+    DPLYR_MASK_ITERATION_INIT();
     DPLYR_MASK_SET_GROUP(i);
     R_xlen_t n_i = XLENGTH(p_rows[i]);
     SEXP result_i = PROTECT(DPLYR_MASK_EVAL(quo));
@@ -42,7 +43,7 @@ SEXP dplyr_mask_eval_all_mutate(SEXP quo, SEXP env_private) {
         dplyr::stop_mutate_mixed_null();
       }
 
-    } else if (vctrs::vec_is_vector(result_i)) {
+    } else if (vctrs::obj_is_vector(result_i)) {
       seen_vec = true;
 
       R_len_t n_result_i = vctrs::short_vec_size(result_i);
@@ -61,6 +62,7 @@ SEXP dplyr_mask_eval_all_mutate(SEXP quo, SEXP env_private) {
     }
 
     UNPROTECT(1);
+    DPLYR_MASK_ITERATION_FINALISE();
   }
 
   if (seen_null && seen_vec) {

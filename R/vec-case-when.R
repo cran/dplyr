@@ -10,8 +10,8 @@ vec_case_when <- function(conditions,
                           call = current_env()) {
   check_dots_empty0(...)
 
-  vec_check_list(conditions, arg = "conditions", call = call)
-  vec_check_list(values, arg = "values", call = call)
+  obj_check_list(conditions, arg = "conditions", call = call)
+  obj_check_list(values, arg = "values", call = call)
 
   list_check_all_vectors(values, arg = values_arg, call = call)
 
@@ -51,13 +51,7 @@ vec_case_when <- function(conditions,
   for (i in seq_len(n_conditions)) {
     condition <- conditions[[i]]
     condition_arg <- condition_args[[i]]
-
-    vec_assert(
-      x = condition,
-      ptype = logical(),
-      arg = condition_arg,
-      call = call
-    )
+    check_logical(condition, arg = condition_arg, call = call)
   }
 
   size <- vec_size_common(
@@ -102,8 +96,7 @@ vec_case_when <- function(conditions,
   for (i in seq_len(n_conditions)) {
     condition <- conditions[[i]]
     condition_arg <- condition_args[[i]]
-
-    vec_assert(condition, size = size, arg = condition_arg, call = call)
+    vec_check_size(condition, size = size, arg = condition_arg, call = call)
   }
 
   value_sizes <- list_sizes(values)
@@ -114,14 +107,13 @@ vec_case_when <- function(conditions,
     if (value_size != 1L) {
       value <- values[[i]]
       value_arg <- value_args[[i]]
-
-      vec_assert(value, size = size, arg = value_arg, call = call)
+      vec_check_size(value, size = size, arg = value_arg, call = call)
     }
   }
 
   default_size <- vec_size(default)
   if (default_size != 1L) {
-    vec_assert(default, size = size, arg = default_arg, call = call)
+    vec_check_size(default, size = size, arg = default_arg, call = call)
   }
 
   n_processed <- 0L

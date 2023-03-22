@@ -9,7 +9,7 @@
 #'
 #' @param condition A logical vector
 #'
-#' @param true,false Values to use for `TRUE` and `FALSE` values of
+#' @param true,false Vectors to use for `TRUE` and `FALSE` values of
 #'   `condition`.
 #'
 #'   Both `true` and `false` will be [recycled][vctrs::vector_recycling_rules]
@@ -60,11 +60,7 @@ if_else <- function(condition,
   check_dots_empty0(...)
 
   # Assert early since we `!` the `condition`
-  vec_assert(
-    x = condition,
-    ptype = logical(),
-    arg = "condition"
-  )
+  check_logical(condition)
 
   conditions <- list(
     condition = condition,

@@ -38,8 +38,8 @@ tibble("{name}" := 2)
 my_df <- function(x) {
   tibble("{{x}}_2" := x * 2)
 }
-x <- 10
-my_df(x)
+my_var <- 10
+my_df(my_var)
 
 ## ---- results = FALSE---------------------------------------------------------
 summarise_mean <- function(data, vars) {
@@ -57,25 +57,6 @@ mtcars %>% select(!all_of(vars))
 ## -----------------------------------------------------------------------------
 mutate_y <- function(data) {
   mutate(data, y = a + x)
-}
-
-## -----------------------------------------------------------------------------
-my_summary_function <- function(data) {
-  data %>% 
-    select(grp, x, y) %>% 
-    filter(x > 0) %>% 
-    group_by(grp) %>% 
-    summarise(y = mean(y), n = n())
-}
-
-## -----------------------------------------------------------------------------
-#' @importFrom rlang .data
-my_summary_function <- function(data) {
-  data %>% 
-    select("grp", "x", "y") %>% 
-    filter(.data$x > 0) %>% 
-    group_by(.data$grp) %>% 
-    summarise(y = mean(.data$y), n = n())
 }
 
 ## -----------------------------------------------------------------------------

@@ -31,11 +31,11 @@ bind_rows <- function(..., .id = NULL) {
   dots <- list2(...)
 
   # bind_rows() has weird legacy squashing behaviour
-  is_flattenable <- function(x) vec_is_list(x) && !is_named(x)
+  is_flattenable <- function(x) !is_named(x)
   if (length(dots) == 1 && is_bare_list(dots[[1]])) {
     dots <- dots[[1]]
   }
-  dots <- flatten_if(dots, is_flattenable)
+  dots <- list_flatten(dots, fn = is_flattenable)
   dots <- discard(dots, is.null)
 
   # Used to restore type
@@ -56,7 +56,7 @@ bind_rows <- function(..., .id = NULL) {
       abort(glue("Argument {i} must be a data frame or a named atomic vector."))
     }
 
-    if (vec_is_list(.x)) {
+    if (obj_is_list(.x)) {
       dots[[i]] <- vctrs::data_frame(!!!.x, .name_repair = "minimal")
     }
   }

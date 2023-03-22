@@ -23,8 +23,8 @@
 #' @inheritParams args_by
 #' @inheritParams arrange
 #' @inheritParams filter
-#' @param ... For `slice()`: <[`data-masking`][dplyr_data_masking]> Integer row
-#'   values.
+#' @param ... For `slice()`: <[`data-masking`][rlang::args_data_masking]>
+#'   Integer row values.
 #'
 #'   Provide either positive values to keep, or negative values to drop.
 #'   The values provided must be either all positive or all negative.
@@ -198,9 +198,9 @@ slice_tail.data.frame <- function(.data, ..., n, prop, by = NULL) {
 
 #' @export
 #' @rdname slice
-#' @param order_by <[`data-masking`][dplyr_data_masking]> Variable or function
-#'   of variables to order by. To order by multiple variables, wrap them in a
-#'   data frame or tibble.
+#' @param order_by <[`data-masking`][rlang::args_data_masking]> Variable or
+#'   function of variables to order by. To order by multiple variables, wrap
+#'   them in a data frame or tibble.
 #' @param with_ties Should ties be kept together? The default, `TRUE`,
 #'   may return more rows than you request. Use `FALSE` to ignore ties,
 #'   and return the first `n` rows.
@@ -233,14 +233,14 @@ slice_min.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_
     local({
       n <- dplyr::n()
       order_by <- {{ order_by }}
-      vec_assert(order_by, size = n)
+      vec_check_size(order_by, size = n)
 
       slice_rank_idx(
         order_by,
         size(n),
         direction = "asc",
-        with_ties = with_ties,
-        na_rm = na_rm
+        with_ties = !!with_ties,
+        na_rm = !!na_rm
       )
     })
   )
@@ -273,15 +273,14 @@ slice_max.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_
     local({
       n <- dplyr::n()
       order_by <- {{ order_by }}
-
-      vec_assert(order_by, size = n)
+      vec_check_size(order_by, size = n)
 
       slice_rank_idx(
         order_by,
         size(n),
         direction = "desc",
-        with_ties = with_ties,
-        na_rm = na_rm
+        with_ties = !!with_ties,
+        na_rm = !!na_rm
       )
     })
   )
@@ -291,9 +290,9 @@ slice_max.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_
 #' @rdname slice
 #' @param replace Should sampling be performed with (`TRUE`) or without
 #'   (`FALSE`, the default) replacement.
-#' @param weight_by <[`data-masking`][dplyr_data_masking]> Sampling weights.
-#'   This must evaluate to a vector of non-negative numbers the same length as
-#'   the input. Weights are automatically standardised to sum to 1.
+#' @param weight_by <[`data-masking`][rlang::args_data_masking]> Sampling
+#'   weights. This must evaluate to a vector of non-negative numbers the same
+#'   length as the input. Weights are automatically standardised to sum to 1.
 slice_sample <- function(.data, ..., n, prop, by = NULL, weight_by = NULL, replace = FALSE) {
   check_dot_by_typo(...)
   check_slice_unnamed_n_prop(..., n = n, prop = prop)
@@ -319,9 +318,9 @@ slice_sample.data.frame <- function(.data, ..., n, prop, by = NULL, weight_by = 
 
       n <- dplyr::n()
       if (!is.null(weight_by)) {
-        weight_by <- vec_assert(weight_by, size = n, arg = "weight_by")
+        vec_check_size(weight_by, size = n)
       }
-      sample_int(n, size(n), replace = replace, wt = weight_by)
+      sample_int(n, size(n), replace = !!replace, wt = weight_by)
     })
   )
 }
@@ -507,17 +506,27 @@ get_slice_size <- function(n, prop, allow_outsize = FALSE, error_call = caller_e
 
   if (slice_input$type == "n") {
     if (slice_input$n >= 0) {
-      function(n) clamp(0, floor(slice_input$n), if (allow_outsize) Inf else n)
+      if (allow_outsize) {
+        body <- expr(!!floor(slice_input$n))
+      } else {
+        body <- expr(clamp(0, !!floor(slice_input$n), n))
+      }
     } else {
-      function(n) clamp(0, ceiling(n + slice_input$n), n)
+      body <- expr(clamp(0, ceiling(n + !!slice_input$n), n))
     }
   } else if (slice_input$type == "prop") {
     if (slice_input$prop >= 0) {
-      function(n) clamp(0, floor(slice_input$prop * n), if (allow_outsize) Inf else n)
+      if (allow_outsize) {
+        body <- expr(floor(!!slice_input$prop * n))
+      } else {
+        body <- expr(clamp(0, floor(!!slice_input$prop * n), n))
+      }
     } else {
-      function(n) clamp(0, ceiling(n + slice_input$prop * n), n)
+      body <- expr(clamp(0, ceiling(n + !!slice_input$prop * n), n))
     }
   }
+
+  new_function(pairlist2(n = ), body)
 }
 
 clamp <- function(min, x, max) {
@@ -546,7 +555,11 @@ slice_rank_idx <- function(
     na_rm = FALSE,
     call = caller_env()
 ) {
-  direction <- arg_match(direction, error_call = call)
+  direction <- arg_match0(
+    arg = direction,
+    values = c("asc", "desc"),
+    error_call = call
+  )
   # puts missing values at the end
   na_value <- if (direction == "asc") "largest" else "smallest"
   ties <- if (with_ties) "min" else "sequential"

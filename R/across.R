@@ -108,6 +108,17 @@
 #' iris %>%
 #'   mutate(across(where(is.double) & !c(Petal.Length, Petal.Width), round))
 #'
+#' # Using an external vector of names
+#' cols <- c("Sepal.Length", "Petal.Width")
+#' iris %>%
+#'   mutate(across(all_of(cols), round))
+#'
+#' # If the external vector is named, the output columns will be named according
+#' # to those names
+#' names(cols) <- tolower(cols)
+#' iris %>%
+#'   mutate(across(all_of(cols), round))
+#'
 #' # A purrr-style formula
 #' iris %>%
 #'   group_by(Species) %>%
@@ -125,6 +136,12 @@
 #' iris %>%
 #'   group_by(Species) %>%
 #'   summarise(across(starts_with("Sepal"), list(mean = mean, sd = sd), .names = "{.col}.{.fn}"))
+#'
+#' # If a named external vector is used for column selection, .names will use
+#' # those names when constructing the output names
+#' iris %>%
+#'   group_by(Species) %>%
+#'   summarise(across(all_of(cols), mean, .names = "mean_{.col}"))
 #'
 #' # When the list is not named, .fn is replaced by the function's position
 #' iris %>%
@@ -528,25 +545,35 @@ new_dplyr_quosure <- function(quo, ...) {
   quo
 }
 
+dplyr_quosure_name <- function(quo_data) {
+  if (quo_data$is_named) {
+    # `name` is a user-supplied or known character string
+    quo_data$name
+  } else {
+    # `name` is a quosure that must be auto-named
+    with_no_rlang_infix_labeling(as_label(quo_data$name))
+  }
+}
+
 dplyr_quosures <- function(...) {
   # We're using quos() instead of enquos() here for speed, because we're not defusing named arguments --
   # only the ellipsis is converted to quosures, there are no further arguments.
   quosures <- quos(..., .ignore_empty = "all")
-  names_given <- names2(quosures)
+  names <- names2(quosures)
 
   for (i in seq_along(quosures)) {
     quosure <- quosures[[i]]
-    name_given <- names_given[[i]]
-    is_named <- (name_given != "")
-    if (is_named) {
-      name_auto <- name_given
-    } else {
-      name_auto <- as_label(quosure)
+    name <- names[[i]]
+    is_named <- (name != "")
+
+    if (!is_named) {
+      # Will be auto-named by `dplyr_quosure_name()` only as needed
+      name <- quosure
     }
 
-    quosures[[i]] <- new_dplyr_quosure(quosure,
-      name_given = name_given,
-      name_auto = name_auto,
+    quosures[[i]] <- new_dplyr_quosure(
+      quo = quosure,
+      name = name,
       is_named = is_named,
       index = i
     )
@@ -722,8 +749,7 @@ expand_across <- function(quo) {
       quo <- new_quosure(sym(var), empty_env())
       quo <- new_dplyr_quosure(
         quo,
-        name_given = name,
-        name_auto = name,
+        name = name,
         is_named = TRUE,
         index = c(quo_data$index, k),
         column = var
@@ -753,8 +779,7 @@ expand_across <- function(quo) {
       name <- names[[k]]
       expressions[[k]] <- new_dplyr_quosure(
         fn_call,
-        name_given = name,
-        name_auto = name,
+        name = name,
         is_named = TRUE,
         index = c(quo_data$index, k),
         column = var
@@ -944,7 +969,7 @@ quo_eval_fns <- function(quo, mask, error_call = caller_env()) {
     }
   }
 
-  if (vec_is_list(out)) {
+  if (obj_is_list(out)) {
     map(out, function(elt) validate(elt))
   } else {
     validate(out)

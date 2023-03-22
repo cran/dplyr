@@ -31,6 +31,7 @@ SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private) {
   R_xlen_t n_null = 0;
   SEXP chunks = PROTECT(Rf_allocVector(VECSXP, ngroups));
   for (R_xlen_t i = 0; i < ngroups; i++) {
+    DPLYR_MASK_ITERATION_INIT();
     DPLYR_MASK_SET_GROUP(i);
 
     SEXP result_i = PROTECT(DPLYR_MASK_EVAL(quo));
@@ -38,11 +39,12 @@ SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private) {
 
     if (result_i == R_NilValue) {
       n_null++;
-    } else if (!vctrs::vec_is_vector(result_i)) {
+    } else if (!vctrs::obj_is_vector(result_i)) {
       dplyr::stop_summarise_unsupported_type(result_i);
     }
 
     UNPROTECT(1);
+    DPLYR_MASK_ITERATION_FINALISE();
   }
   DPLYR_MASK_FINALISE();
   UNPROTECT(1);

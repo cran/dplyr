@@ -102,12 +102,11 @@ test_that("`all_of()` is evaluated in the correct environment (#5460)", {
   # Related to removing the mask layer from the quosure environments
   df <- tibble(g = 1, x = 2, y = 3)
 
-  expect_snapshot(error = TRUE, {
-    mutate(df, z = pick(all_of(y)))
-  })
-  expect_snapshot(error = TRUE, {
-    mutate(df, z = pick_wrapper(all_of(y)))
-  })
+  # We expect an "object not found" error, but we don't control that
+  # so we aren't going to snapshot it, especially since the call reported
+  # by those kinds of errors changed in R 4.3.
+  expect_error(mutate(df, z = pick(all_of(y))))
+  expect_error(mutate(df, z = pick_wrapper(all_of(y))))
 
   y <- "x"
   expect <- df["x"]
@@ -119,18 +118,24 @@ test_that("`all_of()` is evaluated in the correct environment (#5460)", {
   expect_identical(out$z, expect)
 })
 
-test_that("empty selections create 0 row data frames", {
-  # Most closely mimics macro expansion of `pick(<empty-sel>) -> tibble()`.
-  # Easily explainable as such.
+test_that("empty selections create 1 row tibbles (#6685)", {
+  # This makes the result recyclable against other inputs, and ensures that
+  # a `pick(NULL)` call can be used in a `group_by()` wrapper to
+  # "group by nothing". It is a slight departure from viewing `pick()` as a
+  # pure macro expansion into `tibble()`. Instead it is more like an expansion
+  # into:
+  # size <- vctrs::vec_size_common(..., .absent = 1L)
+  # out <- vctrs::vec_recycle_common(..., .size = size)
+  # tibble::new_tibble(out, nrow = size)
+
   df <- tibble(g = c(1, 1, 2), x = c(2, 3, 4))
   gdf <- group_by(df, g)
 
-  expect_snapshot(error = TRUE, {
-    mutate(gdf, y = pick(starts_with("foo")))
-  })
-  expect_snapshot(error = TRUE, {
-    mutate(gdf, y = pick_wrapper(starts_with("foo")))
-  })
+  out <- mutate(gdf, y = pick(starts_with("foo")))
+  expect_identical(out$y, new_tibble(list(), nrow = 3L))
+
+  out <- mutate(gdf, y = pick_wrapper(starts_with("foo")))
+  expect_identical(out$y, new_tibble(list(), nrow = 3L))
 })
 
 test_that("must supply at least one selector to `pick()`", {
@@ -255,10 +260,9 @@ test_that("`pick()` expansion evaluates on the full data", {
   df <- tibble(g = c(1, 1, 2, 2), x = c(0, 0, 1, 1), y = c(1, 1, 0, 0))
   gdf <- group_by(df, g)
 
-  # Doesn't select any columns
-  expect_snapshot(error = TRUE, {
-    mutate(gdf, y = pick(where(~all(.x == 0))))
-  })
+  # Doesn't select any columns. Returns a 1 row tibble per group (#6685).
+  out <- mutate(gdf, y = pick(where(~all(.x == 0))))
+  expect_identical(out$y, new_tibble(list(), nrow = 4L))
 
   # `pick()` evaluation fallback evaluates on the group specific data,
   # forcing potentially different results per group.
@@ -322,6 +326,16 @@ test_that("selection on rowwise data frames uses full list-cols, but actual eval
   expect_identical(out$y, map(df$x, ~tibble(x = .x)))
 })
 
+test_that("when expansion occurs, error labels use the pre-expansion quosure", {
+  df <- tibble(g = c(1, 2, 2), x = c(1, 2, 3))
+
+  # Fails in common type casting of the group chunks,
+  # which references the auto-named column name
+  expect_snapshot(error = TRUE, {
+    mutate(df, if (cur_group_id() == 1L) pick(x) else "x", .by = g)
+  })
+})
+
 test_that("doesn't allow renaming", {
   expect_snapshot(error = TRUE, {
     mutate(data.frame(x = 1), pick(y = x))
@@ -362,15 +376,25 @@ test_that("can `pick()` inside `reframe()`", {
   expect_identical(out$count, expect_count)
 })
 
-test_that("recycles correctly with empty selection", {
+test_that("empty selections recycle to the size of any other column", {
   df <- tibble(x = 1:5)
 
-  out <- reframe(df, sum = sum(x), y = pick(starts_with("foo")))
-  expect_identical(out$sum, integer())
+  # Returns size 1 tibbles that stay the same size (#6685)
+  out <- summarise(df, sum = sum(x), y = pick(starts_with("foo")))
+  expect_identical(out$sum, 15L)
+  expect_identical(out$y, new_tibble(list(), nrow = 1L))
+
+  out <- summarise(df, sum = sum(x), y = pick_wrapper(starts_with("foo")))
+  expect_identical(out$sum, 15L)
+  expect_identical(out$y, new_tibble(list(), nrow = 1L))
+
+  # Returns size 1 tibbles that recycle to size 0 because of `empty` (#6685)
+  out <- reframe(df, empty = integer(), y = pick(starts_with("foo")))
+  expect_identical(out$empty, integer())
   expect_identical(out$y, new_tibble(list(), nrow = 0L))
 
-  out <- reframe(df, sum = sum(x), y = pick_wrapper(starts_with("foo")))
-  expect_identical(out$sum, integer())
+  out <- reframe(df, empty = integer(), y = pick_wrapper(starts_with("foo")))
+  expect_identical(out$empty, integer())
   expect_identical(out$y, new_tibble(list(), nrow = 0L))
 })
 
@@ -484,17 +508,27 @@ test_that("`pick()` can be used inside `group_by()` wrappers", {
   tidyselect_group_by <- function(data, groups) {
     group_by(data, pick({{ groups }}))
   }
+  tidyselect_group_by_wrapper <- function(data, groups) {
+    group_by(data, pick_wrapper({{ groups }}))
+  }
+
   expect_identical(
     tidyselect_group_by(df, c(a, c)),
     group_by(df, a, c)
   )
-
-  tidyselect_group_by_wrapper <- function(data, groups) {
-    group_by(data, pick_wrapper({{ groups }}))
-  }
   expect_identical(
     tidyselect_group_by_wrapper(df, c(a, c)),
     group_by(df, a, c)
+  )
+
+  # Empty selections group by nothing (#6685)
+  expect_identical(
+    tidyselect_group_by(df, NULL),
+    df
+  )
+  expect_identical(
+    tidyselect_group_by_wrapper(df, NULL),
+    df
   )
 })
 

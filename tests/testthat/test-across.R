@@ -189,16 +189,20 @@ test_that("across() throws meaningful error with failure during expansion (#6534
   df <- tibble(g = 1, x = 1, y = 2, z = 3)
   gdf <- group_by(df, g)
 
-  # Ends up failing inside the empty `median()` call, which gets evaluated
+  fn <- function() {
+    stop("oh no!")
+  }
+
+  # Ends up failing inside the `fn()` call, which gets evaluated
   # during `across()` expansion but outside any group context
   expect_snapshot(error = TRUE, {
-    summarise(df, across(everything(), median()))
+    summarise(df, across(everything(), fn()))
   })
   expect_snapshot(error = TRUE, {
-    summarise(df, across(everything(), median()), .by = g)
+    summarise(df, across(everything(), fn()), .by = g)
   })
   expect_snapshot(error = TRUE, {
-    summarise(gdf, across(everything(), median()))
+    summarise(gdf, across(everything(), fn()))
   })
 })
 
@@ -400,6 +404,7 @@ test_that("across() uses environment from the current quosure (#5460)", {
 })
 
 test_that("across() sees columns in the recursive case (#5498)", {
+  skip_if_not_installed("purrr")
   df <- tibble(
     vars = list("foo"),
     data = list(data.frame(foo = 1, bar = 2))
@@ -747,6 +752,30 @@ test_that("list of lambdas work", {
   expect_equal(df %>% mutate((across(1:2, list(~ .x + mean(bar))))), exp)
 })
 
+test_that("anonymous function `.fns` can access the `.data` pronoun even when not inlined", {
+  df <- tibble(x = 1:2, y = 3:4)
+
+  # Can't access it here, `fn()`'s environment doesn't know about `.data`
+  fn <- function(col) {
+    .data[["x"]]
+  }
+  expect_snapshot(error = TRUE, {
+    mutate(df, across(y, fn))
+  })
+
+  # Can access it with inlinable quosures
+  out <- mutate(df, across(y, function(col) {
+    .data[["x"]]
+  }))
+  expect_identical(out$y, out$x)
+
+  # Can access it with non-inlinable quosures
+  out <- mutate(df, across(y, function(col) {
+    return(.data[["x"]])
+  }))
+  expect_identical(out$y, out$x)
+})
+
 test_that("across() uses local formula environment (#5881)", {
   f <- local({
     prefix <- "foo"
@@ -991,8 +1020,7 @@ test_that("expand_across() expands lambdas", {
   quo <- quo(across(c(cyl, am), ~ identity(.x)))
   quo <- new_dplyr_quosure(
     quo,
-    name_given = "",
-    name_auto = "across()",
+    name = quo,
     is_named = FALSE,
     index = 1
   )
@@ -1013,8 +1041,7 @@ test_that("expand_if_across() expands lambdas", {
   quo <- quo(if_any(c(cyl, am), ~ . > 4))
   quo <- new_dplyr_quosure(
     quo,
-    name_given = "",
-    name_auto = "if_any()",
+    name = quo,
     is_named = FALSE,
     index = 1
   )
@@ -1076,9 +1103,10 @@ test_that("`all_of()` is evaluated in the correct environment (#6522)", {
   # Related to removing the mask layer from the quosure environments
   df <- tibble(x = 1, y = 2)
 
-  expect_snapshot(error = TRUE, {
-    mutate(df, z = c_across(all_of(y)))
-  })
+  # We expect an "object not found" error, but we don't control that
+  # so we aren't going to snapshot it, especially since the call reported
+  # by those kinds of errors changed in R 4.3.
+  expect_error(mutate(df, z = c_across(all_of(y))))
 
   y <- "x"
   expect <- df[["x"]]

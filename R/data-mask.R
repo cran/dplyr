@@ -12,6 +12,10 @@ DataMask <- R6Class("DataMask",
       local_mask(self, frame)
 
       names_bindings <- chr_unserialise_unicode(names2(data))
+      if (any(names_bindings == "")) {
+        # `names2()` converted potential `NA` names to `""` already
+        abort("Can't transform a data frame with `NA` or `\"\"` names.", call = error_call)
+      }
       if (anyDuplicated(names_bindings)) {
         abort("Can't transform a data frame with duplicate names.", call = error_call)
       }
@@ -23,8 +27,29 @@ DataMask <- R6Class("DataMask",
       private$grouped <- by$type == "grouped"
       private$rowwise <- by$type == "rowwise"
 
-      private$chops <- .Call(dplyr_lazy_vec_chop_impl, data, rows, private$grouped, private$rowwise)
-      private$mask <- .Call(dplyr_data_masks_setup, private$chops, data, rows)
+      # `duplicate(0L)` is necessary to ensure that the value we modify by
+      # reference is "fresh" and completely owned by this instance of the
+      # `DataMask`. Otherwise nested `mutate()` calls can end up modifying
+      # the same value (#6762).
+      private$env_current_group_info <- new_environment(data = list(
+        `dplyr:::current_group_id` = duplicate(0L),
+        `dplyr:::current_group_size` = duplicate(0L)
+      ))
+
+      private$chops <- .Call(
+        dplyr_lazy_vec_chop_impl,
+        data,
+        rows,
+        private$env_current_group_info,
+        private$grouped,
+        private$rowwise
+      )
+
+      private$env_mask_bindings <- .Call(
+        dplyr_make_mask_bindings,
+        private$chops,
+        data
+      )
 
       private$keys <- group_keys0(by$data)
       private$by_names <- by$names
@@ -34,18 +59,18 @@ DataMask <- R6Class("DataMask",
     add_one = function(name, chunks, result) {
       if (self$is_rowwise()){
         is_scalar_list <- function(.x) {
-          vec_is_list(.x) && length(.x) == 1L
+          obj_is_list(.x) && length(.x) == 1L
         }
         if (all(map_lgl(chunks, is_scalar_list))) {
           chunks <- map(chunks, `[[`, 1L)
         }
       }
 
-      .Call(`dplyr_mask_add`, private, name, result, chunks)
+      .Call(`dplyr_mask_binding_add`, private, name, result, chunks)
     },
 
     remove = function(name) {
-      .Call(`dplyr_mask_remove`, private, name)
+      .Call(`dplyr_mask_binding_remove`, private, name)
     },
 
     resolve = function(name) {
@@ -81,23 +106,22 @@ DataMask <- R6Class("DataMask",
 
       if (self$is_rowwise()) {
         cols <- map2(cols, names(cols), function(col, name) {
-          if (vec_is_list(private$current_data[[name]])) {
+          if (obj_is_list(private$current_data[[name]])) {
             col <- list(col)
           }
           col
         })
       }
 
-      size <- length(self$current_rows())
-      dplyr_new_tibble(cols, size = size)
+      dplyr_new_tibble(cols, size = self$get_current_group_size_mutable())
     },
 
     current_cols = function(vars) {
-      env_get_list(parent.env(private$mask), vars)
+      env_get_list(private$env_mask_bindings, vars)
     },
 
     current_rows = function() {
-      private$rows[[self$get_current_group()]]
+      private$rows[[self$get_current_group_id_mutable()]]
     },
 
     current_key = function() {
@@ -109,7 +133,7 @@ DataMask <- R6Class("DataMask",
         # to do `vec_slice(<0-row-df>, 1L)`, which is an error.
         keys
       } else {
-        vec_slice(keys, self$get_current_group())
+        vec_slice(keys, self$get_current_group_id_mutable())
       }
     },
 
@@ -121,12 +145,45 @@ DataMask <- R6Class("DataMask",
       setdiff(self$current_vars(), private$by_names)
     },
 
-    get_current_group = function() {
-      parent.env(private$chops)$.current_group
+    # This pair of functions provides access to `dplyr:::current_group_id`.
+    # - `dplyr:::current_group_id` is modified by reference at the C level.
+    # - If you access it ephemerally, the mutable version can be used.
+    # - If you access it persistently, like in `cur_group_id()`, it must be
+    #   duplicated on the way out.
+    # - For maximal performance, we inline the mutable function definition into
+    #   the non-mutable version.
+    get_current_group_id = function() {
+      duplicate(private[["env_current_group_info"]][["dplyr:::current_group_id"]])
+    },
+    get_current_group_id_mutable = function() {
+      private[["env_current_group_info"]][["dplyr:::current_group_id"]]
+    },
+
+    # This pair of functions provides access to `dplyr:::current_group_size`.
+    # - `dplyr:::current_group_size` is modified by reference at the C level.
+    # - If you access it ephemerally, the mutable version can be used.
+    # - If you access it persistently, like in `n()`, it must be duplicated on
+    #   the way out.
+    # - For maximal performance, we inline the mutable function definition into
+    #   the non-mutable version.
+    get_current_group_size = function() {
+      duplicate(private[["env_current_group_info"]][["dplyr:::current_group_size"]])
+    },
+    get_current_group_size_mutable = function() {
+      private[["env_current_group_info"]][["dplyr:::current_group_size"]]
     },
 
     set_current_group = function(group) {
-      parent.env(private$chops)$.current_group[] <- group
+      # Only to be used right before throwing an error.
+      # We `duplicate()` both values to be extremely conservative, because there
+      # is an extremely small chance we could modify this by reference and cause
+      # issues with the `group` variable in the caller, but this has never been
+      # seen. We generally assume `length()` always returns a fresh variable, so
+      # we probably don't need to duplicate there, but it seems better to be
+      # extremely safe here.
+      env_current_group_info <- private[["env_current_group_info"]]
+      env_current_group_info[["dplyr:::current_group_id"]] <- duplicate(group)
+      env_current_group_info[["dplyr:::current_group_size"]] <- duplicate(length(private$rows[[group]]))
     },
 
     get_used = function() {
@@ -166,10 +223,10 @@ DataMask <- R6Class("DataMask",
       }
 
       promises <- map(names_bindings, function(.x) expr(osbolete_promise_fn(!!.x)))
-      bindings <- self$get_env_bindings()
+      env_mask_bindings <- private$env_mask_bindings
       suppressWarnings({
-        rm(list = names_bindings, envir = bindings)
-        env_bind_lazy(bindings, !!!set_names(promises, names_bindings))
+        rm(list = names_bindings, envir = env_mask_bindings)
+        env_bind_lazy(env_mask_bindings, !!!set_names(promises, names_bindings))
       })
     },
 
@@ -189,12 +246,13 @@ DataMask <- R6Class("DataMask",
       private$size
     },
 
-    get_env_bindings = function() {
-      parent.env(private$mask)
-    },
-
     get_rlang_mask = function() {
-      private$mask
+      # Mimicking the data mask that is created during typical
+      # expression evaluations, like in `DataMask$eval_all_mutate()`.
+      # Important to insert a `.data` pronoun!
+      mask <- new_data_mask(private$env_mask_bindings)
+      mask[[".data"]] <- as_data_pronoun(private$env_mask_bindings)
+      mask
     }
 
   ),
@@ -202,16 +260,21 @@ DataMask <- R6Class("DataMask",
   private = list(
     # environment that contains lazy vec_chop()s for each input column
     # and list of result chunks as they get added.
-    #
-    # The parent environment of chops has:
-    # - .indices: the list of indices
-    # - .current_group: scalar integer that identifies the current group
     chops = NULL,
 
-    # dynamic data mask, with active bindings for each column
-    # this is an rlang data mask, as such the bindings are actually
-    # in the parent environment of `mask`
-    mask = NULL,
+    # Environment which contains the:
+    # - Current group id
+    # - Current group size
+    # Both of which are updated by reference at the C level.
+    # This environment is the parent environment of `chops`.
+    env_current_group_info = NULL,
+
+    # Environment with active bindings for each column.
+    # Expressions are evaluated in a fresh data mask created from this
+    # environment. Each group gets its own newly created data mask to avoid
+    # cross group contamination of the data mask by lexical side effects, like
+    # usage of `<-` (#6666).
+    env_mask_bindings = NULL,
 
     # ptypes of all the variables
     current_data = list(),

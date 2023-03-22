@@ -55,8 +55,8 @@ test_that("joins preserve grouping", {
   df <- data.frame(x = rep(1:2, each = 4), y = rep(1:4, each = 2))
   g <- group_by(df, x)
 
-  expect_equal(group_vars(inner_join(g, g, by = c("x", "y"), multiple = "all")), "x")
-  expect_equal(group_vars(left_join(g, g, by = c("x", "y"), multiple = "all")), "x")
+  expect_equal(group_vars(inner_join(g, g, by = c("x", "y"), relationship = "many-to-many")), "x")
+  expect_equal(group_vars(left_join(g, g, by = c("x", "y"), relationship = "many-to-many")), "x")
   expect_equal(group_vars(semi_join(g, g, by = c("x", "y"))), "x")
   expect_equal(group_vars(anti_join(g, g, by = c("x", "y"))), "x")
 })
@@ -129,6 +129,7 @@ test_that("mutate does not lose variables (#144)", {
 })
 
 test_that("group_by uses shallow copy", {
+  skip_if_not_installed("lobstr")
   m1 <- group_by(mtcars, cyl)
   expect_equal(group_vars(mtcars), character())
 
@@ -164,7 +165,7 @@ test_that("group_by() handles list as grouping variables", {
   expect_equal(gdata$.rows, list_of(c(1L, 3L), 2L))
 })
 
-test_that("select(group_by(.)) implicitely adds grouping variables (#170)", {
+test_that("select(group_by(.)) implicitly adds grouping variables (#170)", {
   expect_snapshot(
     res <- mtcars %>% group_by(vs) %>% select(mpg)
   )

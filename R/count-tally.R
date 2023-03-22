@@ -14,8 +14,9 @@
 #'
 #' @param x A data frame, data frame extension (e.g. a tibble), or a
 #'   lazy data frame (e.g. from dbplyr or dtplyr).
-#' @param ... <[`data-masking`][dplyr_data_masking]> Variables to group by.
-#' @param wt <[`data-masking`][dplyr_data_masking]> Frequency weights.
+#' @param ... <[`data-masking`][rlang::args_data_masking]> Variables to group
+#'   by.
+#' @param wt <[`data-masking`][rlang::args_data_masking]> Frequency weights.
 #'   Can be `NULL` or a variable:
 #'
 #'   * If `NULL` (the default), counts the number of rows in each group.
@@ -92,7 +93,7 @@ tally <- function(x, wt = NULL, sort = FALSE, name = NULL) {
 
 #' @export
 tally.data.frame <- function(x, wt = NULL, sort = FALSE, name = NULL) {
-  name <- check_name(name, group_vars(x))
+  name <- check_n_name(name, group_vars(x))
 
   dplyr_local_error_call()
 
@@ -165,7 +166,7 @@ add_count_impl <- function(x,
 #' @rdname count
 #' @export
 add_tally <- function(x, wt = NULL, sort = FALSE, name = NULL) {
-  name <- check_name(name, tbl_vars(x))
+  name <- check_n_name(name, tbl_vars(x))
 
   dplyr_local_error_call()
 
@@ -200,10 +201,10 @@ tally_n <- function(x, wt) {
   }
 }
 
-check_name <- function(name,
-                       vars,
-                       arg = caller_arg(name),
-                       call = caller_env()) {
+check_n_name <- function(name,
+                         vars,
+                         arg = caller_arg(name),
+                         call = caller_env()) {
   if (is.null(name)) {
     name <- n_name(vars)
 

@@ -141,6 +141,56 @@ test_that("named data frame results with 0 columns participate in recycling (#65
   )
 })
 
+test_that("can't overwrite column active bindings (#6666)", {
+  skip_if(getRversion() < "3.6.3", message = "Active binding error changed")
+
+  df <- tibble(g = c(1, 1, 2, 2), x = 1:4)
+  gdf <- group_by(df, g)
+
+  # The error seen here comes from trying to `<-` to an active binding when
+  # the active binding function has 0 arguments.
+  expect_snapshot(error = TRUE, {
+    summarise(df, y = {
+      x <<- x + 2L
+      mean(x)
+    })
+  })
+  expect_snapshot(error = TRUE, {
+    summarise(df, .by = g, y = {
+      x <<- x + 2L
+      mean(x)
+    })
+  })
+  expect_snapshot(error = TRUE, {
+    summarise(gdf, y = {
+      x <<- x + 2L
+      mean(x)
+    })
+  })
+})
+
+test_that("assigning with `<-` doesn't affect the mask (#6666)", {
+  df <- tibble(g = c(1, 1, 2, 2), x = 1:4)
+  gdf <- group_by(df, g)
+
+  out <- summarise(df, .by = g, y = {
+    x <- x + 4L
+    mean(x)
+  })
+  expect_identical(out$y, c(5.5, 7.5))
+
+  out <- summarise(gdf, y = {
+    x <- x + 4L
+    mean(x)
+  })
+  expect_identical(out$y, c(5.5, 7.5))
+})
+
+test_that("summarise() correctly auto-names expressions (#6741)", {
+  df <- tibble(a = 1L)
+  expect_identical(summarise(df, sum(-a)), tibble("sum(-a)" = -1L))
+})
+
 # grouping ----------------------------------------------------------------
 
 test_that("peels off a single layer of grouping", {
@@ -368,6 +418,18 @@ test_that("summarise() preserves the call stack on error (#5308)", {
   expect_true(some(stack, is_call, "foobar"))
 })
 
+test_that("`summarise()` doesn't allow data frames with missing or empty names (#6758)", {
+  df1 <- new_data_frame(set_names(list(1), ""))
+  df2 <- new_data_frame(set_names(list(1), NA_character_))
+
+  expect_snapshot(error = TRUE, {
+    summarise(df1)
+  })
+  expect_snapshot(error = TRUE, {
+    summarise(df2)
+  })
+})
+
 test_that("summarise() gives meaningful errors", {
   eval(envir = global_env(), expr({
     expect_snapshot({
@@ -431,10 +493,6 @@ test_that("summarise() gives meaningful errors", {
       (expect_error(
                       data.frame(x = 1:2, g = 1:2) %>% group_by(g) %>% summarise(x = if(g == 2) 42)
       ))
-
-      # Missing variable
-      (expect_error(summarise(mtcars, a = mean(not_there))))
-      (expect_error(summarise(group_by(mtcars, cyl), a = mean(not_there))))
 
       # .data pronoun
       (expect_error(summarise(tibble(a = 1), c = .data$b)))
