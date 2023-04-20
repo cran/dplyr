@@ -55,8 +55,8 @@ rf %>%
   mutate(across(w:z, ~ . / total))
 
 ## -----------------------------------------------------------------------------
-df %>% mutate(total = rowSums(pick(where(is.numeric))))
-df %>% mutate(mean = rowMeans(pick(where(is.numeric))))
+df %>% mutate(total = rowSums(pick(where(is.numeric), -id)))
+df %>% mutate(mean = rowMeans(pick(where(is.numeric), -id)))
 
 ## ---- eval = FALSE, include = FALSE-------------------------------------------
 #  bench::mark(

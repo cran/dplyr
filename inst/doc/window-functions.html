@@ -450,7 +450,7 @@ records within each group. For example:</p>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 aaronha01   1968 ATL      160   606    84   174</span></span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 abbotji01   1991 CAL       34     0     0     0</span></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 abernte02   1965 CHN       84    18     1     3</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 1,076 more rows</span></span></code></pre></div>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # ℹ 1,076 more rows</span></span></code></pre></div>
 <p>Finally, <code>ntile()</code> divides the data up into <code>n</code>
 evenly sized buckets. It’s a coarse ranking, and it can be used in with
 <code>mutate()</code> to divide the data into buckets for further
@@ -589,7 +589,7 @@ they entered the league:</p>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 aaronha01   1955 ML1      153   602   105   189           2</span></span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 aaronha01   1956 ML1      153   609   106   200           3</span></span>
 <span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 aaronha01   1957 ML1      151   615   118   198           4</span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 20,702 more rows</span></span></code></pre></div>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # ℹ 20,702 more rows</span></span></code></pre></div>
 <p>Or, as in the introductory example, we could compute a z-score:</p>
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(players, <span class="at">G_z =</span> (G <span class="sc">-</span> <span class="fu">mean</span>(G)) <span class="sc">/</span> <span class="fu">sd</span>(G))</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # A tibble: 20,706 × 8</span></span>
@@ -600,7 +600,7 @@ they entered the league:</p>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2 aaronha01   1955 ML1      153   602   105   189  0.519</span></span>
 <span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3 aaronha01   1956 ML1      153   609   106   200  0.519</span></span>
 <span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4 aaronha01   1957 ML1      151   615   118   198  0.411</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # … with 20,702 more rows</span></span></code></pre></div>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; # ℹ 20,702 more rows</span></span></code></pre></div>
 </div>
 
 

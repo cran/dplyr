@@ -1,3 +1,11 @@
+# dplyr 1.1.2
+
+* `count()` better documents that it has a `.drop` argument (#6820).
+
+* Fixed tests to maintain compatibility with the next version of waldo (#6823).
+
+* Joins better handle key columns will all `NA`s (#6804).
+
 # dplyr 1.1.1
 
 * Mutating joins now warn about multiple matches much less often. At a high
