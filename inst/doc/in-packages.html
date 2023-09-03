@@ -340,7 +340,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code></pre></div>
 <p>This vignette is aimed at package authors who use dplyr in their
 packages. We will discuss best practices learned over the years to avoid
 <code>R CMD check</code> notes and warnings, and how to handle when
@@ -375,13 +375,13 @@ it is a base package. You can do that easily with
 <h2>Data masking and tidy selection NOTEs</h2>
 <p>If you’re writing a package and you have a function that uses data
 masking or tidy selection:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>my_summary_function <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">%&gt;%</span> </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(grp, x, y) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(x <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(grp) <span class="sc">%&gt;%</span> </span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">y =</span> <span class="fu">mean</span>(y), <span class="at">n =</span> <span class="fu">n</span>())</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>my_summary_function <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  data <span class="sc">%&gt;%</span> </span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>    <span class="fu">select</span>(grp, x, y) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>    <span class="fu">filter</span>(x <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>    <span class="fu">group_by</span>(grp) <span class="sc">%&gt;%</span> </span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">y =</span> <span class="fu">mean</span>(y), <span class="at">n =</span> <span class="fu">n</span>())</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>}</span></code></pre></div>
 <p>You’ll get an <code>NOTE</code> because <code>R CMD check</code>
 doesn’t know that dplyr functions use tidy evaluation:</p>
 <pre><code>N  checking R code for possible problems
@@ -396,14 +396,14 @@ doesn’t know that dplyr functions use tidy evaluation:</p>
 <code>var</code>.</li>
 </ul>
 <p>That yields:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; @importFrom rlang .data</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>my_summary_function <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  data <span class="sc">%&gt;%</span> </span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">&quot;grp&quot;</span>, <span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(.data<span class="sc">$</span>x <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(.data<span class="sc">$</span>grp) <span class="sc">%&gt;%</span> </span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">y =</span> <span class="fu">mean</span>(.data<span class="sc">$</span>y), <span class="at">n =</span> <span class="fu">n</span>())</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co">#&#39; @importFrom rlang .data</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>my_summary_function <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  data <span class="sc">%&gt;%</span> </span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    <span class="fu">select</span>(<span class="st">&quot;grp&quot;</span>, <span class="st">&quot;x&quot;</span>, <span class="st">&quot;y&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="fu">filter</span>(.data<span class="sc">$</span>x <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    <span class="fu">group_by</span>(.data<span class="sc">$</span>grp) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">y =</span> <span class="fu">mean</span>(.data<span class="sc">$</span>y), <span class="at">n =</span> <span class="fu">n</span>())</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>}</span></code></pre></div>
 <p>For more about programming with dplyr, see
 <code>vignette(&quot;programming&quot;, package = &quot;dplyr&quot;)</code>.</p>
 </div>
@@ -438,11 +438,11 @@ version of your package to CRAN before the new version of dplyr is
 released.</p>
 <p>To make code work with multiple versions of a package, your first
 tool is the simple if statement:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;0.5.0&quot;</span>) {</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># code for new version</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># code for old version</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;0.5.0&quot;</span>) {</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="co"># code for new version</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="co"># code for old version</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>Always condition on <code>&gt; current-version</code>, not
 <code>&gt;= next-version</code> because this will ensure that this
 branch is also used for the development version of the package. For
@@ -452,21 +452,21 @@ development version will be <code>&quot;0.5.0.9000&quot;</code>.</p>
 introduces a new argument or has a slightly different return value.</p>
 <p>This <em>doesn’t</em> work if we’ve introduced a new function that
 you need to switch to, like:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;1.0.10&quot;</span>) {</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">reframe</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;1.0.10&quot;</span>) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">reframe</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>In this case, when checks are run with dplyr 1.0.10 you’ll get a
 warning about using a function from dplyr that doesn’t exist
 (<code>reframe()</code>) even though that branch will never run. You can
 get around this by using <code>utils::getFromNamespace()</code> to
 indirectly call the new dplyr function:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;1.0.10&quot;</span>) {</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  utils<span class="sc">::</span><span class="fu">getFromNamespace</span>(<span class="st">&quot;reframe&quot;</span>, <span class="st">&quot;dplyr&quot;</span>)(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>} <span class="cf">else</span> {</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="cf">if</span> (utils<span class="sc">::</span><span class="fu">packageVersion</span>(<span class="st">&quot;dplyr&quot;</span>) <span class="sc">&gt;</span> <span class="st">&quot;1.0.10&quot;</span>) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  utils<span class="sc">::</span><span class="fu">getFromNamespace</span>(<span class="st">&quot;reframe&quot;</span>, <span class="st">&quot;dplyr&quot;</span>)(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(df, <span class="at">x =</span> <span class="fu">unique</span>(x))</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>}</span></code></pre></div>
 <p>As soon as the next version of dplyr is actually on CRAN (1.1.0 in
 this case), you should feel free to remove this code and unconditionally
 use <code>reframe()</code> as long as you also require
@@ -481,12 +481,12 @@ so that you can define a method for it, but that generic has moved
 between packages. In this case, you can take advantage of a little-known
 feature in the <code>NAMESPACE</code> file: you can include raw
 <code>if</code> statements.</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; @rawNamespace</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; if (utils::packageVersion(&quot;dplyr&quot;) &gt; &quot;0.5.0&quot;) {</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39;   importFrom(&quot;dbplyr&quot;, &quot;build_sql&quot;)</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; } else {</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39;   importFrom(&quot;dplyr&quot;, &quot;build_sql&quot;)</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&#39; }</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co">#&#39; @rawNamespace</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&#39; if (utils::packageVersion(&quot;dplyr&quot;) &gt; &quot;0.5.0&quot;) {</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&#39;   importFrom(&quot;dbplyr&quot;, &quot;build_sql&quot;)</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&#39; } else {</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&#39;   importFrom(&quot;dplyr&quot;, &quot;build_sql&quot;)</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&#39; }</span></span></code></pre></div>
 </div>
 <div id="deprecation-of-mutate_-and-summarise_" class="section level3">
 <h3>Deprecation of <code>mutate_*()</code> and
@@ -508,20 +508,20 @@ which was introduced in dplyr 1.0.0.</p>
 <p>If you used <code>mutate_all()</code> or <code>mutate_each()</code>
 without supplying a selection, you should update to use
 <code>across(everything())</code>:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_each</span>(<span class="fu">funs</span>(as.character))</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_all</span>(<span class="fu">funs</span>(as.character))</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), as.character))</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_each</span>(<span class="fu">funs</span>(as.character))</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_all</span>(<span class="fu">funs</span>(as.character))</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), as.character))</span></code></pre></div>
 <p>If you provided a selection through <code>mutate_at()</code> or
 <code>mutate_each()</code>, then you can switch to <code>across()</code>
 with a selection:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_each</span>(<span class="fu">funs</span>(as.character), height, mass)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_at</span>(<span class="fu">vars</span>(height, mass), as.character)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(height, mass), as.character))</span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_each</span>(<span class="fu">funs</span>(as.character), height, mass)</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_at</span>(<span class="fu">vars</span>(height, mass), as.character)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">c</span>(height, mass), as.character))</span></code></pre></div>
 <p>If you used predicates with <code>mutate_if()</code>, you can switch
 to using <code>across()</code> in combination with
 <code>where()</code>:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_if</span>(is.factor, as.character)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor), as.character))</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate_if</span>(is.factor, as.character)</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.factor), as.character))</span></code></pre></div>
 </div>
 </div>
 <div id="data-frame-subclasses" class="section level2">

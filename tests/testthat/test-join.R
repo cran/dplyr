@@ -43,11 +43,18 @@ test_that("filtering joins preserve row and column order of x (#2964)", {
 })
 
 test_that("keys are coerced to symmetric type", {
+  foo <- tibble(id = 1:2, var1 = "foo")
+  bar <- tibble(id = as.numeric(1:2), var2 = "bar")
+  expect_type(inner_join(foo, bar, by = "id")$id, "double")
+  expect_type(inner_join(bar, foo, by = "id")$id, "double")
+
   foo <- tibble(id = factor(c("a", "b")), var1 = "foo")
   bar <- tibble(id = c("a", "b"), var2 = "bar")
   expect_type(inner_join(foo, bar, by = "id")$id, "character")
   expect_type(inner_join(bar, foo, by = "id")$id, "character")
+})
 
+test_that("factor keys are coerced to the union factor type", {
   df1 <- tibble(x = 1, y = factor("a"))
   df2 <- tibble(x = 2, y = factor("b"))
   out <- full_join(df1, df2, by = c("x", "y"))
@@ -191,6 +198,90 @@ test_that("joins don't match NA when na_matches = 'never' (#2033)", {
     full_join(dat1, dat3, by = "name", na_matches = "never"),
     tibble(name = c("a", "c", NA), var1 = c(1, 2, NA), var3 = c(5, NA, 6))
   )
+})
+
+test_that("`left_join(by = join_by(closest(...)))` works as expected", {
+  df1 <- tibble(x = 1:5)
+  df2 <- tibble(y = c(1, 2, 4))
+
+  out <- left_join(df1, df2, by = join_by(closest(x <= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 4, 4, NA))
+
+  out <- left_join(df1, df2, by = join_by(closest(x < y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(2, 4, 4, NA, NA))
+
+  out <- left_join(df1, df2, by = join_by(closest(x >= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 2, 4, 4))
+
+  out <- left_join(df1, df2, by = join_by(closest(x > y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(NA, 1, 2, 2, 4))
+})
+
+test_that("`full_join(by = join_by(closest(...)))` works as expected", {
+  df1 <- tibble(x = 1:5)
+  df2 <- tibble(y = c(1, 2, 4))
+
+  out <- full_join(df1, df2, by = join_by(closest(x <= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 4, 4, NA))
+
+  out <- full_join(df1, df2, by = join_by(closest(x < y)))
+  expect_identical(out$x, c(1:5, NA))
+  expect_identical(out$y, c(2, 4, 4, NA, NA, 1))
+
+  out <- full_join(df1, df2, by = join_by(closest(x >= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 2, 4, 4))
+
+  out <- full_join(df1, df2, by = join_by(closest(x > y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(NA, 1, 2, 2, 4))
+})
+
+test_that("`right_join(by = join_by(closest(...)))` works as expected", {
+  df1 <- tibble(x = 1:5)
+  df2 <- tibble(y = c(1, 2, 4))
+
+  out <- right_join(df1, df2, by = join_by(closest(x <= y)))
+  expect_identical(out$x, 1:4)
+  expect_identical(out$y, c(1, 2, 4, 4))
+
+  out <- right_join(df1, df2, by = join_by(closest(x < y)))
+  expect_identical(out$x, c(1:3, NA))
+  expect_identical(out$y, c(2, 4, 4, 1))
+
+  out <- right_join(df1, df2, by = join_by(closest(x >= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 2, 4, 4))
+
+  out <- right_join(df1, df2, by = join_by(closest(x > y)))
+  expect_identical(out$x, 2:5)
+  expect_identical(out$y, c(1, 2, 2, 4))
+})
+
+test_that("`inner_join(by = join_by(closest(...)))` works as expected", {
+  df1 <- tibble(x = 1:5)
+  df2 <- tibble(y = c(1, 2, 4))
+
+  out <- inner_join(df1, df2, by = join_by(closest(x <= y)))
+  expect_identical(out$x, 1:4)
+  expect_identical(out$y, c(1, 2, 4, 4))
+
+  out <- inner_join(df1, df2, by = join_by(closest(x < y)))
+  expect_identical(out$x, 1:3)
+  expect_identical(out$y, c(2, 4, 4))
+
+  out <- inner_join(df1, df2, by = join_by(closest(x >= y)))
+  expect_identical(out$x, 1:5)
+  expect_identical(out$y, c(1, 2, 2, 4, 4))
+
+  out <- inner_join(df1, df2, by = join_by(closest(x > y)))
+  expect_identical(out$x, 2:5)
+  expect_identical(out$y, c(1, 2, 2, 4))
 })
 
 test_that("joins using `between(bounds =)` work as expected (#6488)", {
