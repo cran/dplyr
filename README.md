@@ -30,8 +30,8 @@ provides a variety of two-table verbs, which you can learn about in
 `vignette("two-table")`.
 
 If you are new to dplyr, the best place to start is the [data
-transformation chapter](https://r4ds.had.co.nz/transform.html) in R for
-data science.
+transformation chapter](https://r4ds.hadley.nz/data-transform) in R for
+Data Science.
 
 ## Backends
 
@@ -50,6 +50,11 @@ alternative backends:
 
 - [dbplyr](https://dbplyr.tidyverse.org/) for data stored in a
   relational database. Translates your dplyr code to SQL.
+
+- [duckplyr](https://duckdblabs.github.io/duckplyr/) for using
+  [duckdb](https://duckdb.org) on large, in-memory datasets with zero
+  extra copies. Translates your dplyr code to high performance duckdb
+  queries with an automatic R fallback when translation isn’t possible.
 
 - [duckdb](https://duckdb.org/docs/api/r) for large datasets that are
   still small enough to fit on your computer.
@@ -149,15 +154,15 @@ starwars %>%
     n > 1,
     mass > 50
   )
-#> # A tibble: 8 × 3
+#> # A tibble: 9 × 3
 #>   species      n  mass
 #>   <chr>    <int> <dbl>
 #> 1 Droid        6  69.8
 #> 2 Gungan       3  74  
-#> 3 Human       35  82.8
+#> 3 Human       35  81.3
 #> 4 Kaminoan     2  88  
 #> 5 Mirialan     2  53.1
-#> # ℹ 3 more rows
+#> # ℹ 4 more rows
 ```
 
 ## Getting help
