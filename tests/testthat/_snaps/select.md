@@ -8,18 +8,18 @@
 ---
 
     Code
-      expect_equal(df %>% select(a = c), tibble(b = 2, a = 3) %>% group_by(b))
+      expect_equal(select(df, a = c), group_by(tibble(b = 2, a = 3), b))
     Message
       Adding missing grouping variables: `b`
     Code
-      expect_equal(df %>% select(b = c), tibble(a = 1, b = 3) %>% group_by(a))
+      expect_equal(select(df, b = c), group_by(tibble(a = 1, b = 3), a))
     Message
       Adding missing grouping variables: `a`
 
 # non-syntactic grouping variable is preserved (#1138)
 
     Code
-      df <- tibble(`a b` = 1L) %>% group_by(`a b`) %>% select()
+      df <- select(group_by(tibble(`a b` = 1L), `a b`))
     Message
       Adding missing grouping variables: `a b`
 
@@ -30,7 +30,7 @@
     Output
       <error/rlang_error>
       Error in `select()`:
-      ! Problem while evaluating `1 + ""`.
+      i In argument: `1 + ""`.
       Caused by error in `1 + ""`:
       ! non-numeric argument to binary operator
 
@@ -41,7 +41,7 @@
     Output
       <error/vctrs_error_subscript_oob>
       Error in `select()`:
-      ! Can't subset columns past the end.
+      ! Can't select columns past the end.
       i Location 2 doesn't exist.
       i There is only 1 column.
     Code
@@ -60,7 +60,7 @@
     Output
       <error/vctrs_error_subscript_oob>
       Error in `select()`:
-      ! Can't subset columns past the end.
+      ! Can't select columns past the end.
       i Location 2 doesn't exist.
       i There is only 1 column.
     Code

@@ -96,6 +96,104 @@ test_that("`reframe()` throws intelligent recycling errors", {
   })
 })
 
+test_that("`reframe()` and `summarise()` are consistent with zero expressions", {
+  df <- tibble(x = c("a", "a", "b"), y = 1:3)
+  gdf <- group_by(df, x)
+
+  expect_identical(reframe(df), tibble(.rows = 1L))
+  expect_identical(reframe(df), summarise(df))
+
+  expect_identical(reframe(df, .by = x), tibble(x = c("a", "b")))
+  expect_identical(reframe(df, .by = x), summarise(df, .by = x))
+
+  expect_identical(reframe(gdf), tibble(x = c("a", "b")))
+  expect_identical(reframe(gdf), summarise(gdf))
+})
+
+test_that("`reframe()` and `summarise()` are consistent with zero expressions and zero rows", {
+  # The grouped cases here are special. There are "zero groups" to evaluate on,
+  # but we still always evaluate 1 time, and then effectively recycle the
+  # results to size 0.
+  df <- tibble(x = character(), y = integer())
+  gdf <- group_by(df, x)
+
+  expect_identical(reframe(df), tibble(.rows = 1L))
+  expect_identical(reframe(df), summarise(df))
+
+  expect_identical(reframe(df, .by = x), tibble(x = character()))
+  expect_identical(reframe(df, .by = x), summarise(df, .by = x))
+
+  expect_identical(reframe(gdf), tibble(x = character()))
+  expect_identical(reframe(gdf), summarise(gdf))
+})
+
+test_that("`reframe()` and `summarise()` are consistent with data frame that flattens into zero expressions", {
+  df <- tibble(x = c("a", "a", "b"), y = 1:3)
+  gdf <- group_by(df, x)
+
+  expect_identical(
+    reframe(df, tibble(.rows = 1L)),
+    tibble(.rows = 1L)
+  )
+  expect_identical(
+    reframe(df, tibble(.rows = 1L)),
+    summarise(df, tibble(.rows = 1L))
+  )
+
+  expect_identical(
+    reframe(df, tibble(.rows = 1L), .by = x),
+    tibble(x = c("a", "b"))
+  )
+  expect_identical(
+    reframe(df, tibble(.rows = 1L), .by = x),
+    summarise(df, tibble(.rows = 1L), .by = x)
+  )
+
+  expect_identical(
+    reframe(gdf, tibble(.rows = 1L)),
+    tibble(x = c("a", "b"))
+  )
+  expect_identical(
+    reframe(gdf, tibble(.rows = 1L)),
+    summarise(gdf, tibble(.rows = 1L))
+  )
+})
+
+test_that("`reframe()` and `summarise()` are consistent with data frame that flattens into zero expressions and zero rows", {
+  # The grouped cases here are special. There are "zero groups" to evaluate on,
+  # but we still always evaluate 1 time, and then effectively recycle the
+  # results to size 0.
+  df <- tibble(x = character(), y = integer())
+  gdf <- group_by(df, x)
+
+  expect_identical(
+    reframe(df, tibble(.rows = 1L)),
+    tibble(.rows = 1L)
+  )
+  expect_identical(
+    reframe(df, tibble(.rows = 1L)),
+    summarise(df, tibble(.rows = 1L))
+  )
+
+  expect_identical(
+    reframe(df, tibble(.rows = 1L), .by = x),
+    tibble(x = character())
+  )
+  expect_identical(
+    reframe(df, tibble(.rows = 1L), .by = x),
+    summarise(df, tibble(.rows = 1L), .by = x)
+  )
+
+  expect_identical(
+    reframe(gdf, tibble(.rows = 1L)),
+    tibble(x = character())
+  )
+  expect_identical(
+    reframe(gdf, tibble(.rows = 1L)),
+    summarise(gdf, tibble(.rows = 1L))
+  )
+})
+
 test_that("`reframe()` can return more rows than the original data frame", {
   df <- tibble(x = 1:2)
 
@@ -259,6 +357,33 @@ test_that("`reframe()` with `rowwise()` always returns an ungrouped tibble", {
   rdf <- rowwise(df, g)
 
   expect_s3_class(reframe(rdf, x), class(df), exact = TRUE)
+})
+
+test_that("named data frame results with 0 columns participate in recycling (#6509)", {
+  df <- tibble(x = 1:3)
+  gdf <- group_by(df, x)
+
+  empty <- tibble()
+  expect_identical(reframe(df, empty = empty), tibble(empty = empty))
+  expect_identical(
+    reframe(df, x = sum(x), empty = empty),
+    tibble(x = integer(), empty = empty)
+  )
+  expect_identical(
+    reframe(df, empty = empty, x = sum(x)),
+    tibble(empty = empty, x = integer())
+  )
+
+  empty3 <- new_tibble(list(), nrow = 3L)
+  expect_identical(reframe(df, empty = empty3), tibble(empty = empty3))
+  expect_identical(
+    reframe(df, x = sum(x), empty = empty3),
+    tibble(x = c(6L, 6L, 6L), empty = empty3)
+  )
+  expect_identical(
+    reframe(df, empty = empty3, x = sum(x)),
+    tibble(empty = empty3, x = c(6L, 6L, 6L))
+  )
 })
 
 # .by ----------------------------------------------------------------------

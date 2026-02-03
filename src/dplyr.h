@@ -7,23 +7,34 @@
 #include <R_ext/Rdynload.h>
 #include <Rversion.h>
 
-#define UTF8_MASK (1<<3)
-#define ASCII_MASK (1<<6)
-
-#define IS_ASCII(x) (LEVELS(x) & ASCII_MASK)
-#define IS_UTF8(x) (LEVELS(x) & UTF8_MASK)
-
-#if (R_VERSION < R_Version(3, 5, 0))
-# define LOGICAL_RO(x) ((const int*) LOGICAL(x))
-# define INTEGER_RO(x) ((const int*) INTEGER(x))
-# define REAL_RO(x) ((const double*) REAL(x))
-# define COMPLEX_RO(x) ((const Rcomplex*) COMPLEX(x))
-# define STRING_PTR_RO(x) ((const SEXP*) STRING_PTR(x))
-# define RAW_RO(x) ((const Rbyte*) RAW(x))
-# define DATAPTR_RO(x) ((const void*) STRING_PTR(x))
+#if (R_VERSION < R_Version(4, 5, 0))
+# define VECTOR_PTR_RO(x) ((const SEXP*) DATAPTR_RO(x))
 #endif
 
-#define VECTOR_PTR_RO(x) ((const SEXP*) DATAPTR_RO(x))
+#if (R_VERSION < R_Version(4, 6, 0))
+// Pulled exactly as is from R
+// https://github.com/r-devel/r-svn/blob/a39f4a28848fd02a1310b455353a871f2bb1965b/src/main/attrib.c#L2014
+// https://github.com/r-devel/r-svn/blob/a39f4a28848fd02a1310b455353a871f2bb1965b/doc/manual/R-exts.texi#L17920
+static inline
+SEXP R_mapAttrib(SEXP x, SEXP (*FUN)(SEXP, SEXP, void *), void *data) {
+  PROTECT_INDEX api;
+  SEXP a = ATTRIB(x);
+  SEXP val = NULL;
+
+  PROTECT_WITH_INDEX(a, &api);
+  while (a != R_NilValue) {
+    SEXP tag = PROTECT(TAG(a));
+    SEXP attr = PROTECT(CAR(a));
+    val = FUN(tag, attr, data);
+    UNPROTECT(2);
+    if (val != NULL)
+      break;
+    REPROTECT(a = CDR(a), api);
+  }
+  UNPROTECT(1);
+  return val;
+}
+#endif
 
 namespace dplyr {
 
@@ -78,7 +89,6 @@ SEXP eval_tidy(SEXP expr, SEXP data, SEXP env);
 SEXP as_data_pronoun(SEXP x);
 SEXP new_data_mask(SEXP bottom, SEXP top);
 SEXP str_as_symbol(SEXP);
-SEXP quo_get_expr(SEXP quo);
 void env_unbind(SEXP, SEXP);
 }
 
@@ -109,8 +119,16 @@ SEXP dplyr_validate_rowwise_df(SEXP df);
 SEXP dplyr_mask_eval_all(SEXP quo, SEXP env_private);
 SEXP dplyr_mask_eval_all_summarise(SEXP quo, SEXP env_private);
 SEXP dplyr_mask_eval_all_mutate(SEXP quo, SEXP env_private);
-SEXP dplyr_mask_eval_all_filter(SEXP quos, SEXP env_private, SEXP s_n, SEXP env_filter);
-SEXP dplyr_summarise_recycle_chunks_in_place(SEXP list_of_chunks, SEXP list_of_result);
+SEXP dplyr_mask_eval_all_filter(SEXP quos, SEXP invert, SEXP env_private, SEXP s_n, SEXP env_filter);
+SEXP dplyr_summarise_check_all_size_one(
+  SEXP result_per_group_per_expression,
+  SEXP s_n_groups
+);
+SEXP dplyr_reframe_recycle_horizontally_in_place(
+  SEXP result_per_group_per_expression,
+  SEXP result_per_expression,
+  SEXP s_n_groups
+);
 SEXP dplyr_group_indices(SEXP data, SEXP rows);
 SEXP dplyr_group_keys(SEXP group_data);
 

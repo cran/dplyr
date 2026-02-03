@@ -52,9 +52,10 @@
 #'
 #' # Current usage
 #'
-#' * `arrange()`, `filter()`, `slice()` (and the rest of the `slice_*()`
-#'   family), `semi_join()`, and `anti_join()` work by generating a vector of
-#'   row indices, and then subsetting with `dplyr_row_slice()`.
+#' * `arrange()`, `filter()` (and `filter_out()`), `slice()` (and the rest of
+#'   the `slice_*()` family), `semi_join()`, and `anti_join()` work by
+#'   generating a vector of row indices, and then subsetting with
+#'   `dplyr_row_slice()`.
 #'
 #' * `mutate()` generates a list of new column value (using `NULL` to indicate
 #'   when columns should be deleted), then passes that to `dplyr_col_modify()`.
@@ -63,7 +64,9 @@
 #'
 #' * `summarise()` and `reframe()` work similarly to `mutate()` but the data
 #'   modified by `dplyr_col_modify()` comes from `group_data()` or is built
-#'   from `.by`.
+#'   from `.by`. Note that this means that the data frames returned by
+#'   `summarise()` and `reframe()` are fundamentally new data frames, and
+#'   will not retain any custom subclasses or attributes.
 #'
 #' * `select()` uses 1d `[` to select columns, then `names<-` to rename them.
 #'   `rename()` just uses `names<-`. `relocate()` just uses 1d `[`.
@@ -219,26 +222,30 @@ dplyr_reconstruct.rowwise_df <- function(data, template) {
 }
 
 dplyr_col_select <- function(.data, loc, error_call = caller_env()) {
-  loc <- vec_as_location(loc, n = ncol(.data), names = names(.data))
+  loc <- vec_as_location(loc, n = df_n_col(.data), names = names(.data))
 
   out <- .data[loc]
   if (!inherits(out, "data.frame")) {
     classes_data <- glue_collapse(class(.data), sep = "/")
-    classes_out  <- glue_collapse(class(out), sep = "/")
+    classes_out <- glue_collapse(class(out), sep = "/")
     bullets <- c(
       "Can't reconstruct data frame.",
-      x = glue("The `[` method for class <{classes_data}> must return a data frame."),
+      x = glue(
+        "The `[` method for class <{classes_data}> must return a data frame."
+      ),
       i = glue("It returned a <{classes_out}>.")
     )
     abort(bullets, call = error_call)
   }
   if (length(out) != length(loc)) {
     classes_data <- glue_collapse(class(.data), sep = "/")
-    classes_out  <- glue_collapse(class(out), sep = "/")
+    classes_out <- glue_collapse(class(out), sep = "/")
     s <- function(x) if (length(x) == 1) "" else "s"
     bullets <- c(
       "Can't reconstruct data frame.",
-      x = glue("The `[` method for class <{classes_data}> must return a data frame with {length(loc)} column{s(loc)}."),
+      x = glue(
+        "The `[` method for class <{classes_data}> must return a data frame with {length(loc)} column{s(loc)}."
+      ),
       i = glue("It returned a <{classes_out}> of {length(out)} column{s(out)}.")
     )
     abort(bullets, call = error_call)
@@ -246,7 +253,10 @@ dplyr_col_select <- function(.data, loc, error_call = caller_env()) {
 
   # Patch base data frames and data.table (#6171) to restore extra attributes that `[.data.frame` drops.
   # We require `[` methods to keep extra attributes for all data frame subclasses.
-  if (identical(class(.data), "data.frame") || identical(class(.data), c("data.table", "data.frame"))) {
+  if (
+    identical(class(.data), "data.frame") ||
+      identical(class(.data), c("data.table", "data.frame"))
+  ) {
     out <- dplyr_reconstruct(out, .data)
   }
 

@@ -5,7 +5,7 @@
 \alias{storms}
 \title{Storm tracks data}
 \format{
-A tibble with 19,537 observations
+A tibble with 20,778 observations
 and 13 variables:
 \describe{
 \item{name}{Storm Name}
@@ -40,7 +40,7 @@ storms
 \description{
 This dataset is the NOAA Atlantic hurricane database best track data,
 \url{https://www.nhc.noaa.gov/data/#hurdat}. The data includes the positions and
-attributes of storms from 1975-2022. Storms
+attributes of storms from 1975-2024. Storms
 from 1979 onward are measured every six hours during the lifetime of the
 storm. Storms in earlier years have some missing data.
 }
@@ -50,8 +50,8 @@ storms
 # Show a few recent storm paths
 if (requireNamespace("ggplot2", quietly = TRUE)) {
   library(ggplot2)
-  storms \%>\%
-    filter(year >= 2000) \%>\%
+  storms |>
+    filter(year >= 2000) |>
     ggplot(aes(long, lat, color = paste(year, name))) +
     geom_path(show.legend = FALSE) +
     facet_wrap(~year)

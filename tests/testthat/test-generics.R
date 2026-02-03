@@ -13,7 +13,6 @@ test_that("row_slice preserves empty groups if requested", {
   expect_equal(group_data(out)$.rows, list_of(integer(), c(1L, 2L), integer()))
 })
 
-
 # dplyr_col_modify --------------------------------------------------------
 
 test_that("empty cols returns input", {
@@ -41,7 +40,10 @@ test_that("can add, remove, and replace columns", {
   df <- data.frame(x = 1, y = 2)
   expect_equal(dplyr_col_modify(df, list(y = NULL)), data.frame(x = 1))
   expect_equal(dplyr_col_modify(df, list(y = 3)), data.frame(x = 1, y = 3))
-  expect_equal(dplyr_col_modify(df, list(z = 3)), data.frame(x = 1, y = 2, z = 3))
+  expect_equal(
+    dplyr_col_modify(df, list(z = 3)),
+    data.frame(x = 1, y = 2, z = 3)
+  )
 })
 
 test_that("doesn't expand row names", {
@@ -138,9 +140,12 @@ test_that("dplyr_reconstruct() strips attributes before dispatch", {
   expect_identical(out, data.frame(x = 1, row.names = "a"))
 })
 
-test_that("`dplyr_reconstruct()` retains attribute ordering of `template`", {
+test_that("`dplyr_reconstruct()` can't guarantee attribute ordering of `template`", {
+  # This used to be `expect_identical()`, but attribute ordering may change
+  # during reconstruction. Attributes should be viewed as a map, so this is fine
+  # (#7797).
   df <- vctrs::data_frame(x = 1)
-  expect_identical(
+  expect_mapequal(
     attributes(dplyr_reconstruct(df, df)),
     attributes(df)
   )
@@ -157,6 +162,11 @@ test_that("`dplyr_reconstruct()` doesn't modify the original `data` in place", {
 })
 
 test_that("`dplyr_reconstruct()`, which gets and sets attributes, doesn't touch `row.names` (#6525)", {
+  skip_if(
+    getRversion() >= "4.6.0",
+    "Can't call `ATTRIB()` or `SET_ATTRIB()` anymore."
+  )
+
   skip_if_no_lazy_character()
 
   dplyr_attributes <- function(x) {

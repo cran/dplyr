@@ -4,7 +4,7 @@
 \alias{cumall}
 \alias{cumany}
 \alias{cummean}
-\title{Cumulativate versions of any, all, and mean}
+\title{Cumulative versions of any, all, and mean}
 \usage{
 cumall(x)
 
@@ -52,8 +52,8 @@ df <- data.frame(
   balance = c(100, 50, 25, -25, -50, 30, 120)
 )
 # all rows after first overdraft
-df \%>\% filter(cumany(balance < 0))
+df |> filter(cumany(balance < 0))
 # all rows until first overdraft
-df \%>\% filter(cumall(!(balance < 0)))
+df |> filter(cumall(!(balance < 0)))
 
 }

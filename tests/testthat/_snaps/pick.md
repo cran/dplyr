@@ -30,7 +30,7 @@
       Error in `mutate()`:
       i In argument: `y = pick(g)`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `g` doesn't exist.
 
 ---
@@ -42,7 +42,7 @@
       i In argument: `y = pick_wrapper(g)`.
       i In group 1: `g = 1`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `g` doesn't exist.
 
 # must supply at least one selector to `pick()`
@@ -73,7 +73,7 @@
       Error in `mutate()`:
       i In argument: `y = pick(x)`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `x` doesn't exist.
 
 ---
@@ -85,7 +85,7 @@
       i In argument: `y = pick_wrapper(x)`.
       i In group 1: `g = 1`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `x` doesn't exist.
 
 # can call `pick()` from a user defined function
@@ -96,9 +96,11 @@
       Error in `mutate()`:
       i In argument: `d = my_pick()`.
       i In group 1: `a = 1`.
+      Caused by error in `pick()`:
+      i In argument: `all_of(x)`.
       Caused by error in `all_of()`:
-      ! Can't subset columns that don't exist.
-      x Column `a` doesn't exist.
+      ! Can't subset elements that don't exist.
+      x Element `a` doesn't exist.
 
 ---
 
@@ -108,9 +110,11 @@
       Error in `mutate()`:
       i In argument: `d = my_pick(y)`.
       i In group 1: `a = 1`.
+      Caused by error in `pick()`:
+      i In argument: `all_of(x)`.
       Caused by error in `all_of()`:
-      ! Can't subset columns that don't exist.
-      x Column `a` doesn't exist.
+      ! Can't subset elements that don't exist.
+      x Element `a` doesn't exist.
 
 # errors correctly outside mutate context
 
@@ -168,7 +172,7 @@
       Error in `arrange()`:
       i In argument: `..1 = pick(y)`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `y` doesn't exist.
 
 ---
@@ -181,7 +185,7 @@
       Caused by error in `foo()`:
       ! could not find function "foo"
 
-# `filter()` with `pick()` that uses invalid tidy-selection errors
+# `filter()` / `filter_out()` with `pick()` that uses invalid tidy-selection errors
 
     Code
       filter(df, pick(x, a))
@@ -189,7 +193,7 @@
       Error in `filter()`:
       i In argument: `pick(x, a)`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `a` doesn't exist.
 
 ---
@@ -200,16 +204,38 @@
       Error in `filter()`:
       i In argument: `pick_wrapper(x, a)`.
       Caused by error in `pick()`:
-      ! Can't subset columns that don't exist.
+      ! Can't select columns that don't exist.
       x Column `a` doesn't exist.
 
-# `filter()` that doesn't use `pick()` result correctly errors
+---
+
+    Code
+      filter_out(df, pick(x, a))
+    Condition
+      Error in `filter_out()`:
+      i In argument: `pick(x, a)`.
+      Caused by error in `pick()`:
+      ! Can't select columns that don't exist.
+      x Column `a` doesn't exist.
+
+---
+
+    Code
+      filter_out(df, pick_wrapper(x, a))
+    Condition
+      Error in `filter_out()`:
+      i In argument: `pick_wrapper(x, a)`.
+      Caused by error in `pick()`:
+      ! Can't select columns that don't exist.
+      x Column `a` doesn't exist.
+
+# `filter()` / `filter_out()` that doesn't use `pick()` result correctly errors
 
     Code
       filter(df, pick(x, y)$x)
     Condition
       Error in `filter()`:
-      i In argument: `asNamespace("dplyr")$dplyr_pick_tibble(x = x, y = y)$x`.
+      i In argument: `pick(x, y)$x`.
       Caused by error:
       ! `..1` must be a logical vector, not a double vector.
 
@@ -219,6 +245,26 @@
       filter(df, pick_wrapper(x, y)$x)
     Condition
       Error in `filter()`:
+      i In argument: `pick_wrapper(x, y)$x`.
+      Caused by error:
+      ! `..1` must be a logical vector, not a double vector.
+
+---
+
+    Code
+      filter_out(df, pick(x, y)$x)
+    Condition
+      Error in `filter_out()`:
+      i In argument: `pick(x, y)$x`.
+      Caused by error:
+      ! `..1` must be a logical vector, not a double vector.
+
+---
+
+    Code
+      filter_out(df, pick_wrapper(x, y)$x)
+    Condition
+      Error in `filter_out()`:
       i In argument: `pick_wrapper(x, y)$x`.
       Caused by error:
       ! `..1` must be a logical vector, not a double vector.

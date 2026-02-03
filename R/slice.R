@@ -19,6 +19,12 @@
 #' intrinsic notion of row order. If you want to perform the equivalent
 #' operation, use [filter()] and [row_number()].
 #'
+#' For `slice_sample()`, note that the weights provided in `weight_by` are
+#' passed through to the `prob` argument of [base::sample.int()]. This means
+#' they cannot be used to reconstruct summary statistics from the underlying
+#' population. See [this discussion](https://stats.stackexchange.com/q/639211/)
+#' for more details.
+#'
 #' @family single table verbs
 #' @inheritParams args_by
 #' @inheritParams arrange
@@ -66,37 +72,40 @@
 #' @export
 #' @examples
 #' # Similar to head(mtcars, 1):
-#' mtcars %>% slice(1L)
+#' mtcars |> slice(1L)
 #' # Similar to tail(mtcars, 1):
-#' mtcars %>% slice(n())
-#' mtcars %>% slice(5:n())
+#' mtcars |> slice(n())
+#' mtcars |> slice(5:n())
 #' # Rows can be dropped with negative indices:
 #' slice(mtcars, -(1:4))
 #'
 #' # First and last rows based on existing order
-#' mtcars %>% slice_head(n = 5)
-#' mtcars %>% slice_tail(n = 5)
+#' mtcars |> slice_head(n = 5)
+#' mtcars |> slice_tail(n = 5)
 #'
 #' # Rows with minimum and maximum values of a variable
-#' mtcars %>% slice_min(mpg, n = 5)
-#' mtcars %>% slice_max(mpg, n = 5)
+#' mtcars |> slice_min(mpg, n = 5)
+#' mtcars |> slice_max(mpg, n = 5)
 #'
 #' # slice_min() and slice_max() may return more rows than requested
 #' # in the presence of ties.
-#' mtcars %>% slice_min(cyl, n = 1)
+#' mtcars |> slice_min(cyl, n = 1)
 #' # Use with_ties = FALSE to return exactly n matches
-#' mtcars %>% slice_min(cyl, n = 1, with_ties = FALSE)
+#' mtcars |> slice_min(cyl, n = 1, with_ties = FALSE)
 #' # Or use additional variables to break the tie:
-#' mtcars %>% slice_min(tibble(cyl, mpg), n = 1)
+#' mtcars |> slice_min(tibble(cyl, mpg), n = 1)
 #'
 #' # slice_sample() allows you to random select with or without replacement
-#' mtcars %>% slice_sample(n = 5)
-#' mtcars %>% slice_sample(n = 5, replace = TRUE)
+#' mtcars |> slice_sample(n = 5)
+#' mtcars |> slice_sample(n = 5, replace = TRUE)
 #'
-#' # you can optionally weight by a variable - this code weights by the
+#' # slice_sample() can be used to shuffle rows with `prop = 1`
+#' mtcars |> slice_sample(prop = 1)
+#'
+#' # You can optionally weight by a variable - this code weights by the
 #' # physical weight of the cars, so heavy cars are more likely to get
-#' # selected
-#' mtcars %>% slice_sample(weight_by = wt, n = 5)
+#' # selected.
+#' mtcars |> slice_sample(weight_by = wt, n = 5)
 #'
 #' # Group wise operation ----------------------------------------
 #' df <- tibble(
@@ -106,11 +115,11 @@
 #'
 #' # All slice helpers operate per group, silently truncating to the group
 #' # size, so the following code works without error
-#' df %>% group_by(group) %>% slice_head(n = 2)
+#' df |> group_by(group) |> slice_head(n = 2)
 #'
 #' # When specifying the proportion of rows to include non-integer sizes
 #' # are rounded down, so group a gets 0 rows
-#' df %>% group_by(group) %>% slice_head(prop = 0.5)
+#' df |> group_by(group) |> slice_head(prop = 0.5)
 #'
 #' # Filter equivalents --------------------------------------------
 #' # slice() expressions can often be written to use `filter()` and
@@ -208,7 +217,16 @@ slice_tail.data.frame <- function(.data, ..., n, prop, by = NULL) {
 #'   If `FALSE`, `NA` values are sorted to the end (like in [arrange()]), so
 #'   they will only be included if there are insufficient non-missing values to
 #'   reach `n`/`prop`.
-slice_min <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE, na_rm = FALSE) {
+slice_min <- function(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+) {
   check_required(order_by)
   check_dot_by_typo(...)
   check_slice_unnamed_n_prop(..., n = n, prop = prop)
@@ -219,7 +237,16 @@ slice_min <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE
 }
 
 #' @export
-slice_min.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE, na_rm = FALSE) {
+slice_min.data.frame <- function(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+) {
   check_dots_empty0(...)
 
   size <- get_slice_size(n = n, prop = prop)
@@ -248,7 +275,16 @@ slice_min.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_
 
 #' @export
 #' @rdname slice
-slice_max <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE, na_rm = FALSE) {
+slice_max <- function(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+) {
   check_required(order_by)
   check_dot_by_typo(...)
   check_slice_unnamed_n_prop(..., n = n, prop = prop)
@@ -259,7 +295,16 @@ slice_max <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE
 }
 
 #' @export
-slice_max.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_ties = TRUE, na_rm = FALSE) {
+slice_max.data.frame <- function(
+  .data,
+  order_by,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  with_ties = TRUE,
+  na_rm = FALSE
+) {
   check_dots_empty0(...)
 
   size <- get_slice_size(n = n, prop = prop)
@@ -293,7 +338,17 @@ slice_max.data.frame <- function(.data, order_by, ..., n, prop, by = NULL, with_
 #' @param weight_by <[`data-masking`][rlang::args_data_masking]> Sampling
 #'   weights. This must evaluate to a vector of non-negative numbers the same
 #'   length as the input. Weights are automatically standardised to sum to 1.
-slice_sample <- function(.data, ..., n, prop, by = NULL, weight_by = NULL, replace = FALSE) {
+#'   See the `Details` section for more technical details regarding these
+#'   weights.
+slice_sample <- function(
+  .data,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  weight_by = NULL,
+  replace = FALSE
+) {
   check_dot_by_typo(...)
   check_slice_unnamed_n_prop(..., n = n, prop = prop)
   check_bool(replace)
@@ -302,7 +357,15 @@ slice_sample <- function(.data, ..., n, prop, by = NULL, weight_by = NULL, repla
 }
 
 #' @export
-slice_sample.data.frame <- function(.data, ..., n, prop, by = NULL, weight_by = NULL, replace = FALSE) {
+slice_sample.data.frame <- function(
+  .data,
+  ...,
+  n,
+  prop,
+  by = NULL,
+  weight_by = NULL,
+  replace = FALSE
+) {
   check_dots_empty0(...)
 
   size <- get_slice_size(n = n, prop = prop, allow_outsize = replace)
@@ -327,22 +390,28 @@ slice_sample.data.frame <- function(.data, ..., n, prop, by = NULL, weight_by = 
 
 # helpers -----------------------------------------------------------------
 
-slice_rows <- function(data,
-                       dots,
-                       by,
-                       error_call = caller_env(),
-                       user_env = caller_env(2)) {
+slice_rows <- function(
+  data,
+  dots,
+  by,
+  error_call = caller_env(),
+  user_env = caller_env(2)
+) {
   error_call <- dplyr_error_call(error_call)
 
   mask <- DataMask$new(data, by, "slice", error_call = error_call)
   on.exit(mask$forget(), add = TRUE)
 
   chunks <- slice_eval(mask, dots, error_call = error_call, user_env = user_env)
-  slice_indices <- slice_combine(chunks, dots, mask = mask, error_call = error_call)
+  slice_indices <- slice_combine(
+    chunks,
+    dots,
+    mask = mask,
+    error_call = error_call
+  )
 
   vec_c(!!!slice_indices, .ptype = integer())
 }
-
 
 is_slice_call <- function(error_call) {
   is_slice <- TRUE
@@ -352,26 +421,30 @@ is_slice_call <- function(error_call) {
   is_slice
 }
 
-slice_eval <- function(mask,
-                       dots,
-                       error_call = caller_env(),
-                       user_env = caller_env(2)) {
+slice_eval <- function(
+  mask,
+  dots,
+  error_call = caller_env(),
+  user_env = caller_env(2)
+) {
   index <- 0L
   impl <- function(...) {
-    n <- ...length2()
+    n <- ...length()
     out <- vector("list", n)
 
     for (i in seq_len(n)) {
       index <<- i
 
-      slice_idx <- ...elt2(i)
+      slice_idx <- ...elt(i)
 
-      if (is.matrix(slice_idx) && ncol(slice_idx) == 1) {
+      if (is.matrix(slice_idx) && mat_n_col(slice_idx) == 1) {
         lifecycle::deprecate_warn(
           when = "1.1.0",
           what = I("Slicing with a 1-column matrix"),
           env = error_call,
-          user_env = user_env
+          user_env = user_env,
+          always = TRUE,
+          id = "dplyr-slice-one-column-matrix"
         )
         slice_idx <- slice_idx[, 1]
       }
@@ -431,7 +504,8 @@ slice_combine <- function(chunks, dots, mask, error_call = caller_env()) {
       grp_loc <- grp_loc[!is.na(grp_loc)]
 
       slice_indices[[group]] <- grp_loc
-    }, error = function(cnd) {
+    },
+    error = function(cnd) {
       mask$set_current_group(group)
       bullets <- c(
         "Can't compute indices.",
@@ -453,7 +527,12 @@ check_constant <- function(x, name, error_call = caller_env()) {
   })
 }
 
-check_slice_unnamed_n_prop <- function(..., n, prop, error_call = caller_env()) {
+check_slice_unnamed_n_prop <- function(
+  ...,
+  n,
+  prop,
+  error_call = caller_env()
+) {
   if (!missing(n) || !missing(prop)) {
     return(invisible())
   }
@@ -502,7 +581,12 @@ check_slice_n_prop <- function(n, prop, error_call = caller_env()) {
 }
 
 # Always returns an integer between 0 and the group size
-get_slice_size <- function(n, prop, allow_outsize = FALSE, error_call = caller_env()) {
+get_slice_size <- function(
+  n,
+  prop,
+  allow_outsize = FALSE,
+  error_call = caller_env()
+) {
   slice_input <- check_slice_n_prop(n, prop, error_call = error_call)
 
   if (slice_input$type == "n") {
@@ -549,12 +633,12 @@ sample_int <- function(n, size, replace = FALSE, wt = NULL) {
 }
 
 slice_rank_idx <- function(
-    order_by,
-    size,
-    with_ties = TRUE,
-    direction = c("asc", "desc"),
-    na_rm = FALSE,
-    call = caller_env()
+  order_by,
+  size,
+  with_ties = TRUE,
+  direction = c("asc", "desc"),
+  na_rm = FALSE,
+  call = caller_env()
 ) {
   direction <- arg_match0(
     arg = direction,
@@ -587,18 +671,4 @@ on_load({
 })
 dplyr_local_slice_by_arg <- function(by_arg, frame = caller_env()) {
   local_bindings(slice_by_arg = by_arg, .env = the, .frame = frame)
-}
-
-# Backports for R 3.5.0 utils
-...length2 <- function(frame = caller_env()) {
-  dots <- env_get(frame, "...")
-
-  if (is_missing(dots)) {
-    0L
-  } else {
-    length(dots)
-  }
-}
-...elt2 <- function(i, frame = caller_env()) {
-  eval_bare(sym(paste0("..", i)), frame)
 }

@@ -73,16 +73,19 @@ methods as needed.
 
 \section{Current usage}{
 \itemize{
-\item \code{arrange()}, \code{filter()}, \code{slice()} (and the rest of the \verb{slice_*()}
-family), \code{semi_join()}, and \code{anti_join()} work by generating a vector of
-row indices, and then subsetting with \code{dplyr_row_slice()}.
+\item \code{arrange()}, \code{filter()} (and \code{filter_out()}), \code{slice()} (and the rest of
+the \verb{slice_*()} family), \code{semi_join()}, and \code{anti_join()} work by
+generating a vector of row indices, and then subsetting with
+\code{dplyr_row_slice()}.
 \item \code{mutate()} generates a list of new column value (using \code{NULL} to indicate
 when columns should be deleted), then passes that to \code{dplyr_col_modify()}.
 It also uses 1d \code{[} to implement \code{.keep}, and will call \code{relocate()} if
 either \code{.before} or \code{.after} are supplied.
 \item \code{summarise()} and \code{reframe()} work similarly to \code{mutate()} but the data
 modified by \code{dplyr_col_modify()} comes from \code{group_data()} or is built
-from \code{.by}.
+from \code{.by}. Note that this means that the data frames returned by
+\code{summarise()} and \code{reframe()} are fundamentally new data frames, and
+will not retain any custom subclasses or attributes.
 \item \code{select()} uses 1d \code{[} to select columns, then \verb{names<-} to rename them.
 \code{rename()} just uses \verb{names<-}. \code{relocate()} just uses 1d \code{[}.
 \item \code{inner_join()}, \code{left_join()}, \code{right_join()}, and \code{full_join()}

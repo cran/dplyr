@@ -1,4 +1,5 @@
-DataMask <- R6Class("DataMask",
+DataMask <- R6Class(
+  "DataMask",
   public = list(
     initialize = function(data, by, verb, error_call) {
       rows <- by$data$.rows
@@ -11,13 +12,34 @@ DataMask <- R6Class("DataMask",
       frame <- caller_env(n = 2)
       local_mask(self, frame)
 
-      names_bindings <- chr_unserialise_unicode(names2(data))
+      names <- names(data)
+
+      if (is.null(names)) {
+        cli::cli_abort(
+          "Can't transform a data frame with `NULL` names.",
+          call = error_call
+        )
+      }
+      if (vec_any_missing(names)) {
+        cli::cli_abort(
+          "Can't transform a data frame with missing names.",
+          call = error_call
+        )
+      }
+
+      names_bindings <- chr_unserialise_unicode(names)
       if (any(names_bindings == "")) {
         # `names2()` converted potential `NA` names to `""` already
-        abort("Can't transform a data frame with `NA` or `\"\"` names.", call = error_call)
+        abort(
+          "Can't transform a data frame with `NA` or `\"\"` names.",
+          call = error_call
+        )
       }
       if (anyDuplicated(names_bindings)) {
-        abort("Can't transform a data frame with duplicate names.", call = error_call)
+        abort(
+          "Can't transform a data frame with duplicate names.",
+          call = error_call
+        )
       }
       names(data) <- names_bindings
 
@@ -31,7 +53,7 @@ DataMask <- R6Class("DataMask",
       # reference is "fresh" and completely owned by this instance of the
       # `DataMask`. Otherwise nested `mutate()` calls can end up modifying
       # the same value (#6762).
-      private$env_current_group_info <- new_environment(data = list(
+      private$env_current_group_info <- new_environment(list(
         `dplyr:::current_group_id` = duplicate(0L),
         `dplyr:::current_group_size` = duplicate(0L)
       ))
@@ -52,12 +74,13 @@ DataMask <- R6Class("DataMask",
       )
 
       private$keys <- group_keys0(by$data)
+      private$n_groups <- nrow(private$keys)
       private$by_names <- by$names
       private$verb <- verb
     },
 
     add_one = function(name, chunks, result) {
-      if (self$is_rowwise()){
+      if (self$is_rowwise()) {
         is_scalar_list <- function(.x) {
           obj_is_list(.x) && length(.x) == 1L
         }
@@ -94,8 +117,17 @@ DataMask <- R6Class("DataMask",
       eval()
     },
 
-    eval_all_filter = function(quos, env_filter) {
-      eval <- function() .Call(`dplyr_mask_eval_all_filter`, quos, private, private$size, env_filter)
+    eval_all_filter = function(quos, invert, env_filter) {
+      eval <- function() {
+        .Call(
+          `dplyr_mask_eval_all_filter`,
+          quos,
+          invert,
+          private,
+          private$size,
+          env_filter
+        )
+      }
       eval()
     },
 
@@ -153,7 +185,9 @@ DataMask <- R6Class("DataMask",
     # - For maximal performance, we inline the mutable function definition into
     #   the non-mutable version.
     get_current_group_id = function() {
-      duplicate(private[["env_current_group_info"]][["dplyr:::current_group_id"]])
+      duplicate(
+        private[["env_current_group_info"]][["dplyr:::current_group_id"]]
+      )
     },
     get_current_group_id_mutable = function() {
       private[["env_current_group_info"]][["dplyr:::current_group_id"]]
@@ -167,7 +201,9 @@ DataMask <- R6Class("DataMask",
     # - For maximal performance, we inline the mutable function definition into
     #   the non-mutable version.
     get_current_group_size = function() {
-      duplicate(private[["env_current_group_info"]][["dplyr:::current_group_size"]])
+      duplicate(
+        private[["env_current_group_info"]][["dplyr:::current_group_size"]]
+      )
     },
     get_current_group_size_mutable = function() {
       private[["env_current_group_info"]][["dplyr:::current_group_size"]]
@@ -183,7 +219,8 @@ DataMask <- R6Class("DataMask",
       # extremely safe here.
       env_current_group_info <- private[["env_current_group_info"]]
       env_current_group_info[["dplyr:::current_group_id"]] <- duplicate(group)
-      env_current_group_info[["dplyr:::current_group_size"]] <- duplicate(length(private$rows[[group]]))
+      env_current_group_info[["dplyr:::current_group_size"]] <-
+        duplicate(length(private$rows[[group]]))
     },
 
     get_used = function() {
@@ -215,14 +252,23 @@ DataMask <- R6Class("DataMask",
       verb <- private$verb
 
       osbolete_promise_fn <- function(name) {
-        abort(c(
-          "Obsolete data mask.",
-          x = glue("Too late to resolve `{name}` after the end of `dplyr::{verb}()`."),
-          i = glue("Did you save an object that uses `{name}` lazily in a column in the `dplyr::{verb}()` expression ?")
-        ), call = NULL)
+        abort(
+          c(
+            "Obsolete data mask.",
+            x = glue(
+              "Too late to resolve `{name}` after the end of `dplyr::{verb}()`."
+            ),
+            i = glue(
+              "Did you save an object that uses `{name}` lazily in a column in the `dplyr::{verb}()` expression ?"
+            )
+          ),
+          call = NULL
+        )
       }
 
-      promises <- map(names_bindings, function(.x) expr(osbolete_promise_fn(!!.x)))
+      promises <- map(names_bindings, function(.x) {
+        expr(osbolete_promise_fn(!!.x))
+      })
       env_mask_bindings <- private$env_mask_bindings
       suppressWarnings({
         rm(list = names_bindings, envir = env_mask_bindings)
@@ -242,6 +288,10 @@ DataMask <- R6Class("DataMask",
       private$keys
     },
 
+    get_n_groups = function() {
+      private$n_groups
+    },
+
     get_size = function() {
       private$size
     },
@@ -254,7 +304,6 @@ DataMask <- R6Class("DataMask",
       mask[[".data"]] <- as_data_pronoun(private$env_mask_bindings)
       mask
     }
-
   ),
 
   private = list(
@@ -287,6 +336,9 @@ DataMask <- R6Class("DataMask",
 
     # data frame of keys, one row per group
     keys = NULL,
+
+    # number of groups, computed as number of rows in `keys`
+    n_groups = NULL,
 
     # number of rows in `data`
     size = NULL,
