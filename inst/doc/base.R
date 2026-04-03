@@ -44,15 +44,15 @@ subset(starwars, mass > 1000)
 subset(starwars, hair_color == "none" & eye_color == "black")
 
 ## -----------------------------------------------------------------------------
-starwars[which(starwars$species == "Human"), , drop = FALSE]
-starwars[which(starwars$mass > 1000), , drop = FALSE]
-starwars[which(starwars$hair_color == "none" & starwars$eye_color == "black"), , drop = FALSE]
+starwars[which(starwars$species == "Human"), ]
+starwars[which(starwars$mass > 1000), ]
+starwars[which(starwars$hair_color == "none" & starwars$eye_color == "black"), ]
 
 ## -----------------------------------------------------------------------------
-df |> mutate(z = x + y, z2 = z ^ 2)
+df |> mutate(z = x + y, z2 = z^2)
 
 ## -----------------------------------------------------------------------------
-head(transform(df, z = x + y, z2 = (x + y) ^ 2))
+head(transform(df, z = x + y, z2 = (x + y)^2))
 
 ## -----------------------------------------------------------------------------
 mtcars$cyl2 <- mtcars$cyl * 2
@@ -65,7 +65,8 @@ gf |>
   mutate(x_mean = mean(x), x_rank = rank(x))
 
 ## -----------------------------------------------------------------------------
-transform(gf,
+transform(
+  gf,
   x_mean = ave(x, g, FUN = mean),
   x_rank = ave(x, g, FUN = rank)
 )
@@ -139,7 +140,9 @@ mtcars_by <- by(mtcars, mtcars$cyl, function(df) {
 do.call(rbind, mtcars_by)
 
 ## -----------------------------------------------------------------------------
-agg <- aggregate(disp ~ cyl, mtcars, function(x) c(mean = mean(x), n = length(x)))
+agg <- aggregate(disp ~ cyl, mtcars, function(x) {
+  c(mean = mean(x), n = length(x))
+})
 agg
 
 ## -----------------------------------------------------------------------------

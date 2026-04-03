@@ -1,3 +1,7 @@
+# dplyr 1.2.1
+
+* dplyr is now fully compliant with the R C API (#7819).
+
 # dplyr 1.2.0
 
 ## New features

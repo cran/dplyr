@@ -122,7 +122,7 @@ mods <- mods |> mutate(pred = list(predict(mod, data)))
 mods
 
 ## -----------------------------------------------------------------------------
-mods |> summarise(rmse = sqrt(mean((pred - data$mpg) ^ 2)))
+mods |> summarise(rmse = sqrt(mean((pred - data$mpg)^2)))
 mods |> summarise(rsq = summary(mod)$r.squared)
 mods |> summarise(broom::glance(mod))
 
@@ -131,10 +131,10 @@ mods |> reframe(broom::tidy(mod))
 
 ## -----------------------------------------------------------------------------
 df <- tribble(
-  ~ n, ~ min, ~ max,
-    1,     0,     1,
-    2,    10,   100,
-    3,   100,  1000,
+  ~n , ~min , ~max ,
+   1 ,    0 ,    1 ,
+   2 ,   10 ,  100 ,
+   3 ,  100 , 1000 ,
 )
 
 ## -----------------------------------------------------------------------------
@@ -158,10 +158,10 @@ df |>
 
 ## -----------------------------------------------------------------------------
 df <- tribble(
-   ~rng,     ~params,
-   "runif",  list(n = 10),
-   "rnorm",  list(n = 20),
-   "rpois",  list(n = 10, lambda = 5),
+  ~rng    , ~params                  ,
+  "runif" , list(n = 10)             ,
+  "rnorm" , list(n = 20)             ,
+  "rpois" , list(n = 10, lambda = 5) ,
 ) |>
   rowwise()
 
@@ -170,10 +170,10 @@ df |>
 
 ## ----include = FALSE, eval = FALSE--------------------------------------------
 # df <- rowwise(tribble(
-#    ~rng,     ~params,
-#    "runif",  list(min = -1, max = 1),
-#    "rnorm",  list(),
-#    "rpois",  list(lambda = 5),
+#   ~rng    , ~params                 ,
+#   "runif" , list(min = -1, max = 1) ,
+#   "rnorm" , list()                  ,
+#   "rpois" , list(lambda = 5)        ,
 # ))
 # 
 # # Has to happen in separate function to avoid eager unquoting

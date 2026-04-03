@@ -384,7 +384,7 @@ R</em></a>.</p>
 typing. In most (but not all<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>) base R functions you need to refer to
 variables with <code>$</code>, leading to code that repeats the name of
 the data frame many times:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>starwars[starwars<span class="sc">$</span>homeworld <span class="sc">==</span> <span class="st">&quot;Naboo&quot;</span> <span class="sc">&amp;</span> starwars<span class="sc">$</span>species <span class="sc">==</span> <span class="st">&quot;Human&quot;</span>, ,]</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>starwars[starwars<span class="sc">$</span>homeworld <span class="sc">==</span> <span class="st">&quot;Naboo&quot;</span> <span class="sc">&amp;</span> starwars<span class="sc">$</span>species <span class="sc">==</span> <span class="st">&quot;Human&quot;</span>, , ]</span></code></pre></div>
 <p>The dplyr equivalent of this code is more concise because data
 masking allows you to need to type <code>starwars</code> once:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>starwars <span class="sc">|&gt;</span> <span class="fu">filter</span>(homeworld <span class="sc">==</span> <span class="st">&quot;Naboo&quot;</span>, species <span class="sc">==</span> <span class="st">&quot;Human&quot;</span>)</span></code></pre></div>
@@ -574,12 +574,13 @@ argument:</p>
 <p>This generalises in a straightforward way if you want to use one
 user-supplied expression in multiple places:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>my_summarise2 <span class="ot">&lt;-</span> <span class="cf">function</span>(data, expr) {</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  data <span class="sc">|&gt;</span> <span class="fu">summarise</span>(</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>    <span class="at">mean =</span> <span class="fu">mean</span>({{ expr }}),</span>
-<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>    <span class="at">sum =</span> <span class="fu">sum</span>({{ expr }}),</span>
-<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>()</span>
-<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  )</span>
-<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>      <span class="at">mean =</span> <span class="fu">mean</span>({{ expr }}),</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>      <span class="at">sum =</span> <span class="fu">sum</span>({{ expr }}),</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>      <span class="at">n =</span> <span class="fu">n</span>()</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>    )</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>}</span></code></pre></div>
 <p>If you want the user to provide multiple expressions, embrace each of
 them:</p>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>my_summarise3 <span class="ot">&lt;-</span> <span class="cf">function</span>(data, mean_var, sd_var) {</span>
@@ -590,19 +591,20 @@ them:</p>
 embrace the variable name on the left-hand side of <code>:=</code> with
 <code>{{</code>:</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>my_summarise4 <span class="ot">&lt;-</span> <span class="cf">function</span>(data, expr) {</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  data <span class="sc">|&gt;</span> <span class="fu">summarise</span>(</span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>    <span class="st">&quot;mean_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">mean</span>({{ expr }}),</span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>    <span class="st">&quot;sum_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">sum</span>({{ expr }}),</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>    <span class="st">&quot;n_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">n</span>()</span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  )</span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>}</span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>my_summarise5 <span class="ot">&lt;-</span> <span class="cf">function</span>(data, mean_var, sd_var) {</span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>      <span class="st">&quot;mean_{{mean_var}}&quot;</span> <span class="sc">:=</span> <span class="fu">mean</span>({{ mean_var }}),</span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>      <span class="st">&quot;sd_{{sd_var}}&quot;</span> <span class="sc">:=</span> <span class="fu">sd</span>({{ sd_var }})</span>
-<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>    )</span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a>      <span class="st">&quot;mean_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">mean</span>({{ expr }}),</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>      <span class="st">&quot;sum_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">sum</span>({{ expr }}),</span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>      <span class="st">&quot;n_{{expr}}&quot;</span> <span class="sc">:=</span> <span class="fu">n</span>()</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a>    )</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>}</span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a>my_summarise5 <span class="ot">&lt;-</span> <span class="cf">function</span>(data, mean_var, sd_var) {</span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a>  data <span class="sc">|&gt;</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a>      <span class="st">&quot;mean_{{mean_var}}&quot;</span> <span class="sc">:=</span> <span class="fu">mean</span>({{ mean_var }}),</span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a>      <span class="st">&quot;sd_{{sd_var}}&quot;</span> <span class="sc">:=</span> <span class="fu">sd</span>({{ sd_var }})</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a>    )</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 <div id="any-number-of-user-supplied-expressions" class="section level3">
 <h3>Any number of user-supplied expressions</h3>
@@ -613,34 +615,37 @@ the user full control over a single part of the pipeline, like a
 <div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>my_summarise <span class="ot">&lt;-</span> <span class="cf">function</span>(.data, ...) {</span>
 <span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>  .data <span class="sc">|&gt;</span></span>
 <span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>    <span class="fu">group_by</span>(...) <span class="sc">|&gt;</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">mass =</span> <span class="fu">mean</span>(mass, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">height =</span> <span class="fu">mean</span>(height, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>}</span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a></span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>starwars <span class="sc">|&gt;</span> <span class="fu">my_summarise</span>(homeworld)</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a><span class="co">#&gt; # A tibble: 49 × 3</span></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co">#&gt;   homeworld    mass height</span></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;dbl&gt;  &lt;dbl&gt;</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="co">#&gt; 1 Alderaan       64   176.</span></span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="co">#&gt; 2 Aleen Minor    15    79 </span></span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="co">#&gt; 3 Bespin         79   175 </span></span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="co">#&gt; 4 Bestine IV    110   180 </span></span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="co">#&gt; # ℹ 45 more rows</span></span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a>starwars <span class="sc">|&gt;</span> <span class="fu">my_summarise</span>(sex, gender)</span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="co">#&gt; `summarise()` has regrouped the output.</span></span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="co">#&gt; ℹ Summaries were computed grouped by sex and gender.</span></span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="co">#&gt; ℹ Output is grouped by sex.</span></span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="co">#&gt; ℹ Use `summarise(.groups = &quot;drop_last&quot;)` to silence this message.</span></span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="co">#&gt; ℹ Use `summarise(.by = c(sex, gender))` for per-operation grouping</span></span>
-<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a><span class="co">#&gt;   (`?dplyr::dplyr_by`) instead.</span></span>
-<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
-<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a><span class="co">#&gt; # Groups:   sex [5]</span></span>
-<span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a><span class="co">#&gt;   sex            gender      mass height</span></span>
-<span id="cb16-26"><a href="#cb16-26" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;chr&gt;      &lt;dbl&gt;  &lt;dbl&gt;</span></span>
-<span id="cb16-27"><a href="#cb16-27" tabindex="-1"></a><span class="co">#&gt; 1 female         feminine    54.7   172.</span></span>
-<span id="cb16-28"><a href="#cb16-28" tabindex="-1"></a><span class="co">#&gt; 2 hermaphroditic masculine 1358     175 </span></span>
-<span id="cb16-29"><a href="#cb16-29" tabindex="-1"></a><span class="co">#&gt; 3 male           masculine   80.2   179.</span></span>
-<span id="cb16-30"><a href="#cb16-30" tabindex="-1"></a><span class="co">#&gt; 4 none           feminine   NaN      96 </span></span>
-<span id="cb16-31"><a href="#cb16-31" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more rows</span></span></code></pre></div>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>    <span class="fu">summarise</span>(</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a>      <span class="at">mass =</span> <span class="fu">mean</span>(mass, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a>      <span class="at">height =</span> <span class="fu">mean</span>(height, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a>    )</span>
+<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a>}</span>
+<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a></span>
+<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a>starwars <span class="sc">|&gt;</span> <span class="fu">my_summarise</span>(homeworld)</span>
+<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a><span class="co">#&gt; # A tibble: 49 × 3</span></span>
+<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="co">#&gt;   homeworld    mass height</span></span>
+<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;       &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="co">#&gt; 1 Alderaan       64   176.</span></span>
+<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="co">#&gt; 2 Aleen Minor    15    79 </span></span>
+<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="co">#&gt; 3 Bespin         79   175 </span></span>
+<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="co">#&gt; 4 Bestine IV    110   180 </span></span>
+<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="co">#&gt; # ℹ 45 more rows</span></span>
+<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a>starwars <span class="sc">|&gt;</span> <span class="fu">my_summarise</span>(sex, gender)</span>
+<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="co">#&gt; `summarise()` has regrouped the output.</span></span>
+<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="co">#&gt; ℹ Summaries were computed grouped by sex and gender.</span></span>
+<span id="cb16-22"><a href="#cb16-22" tabindex="-1"></a><span class="co">#&gt; ℹ Output is grouped by sex.</span></span>
+<span id="cb16-23"><a href="#cb16-23" tabindex="-1"></a><span class="co">#&gt; ℹ Use `summarise(.groups = &quot;drop_last&quot;)` to silence this message.</span></span>
+<span id="cb16-24"><a href="#cb16-24" tabindex="-1"></a><span class="co">#&gt; ℹ Use `summarise(.by = c(sex, gender))` for per-operation grouping</span></span>
+<span id="cb16-25"><a href="#cb16-25" tabindex="-1"></a><span class="co">#&gt;   (`?dplyr::dplyr_by`) instead.</span></span>
+<span id="cb16-26"><a href="#cb16-26" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 4</span></span>
+<span id="cb16-27"><a href="#cb16-27" tabindex="-1"></a><span class="co">#&gt; # Groups:   sex [5]</span></span>
+<span id="cb16-28"><a href="#cb16-28" tabindex="-1"></a><span class="co">#&gt;   sex            gender      mass height</span></span>
+<span id="cb16-29"><a href="#cb16-29" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;          &lt;chr&gt;      &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb16-30"><a href="#cb16-30" tabindex="-1"></a><span class="co">#&gt; 1 female         feminine    54.7   172.</span></span>
+<span id="cb16-31"><a href="#cb16-31" tabindex="-1"></a><span class="co">#&gt; 2 hermaphroditic masculine 1358     175 </span></span>
+<span id="cb16-32"><a href="#cb16-32" tabindex="-1"></a><span class="co">#&gt; 3 male           masculine   80.2   179.</span></span>
+<span id="cb16-33"><a href="#cb16-33" tabindex="-1"></a><span class="co">#&gt; 4 none           feminine   NaN      96 </span></span>
+<span id="cb16-34"><a href="#cb16-34" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more rows</span></span></code></pre></div>
 <p>When you use <code>...</code> in this way, make sure that any other
 arguments start with <code>.</code> to reduce the chances of argument
 clashes; see <a href="https://design.tidyverse.org/dots-prefix.html" class="uri">https://design.tidyverse.org/dots-prefix.html</a> for more

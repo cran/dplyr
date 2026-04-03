@@ -82,7 +82,8 @@ starwars |> summarise(height = mean(height, na.rm = TRUE))
 ## ----eval = FALSE-------------------------------------------------------------
 # a1 <- group_by(starwars, species, sex)
 # a2 <- select(a1, height, mass)
-# a3 <- summarise(a2,
+# a3 <- summarise(
+#   a2,
 #   height = mean(height, na.rm = TRUE),
 #   mass = mean(mass, na.rm = TRUE)
 # )
@@ -91,7 +92,8 @@ starwars |> summarise(height = mean(height, na.rm = TRUE))
 summarise(
   select(
     group_by(starwars, species, sex),
-    height, mass
+    height,
+    mass
   ),
   height = mean(height, na.rm = TRUE),
   mass = mean(mass, na.rm = TRUE)

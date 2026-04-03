@@ -38,29 +38,49 @@ df |>
 
 ## -----------------------------------------------------------------------------
 min_max <- list(
-  min = ~min(.x, na.rm = TRUE),
-  max = ~max(.x, na.rm = TRUE)
+  min = ~ min(.x, na.rm = TRUE),
+  max = ~ max(.x, na.rm = TRUE)
 )
 starwars |> summarise(across(where(is.numeric), min_max))
 starwars |> summarise(across(c(height, mass, birth_year), min_max))
 
 ## -----------------------------------------------------------------------------
-starwars |> summarise(across(where(is.numeric), min_max, .names = "{.fn}.{.col}"))
-starwars |> summarise(across(c(height, mass, birth_year), min_max, .names = "{.fn}.{.col}"))
+starwars |>
+  summarise(across(
+    where(is.numeric),
+    min_max,
+    .names = "{.fn}.{.col}"
+  ))
+starwars |>
+  summarise(across(
+    c(height, mass, birth_year),
+    min_max,
+    .names = "{.fn}.{.col}"
+  ))
 
 ## -----------------------------------------------------------------------------
-starwars |> summarise(
-  across(c(height, mass, birth_year), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
-  across(c(height, mass, birth_year), ~max(.x, na.rm = TRUE), .names = "max_{.col}")
-)
-
-## -----------------------------------------------------------------------------
-starwars |> summarise(
-  tibble(
-    across(where(is.numeric), ~min(.x, na.rm = TRUE), .names = "min_{.col}"),
-    across(where(is.numeric), ~max(.x, na.rm = TRUE), .names = "max_{.col}")
+starwars |>
+  summarise(
+    across(
+      c(height, mass, birth_year),
+      ~ min(.x, na.rm = TRUE),
+      .names = "min_{.col}"
+    ),
+    across(
+      c(height, mass, birth_year),
+      ~ max(.x, na.rm = TRUE),
+      .names = "max_{.col}"
+    )
   )
-)
+
+## -----------------------------------------------------------------------------
+starwars |>
+  summarise(
+    tibble(
+      across(where(is.numeric), ~ min(.x, na.rm = TRUE), .names = "min_{.col}"),
+      across(where(is.numeric), ~ max(.x, na.rm = TRUE), .names = "max_{.col}")
+    )
+  )
 
 ## -----------------------------------------------------------------------------
 starwars |>
@@ -71,7 +91,8 @@ starwars |>
 df <- tibble(x = 1:3, y = 3:5, z = 5:7)
 mult <- list(x = 1, y = 10, z = 100)
 
-df |> mutate(across(all_of(names(mult)), ~ .x * mult[[cur_column()]]))
+df |>
+  mutate(across(all_of(names(mult)), ~ .x * mult[[cur_column()]]))
 
 ## -----------------------------------------------------------------------------
 df <- data.frame(x = c(1, 2, 3), y = c(1, 4, 9))
@@ -89,9 +110,7 @@ df |>
 
 ## -----------------------------------------------------------------------------
 df |>
-  summarise(
-    tibble(n = n(), across(where(is.numeric), sd))
-  )
+  summarise(tibble(n = n(), across(where(is.numeric), sd)))
 
 ## -----------------------------------------------------------------------------
 rescale01 <- function(x) {
@@ -125,9 +144,9 @@ starwars |>
 #   )
 
 ## ----results = FALSE----------------------------------------------------------
-df |> mutate_if(is.numeric, ~mean(.x, na.rm = TRUE))
+df |> mutate_if(is.numeric, ~ mean(.x, na.rm = TRUE))
 # ->
-df |> mutate(across(where(is.numeric), ~mean(.x, na.rm = TRUE)))
+df |> mutate(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
 
 df |> mutate_at(vars(c(x, starts_with("y"))), mean)
 # ->

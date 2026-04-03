@@ -69,7 +69,7 @@ mutate(players, G_delta = G - lag(G))
 filter(players, teamID != lag(teamID))
 
 ## -----------------------------------------------------------------------------
-df <- data.frame(year = 2000:2005, value = (0:5) ^ 2)
+df <- data.frame(year = 2000:2005, value = (0:5)^2)
 scrambled <- df[sample(nrow(df)), ]
 
 wrong <- mutate(scrambled, prev_value = lag(value))

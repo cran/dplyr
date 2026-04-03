@@ -508,7 +508,7 @@ variable. This is important if you have not already sorted the data, or
 you want to sort one way and lag another.</p>
 <p>Here’s a simple example of what happens if you don’t specify
 <code>order_by</code> when you need it:</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">year =</span> <span class="dv">2000</span><span class="sc">:</span><span class="dv">2005</span>, <span class="at">value =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>) <span class="sc">^</span> <span class="dv">2</span>)</span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">year =</span> <span class="dv">2000</span><span class="sc">:</span><span class="dv">2005</span>, <span class="at">value =</span> (<span class="dv">0</span><span class="sc">:</span><span class="dv">5</span>)<span class="sc">^</span><span class="dv">2</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>scrambled <span class="ot">&lt;-</span> df[<span class="fu">sample</span>(<span class="fu">nrow</span>(df)), ]</span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>wrong <span class="ot">&lt;-</span> <span class="fu">mutate</span>(scrambled, <span class="at">prev_value =</span> <span class="fu">lag</span>(value))</span>

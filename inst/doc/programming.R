@@ -7,7 +7,7 @@ set.seed(1014)
 library(dplyr)
 
 ## ----results = FALSE----------------------------------------------------------
-starwars[starwars$homeworld == "Naboo" & starwars$species == "Human", ,]
+starwars[starwars$homeworld == "Naboo" & starwars$species == "Human", , ]
 
 ## ----results = FALSE----------------------------------------------------------
 starwars |> filter(homeworld == "Naboo", species == "Human")
@@ -68,11 +68,12 @@ my_summarise <- function(data, group_var) {
 
 ## -----------------------------------------------------------------------------
 my_summarise2 <- function(data, expr) {
-  data |> summarise(
-    mean = mean({{ expr }}),
-    sum = sum({{ expr }}),
-    n = n()
-  )
+  data |>
+    summarise(
+      mean = mean({{ expr }}),
+      sum = sum({{ expr }}),
+      n = n()
+    )
 }
 
 ## -----------------------------------------------------------------------------
@@ -83,11 +84,12 @@ my_summarise3 <- function(data, mean_var, sd_var) {
 
 ## -----------------------------------------------------------------------------
 my_summarise4 <- function(data, expr) {
-  data |> summarise(
-    "mean_{{expr}}" := mean({{ expr }}),
-    "sum_{{expr}}" := sum({{ expr }}),
-    "n_{{expr}}" := n()
-  )
+  data |>
+    summarise(
+      "mean_{{expr}}" := mean({{ expr }}),
+      "sum_{{expr}}" := sum({{ expr }}),
+      "n_{{expr}}" := n()
+    )
 }
 my_summarise5 <- function(data, mean_var, sd_var) {
   data |>
@@ -101,7 +103,10 @@ my_summarise5 <- function(data, mean_var, sd_var) {
 my_summarise <- function(.data, ...) {
   .data |>
     group_by(...) |>
-    summarise(mass = mean(mass, na.rm = TRUE), height = mean(height, na.rm = TRUE))
+    summarise(
+      mass = mean(mass, na.rm = TRUE),
+      height = mean(height, na.rm = TRUE)
+    )
 }
 
 starwars |> my_summarise(homeworld)

@@ -415,7 +415,7 @@ function of existing variables. This is equivalent to performing a
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>bmi_breaks <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">18.5</span>, <span class="dv">25</span>, <span class="dv">30</span>, <span class="cn">Inf</span>)</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">bmi_cat =</span> <span class="fu">cut</span>(mass<span class="sc">/</span>(height<span class="sc">/</span><span class="dv">100</span>)<span class="sc">^</span><span class="dv">2</span>, <span class="at">breaks=</span>bmi_breaks)) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="fu">group_by</span>(<span class="at">bmi_cat =</span> <span class="fu">cut</span>(mass <span class="sc">/</span> (height <span class="sc">/</span> <span class="dv">100</span>)<span class="sc">^</span><span class="dv">2</span>, <span class="at">breaks =</span> bmi_breaks)) <span class="sc">|&gt;</span></span>
 <span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="fu">tally</span>()</span>
 <span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; # A tibble: 5 × 2</span></span>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt;   bmi_cat       n</span></span>

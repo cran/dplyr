@@ -22,7 +22,7 @@ by_sex_gender |> tally(sort = TRUE)
 bmi_breaks <- c(0, 18.5, 25, 30, Inf)
 
 starwars |>
-  group_by(bmi_cat = cut(mass/(height/100)^2, breaks=bmi_breaks)) |>
+  group_by(bmi_cat = cut(mass / (height / 100)^2, breaks = bmi_breaks)) |>
   tally()
 
 ## ----group_vars---------------------------------------------------------------
